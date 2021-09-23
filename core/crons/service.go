@@ -206,172 +206,172 @@ func (impl *CronImpl) HandleDataInputFile() {
 }
 
 func (impl *CronImpl) HandlePlansInputFile() {
-	fileName := "./doc/Input.xlsx"
+	// fileName := "./doc/Input.xlsx"
 
-	file, err := excelize.OpenFile(fileName)
-	if err != nil {
-		log.Fatalf("could not open file, %v\n", err)
-	}
+	// file, err := excelize.OpenFile(fileName)
+	// if err != nil {
+	// 	log.Fatalf("could not open file, %v\n", err)
+	// }
 
-	rows, err := file.Rows("Plans")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// rows, err := file.Rows("Plans")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
 
-	//records := make([]*db.Transaction, 0)
-	impl.DBService.DeleteProductPlans()
+	// //records := make([]*db.Transaction, 0)
+	// impl.DBService.DeleteProductPlans()
 
-	isFirstRow := true
-	index := 0
+	// isFirstRow := true
+	// index := 0
 
-	for rows.Next() {
+	// for rows.Next() {
 
-		index++
+	// 	index++
 
-		if isFirstRow {
-			rows.Columns()
-			isFirstRow = false
-			continue
-		}
+	// 	if isFirstRow {
+	// 		rows.Columns()
+	// 		isFirstRow = false
+	// 		continue
+	// 	}
 
-		row, err := rows.Columns()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+	// 	row, err := rows.Columns()
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 		return
+	// 	}
 
-		trx := &db.ProductPlans{}
+	// 	trx := &db.ProductPlans{}
 
-		for i, colCell := range row {
+	// 	for i, colCell := range row {
 
-			switch i {
-			case 0:
-				trx.PlanName = strings.TrimSpace(colCell)
-			case 1:
-				num, err := strconv.ParseFloat(strings.TrimSpace(colCell), 64)
-				if err != nil {
-					log.Println("PlanPrice error: " + err.Error() + " index: " + strconv.Itoa(index))
-					return
-				}
-				trx.PlanPrice = num
-			case 2:
-				num, err := strconv.ParseFloat(strings.TrimSpace(colCell), 64)
-				if err != nil {
-					log.Println("SIPPlanPrice error: " + err.Error() + " index: " + strconv.Itoa(index))
-					return
-				}
-				trx.SIPRatePlan = num
-			}
-		}
+	// 		switch i {
+	// 		case 0:
+	// 			trx.PlanName = strings.TrimSpace(colCell)
+	// 		case 1:
+	// 			num, err := strconv.ParseFloat(strings.TrimSpace(colCell), 64)
+	// 			if err != nil {
+	// 				log.Println("PlanPrice error: " + err.Error() + " index: " + strconv.Itoa(index))
+	// 				return
+	// 			}
+	// 			trx.PlanPrice = num
+	// 		case 2:
+	// 			num, err := strconv.ParseFloat(strings.TrimSpace(colCell), 64)
+	// 			if err != nil {
+	// 				log.Println("SIPPlanPrice error: " + err.Error() + " index: " + strconv.Itoa(index))
+	// 				return
+	// 			}
+	// 			trx.SIPRatePlan = num
+	// 		}
+	// 	}
 
-		err = impl.DBService.InsertProductPlans(trx)
-		if err != nil {
-			log.Println("productPlan insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
-			return
-		}
-	}
+	// 	err = impl.DBService.InsertProductPlans(trx)
+	// 	if err != nil {
+	// 		log.Println("productPlan insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
+	// 		return
+	// 	}
+	// }
 
-	if err = impl.DBService.FetchPlans(); err != nil {
+	if err := impl.DBService.FetchPlans(); err != nil {
 		log.Println("productPlan fetching failed: " + err.Error())
 	}
 }
 
 func (impl *CronImpl) HandleTargetInputFile() {
-	fileName := "./doc/Input.xlsx"
+	// 	fileName := "./doc/Input.xlsx"
 
-	file, err := excelize.OpenFile(fileName)
-	if err != nil {
-		log.Fatalf("could not open file, %v\n", err)
-	}
+	// 	file, err := excelize.OpenFile(fileName)
+	// 	if err != nil {
+	// 		log.Fatalf("could not open file, %v\n", err)
+	// 	}
 
-	rows, err := file.Rows("Target")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// 	rows, err := file.Rows("Target")
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 		return
+	// 	}
 
-	//records := make([]*db.Transaction, 0)
+	// 	//records := make([]*db.Transaction, 0)
 
-	impl.DBService.DeleteStoreTargets()
+	// 	impl.DBService.DeleteStoreTargets()
 
-	isFirstRow := true
-	index := 0
+	// 	isFirstRow := true
+	// 	index := 0
 
-	region := ""
-LOOP:
-	for rows.Next() {
+	// 	region := ""
+	// LOOP:
+	// 	for rows.Next() {
 
-		index++
+	// 		index++
 
-		if isFirstRow {
-			rows.Columns()
-			isFirstRow = false
-			continue
-		}
+	// 		if isFirstRow {
+	// 			rows.Columns()
+	// 			isFirstRow = false
+	// 			continue
+	// 		}
 
-		row, err := rows.Columns()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+	// 		row, err := rows.Columns()
+	// 		if err != nil {
+	// 			fmt.Println(err)
+	// 			return
+	// 		}
 
-		trx := &db.ProductGrpTarget{}
-		outlet := ""
+	// 		trx := &db.ProductGrpTarget{}
+	// 		outlet := ""
 
-		for i, colCell := range row {
+	// 		for i, colCell := range row {
 
-			if impl.isRegion(strings.ToUpper(strings.TrimSpace(colCell))) {
-				region = strings.ToUpper(strings.TrimSpace(colCell))
-				continue LOOP
-			}
+	// 			if impl.isRegion(strings.ToUpper(strings.TrimSpace(colCell))) {
+	// 				region = strings.ToUpper(strings.TrimSpace(colCell))
+	// 				continue LOOP
+	// 			}
 
-			switch i {
-			case 0:
-				outlet = strings.ToUpper(strings.TrimSpace(colCell))
-			case 1:
-				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-				if err != nil {
-					log.Println("Baqati target error: " + err.Error() + " index: " + strconv.Itoa(index))
-					return
-				}
-				trx.Baqati = num
-			case 2:
-				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-				if err != nil {
-					log.Println("HBB target error: " + err.Error() + " index: " + strconv.Itoa(index))
-					return
-				}
-				trx.HBB = num
-			case 3:
-				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-				if err != nil {
-					log.Println("Hayyak target error: " + err.Error() + " index: " + strconv.Itoa(index))
-					return
-				}
-				trx.Hayyak = num
-			case 4:
-				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-				if err != nil {
-					log.Println("Upgrade target error: " + err.Error() + " index: " + strconv.Itoa(index))
-					return
-				}
-				trx.Upgrade = num
-			}
-		}
+	// 			switch i {
+	// 			case 0:
+	// 				outlet = strings.ToUpper(strings.TrimSpace(colCell))
+	// 			case 1:
+	// 				num, err := strconv.Atoi(strings.TrimSpace(colCell))
+	// 				if err != nil {
+	// 					log.Println("Baqati target error: " + err.Error() + " index: " + strconv.Itoa(index))
+	// 					return
+	// 				}
+	// 				trx.Baqati = num
+	// 			case 2:
+	// 				num, err := strconv.Atoi(strings.TrimSpace(colCell))
+	// 				if err != nil {
+	// 					log.Println("HBB target error: " + err.Error() + " index: " + strconv.Itoa(index))
+	// 					return
+	// 				}
+	// 				trx.HBB = num
+	// 			case 3:
+	// 				num, err := strconv.Atoi(strings.TrimSpace(colCell))
+	// 				if err != nil {
+	// 					log.Println("Hayyak target error: " + err.Error() + " index: " + strconv.Itoa(index))
+	// 					return
+	// 				}
+	// 				trx.Hayyak = num
+	// 			case 4:
+	// 				num, err := strconv.Atoi(strings.TrimSpace(colCell))
+	// 				if err != nil {
+	// 					log.Println("Upgrade target error: " + err.Error() + " index: " + strconv.Itoa(index))
+	// 					return
+	// 				}
+	// 				trx.Upgrade = num
+	// 			}
+	// 		}
 
-		if trx.HBB == 0 || trx.Baqati == 0 || trx.Hayyak == 0 || trx.Upgrade == 0 {
-			continue LOOP
-		}
+	// 		if trx.HBB == 0 || trx.Baqati == 0 || trx.Hayyak == 0 || trx.Upgrade == 0 {
+	// 			continue LOOP
+	// 		}
 
-		err = impl.DBService.InsertStoreTargets(region, outlet, trx)
-		if err != nil {
-			log.Println("Target insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
-			return
-		}
-	}
+	// 		err = impl.DBService.InsertStoreTargets(region, outlet, trx)
+	// 		if err != nil {
+	// 			log.Println("Target insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
+	// 			return
+	// 		}
+	// 	}
 
-	if err = impl.DBService.FetchSaleTarget(); err != nil {
+	if err := impl.DBService.FetchSaleTarget(); err != nil {
 		log.Println("sale target fetching failed: " + err.Error())
 	}
 }
