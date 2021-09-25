@@ -39,16 +39,17 @@ type SaleTransaction struct {
 }
 
 type IndividualIncentive struct {
-	Payout      float64
-	ExtraPayout float64
-	Error       string
+	Payout      float64 `json:"payout"`
+	ExtraPayout float64 `json:"extra_payout"`
+	Error       string  `json:"error"`
 }
 
 type TotalIncentive struct {
-	HBB     *IndividualIncentive
-	Baqati  *IndividualIncentive
-	Hayyak  *IndividualIncentive
-	Upgrade *IndividualIncentive
+	HBB      *IndividualIncentive
+	Baqati   *IndividualIncentive
+	Hayyak   *IndividualIncentive
+	Upgrade  *IndividualIncentive
+	TotalPay float64 `json:"total_pay"`
 }
 
 type ProductGrpTarget struct {

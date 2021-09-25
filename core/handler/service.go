@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"math"
 
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/config"
@@ -38,11 +39,15 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 		return nil, errors.New("no employee found")
 	}
 
+	fmt.Println("TotalEmp", totalEmp)
+
 	totalEmp--
 
-	fmt.Println("totaalEmp", totalEmp)
-
 	resp := &db.TotalIncentive{}
+	// resp.HBB.Error = "nil"
+	// resp.Hayyak.Error = "nil"
+	// resp.Baqati.Error = "nil"
+	// resp.Upgrade.Error = "nil"
 
 	grpPlans := make(map[string]map[string]int)
 	upgradedPlans := make(map[string]map[string]int)
@@ -51,6 +56,8 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 	totalActiveUpgrade := 0
 
 	for grp, rcds := range trx.SaleRecords {
+
+		fmt.Println("Total Sales in "+grp, len(rcds))
 
 		for _, v := range rcds {
 			if v.Category != commons.UpgradeCategory {
@@ -78,31 +85,35 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 			ind := &db.IndividualIncentive{}
 
-			target := impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet) / totalEmp
+			fmt.Println("HBB sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet))
+
+			target := float64(impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet)) / float64(totalEmp)
 			if target <= 0 {
-				ind.Error = fmt.Errorf("per employee target found is %d for HBB", target).Error()
+				ind.Error = fmt.Errorf("per employee target found is %f for HBB", target).Error()
 				break
 			} else {
 				achieved := float64(totalActive[grp]) * 100 / float64(target)
 				vop := impl.getValueOfPoint(grp, achieved)
 
-				fmt.Println("HBB", achieved, vop, totalActive[grp], target)
+				fmt.Println("HBB: target, achieved, percent, vop", target, totalActive[grp], achieved, vop)
 
 				ind.ExtraPayout = impl.getExtraPay(grp, achieved)
+				ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
+				resp.TotalPay += ind.ExtraPayout
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					fmt.Println("rate", rate, qty)
-					fmt.Println("pay", float64(qty)*vop*rate)
+					fmt.Println("HBB planName  planRate qty pay: "+plan, rate, qty, float64(qty)*vop*rate)
 					ind.Payout += float64(qty) * vop * rate
 				}
-
-				fmt.Println("payout", ind.Payout)
 
 				max := impl.getMaxPayout(grp)
 				if ind.Payout > max {
 					ind.Payout = max
 				}
+
+				ind.Payout = math.Round(ind.Payout*100) / 100
+				resp.TotalPay += ind.Payout
 			}
 			resp.HBB = ind
 
@@ -110,17 +121,24 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 			ind := &db.IndividualIncentive{}
 
-			target := impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet) / totalEmp
+			fmt.Println("HAYYAK sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet))
+
+			target := float64(impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet)) / float64(totalEmp)
 			if target <= 0 {
-				ind.Error = fmt.Errorf("per employee target found is %d for HAYYAK", target).Error()
+				ind.Error = fmt.Errorf("per employee target found is %f for HAYYAK", target).Error()
 			} else {
 				achieved := float64(totalActive[grp]) * 100 / float64(target)
 				vop := impl.getValueOfPoint(grp, achieved)
 
+				fmt.Println("HAYYAK: target, achieved, percent, vop", target, totalActive[grp], achieved, vop)
+
 				ind.ExtraPayout = impl.getExtraPay(grp, achieved)
+				ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
+				resp.TotalPay += ind.ExtraPayout
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
+					fmt.Println("HAYYAK planName  planRate qty pay: "+plan, rate, qty, float64(qty)*vop*rate)
 					ind.Payout += float64(qty) * vop * rate
 				}
 
@@ -128,6 +146,9 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 				if ind.Payout > max {
 					ind.Payout = max
 				}
+
+				ind.Payout = math.Round(ind.Payout*100) / 100
+				resp.TotalPay += ind.Payout
 			}
 			resp.Hayyak = ind
 
@@ -135,17 +156,24 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 			ind := &db.IndividualIncentive{}
 
-			target := impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet) / totalEmp
+			fmt.Println("BAQATI sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet))
+
+			target := float64(impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet)) / float64(totalEmp)
 			if target <= 0 {
-				ind.Error = fmt.Errorf("per employee target found is %d for BAQATI", target).Error()
+				ind.Error = fmt.Errorf("per employee target found is %f for BAQATI", target).Error()
 			} else {
 				achieved := float64(totalActive[grp]) * 100 / float64(target)
 				vop := impl.getValueOfPoint(grp, achieved)
 
+				fmt.Println("BAQATI: target, achieved, percent, vop", target, totalActive[grp], achieved, vop)
+
 				ind.ExtraPayout = impl.getExtraPay(grp, achieved)
+				ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
+				resp.TotalPay += ind.ExtraPayout
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
+					fmt.Println("BAQATI planName  planRate qty pay: "+plan, rate, qty, float64(qty)*vop*rate)
 					ind.Payout += float64(qty) * vop * rate
 				}
 
@@ -153,23 +181,34 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 				if ind.Payout > max {
 					ind.Payout = max
 				}
+				ind.Payout = math.Round(ind.Payout*100) / 100
+				resp.TotalPay += ind.Payout
 			}
 			resp.Baqati = ind
 		}
 	}
 
 	ind := &db.IndividualIncentive{}
-	target := impl.getSaleTargetPerOutlet(commons.UpgradeCategory, trx.Region, trx.Outlet) / totalEmp
+
+	fmt.Println("UPGRADE sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(commons.UpgradeCategory, trx.Region, trx.Outlet))
+
+	target := float64(impl.getSaleTargetPerOutlet(commons.UpgradeCategory, trx.Region, trx.Outlet)) / float64(totalEmp)
 	if target <= 0 {
-		ind.Error = fmt.Errorf("per employee target found is %d for BAQATI", target).Error()
+		ind.Error = fmt.Errorf("per employee target found is %f for BAQATI", target).Error()
 	} else {
 		achieved := float64(totalActiveUpgrade) * 100 / float64(target)
 		vop := impl.getValueOfPoint(commons.UpgradeCategory, achieved)
+
+		fmt.Println("UPGRADE: target, achieved, percent, vop", target, totalActiveUpgrade, achieved, vop)
+
 		ind.ExtraPayout = impl.getExtraPay(commons.UpgradeCategory, achieved)
+		ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
+		resp.TotalPay += ind.ExtraPayout
 
 		for currPlan, prevPlansMap := range upgradedPlans {
 			for prevPln, qty := range prevPlansMap {
 				rate := impl.getSIPRatePlan(currPlan) - impl.getSIPRatePlan(prevPln)
+				fmt.Println("UPGRADE currPlanName prevPlanName  currPlanRate  prevPlanRate rate qty pay: "+currPlan+" "+prevPln, impl.getSIPRatePlan(currPlan), impl.getSIPRatePlan(prevPln), rate, qty, float64(qty)*vop*rate)
 				ind.Payout += float64(qty) * vop * rate
 			}
 		}
@@ -178,6 +217,8 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 		if ind.Payout > max {
 			ind.Payout = max
 		}
+		ind.Payout = math.Round(ind.Payout*100) / 100
+		resp.TotalPay += ind.Payout
 	}
 
 	resp.Upgrade = ind

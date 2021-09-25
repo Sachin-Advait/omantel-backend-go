@@ -12,11 +12,11 @@ func (impl *SalesIncentiveImpl) getValueOfPoint(grp string, achievedPercent floa
 	switch {
 	case achievedPercent < 75:
 		return db.ValOfPoint.VopMap[grp][75].Point
-	case achievedPercent <= 95:
+	case achievedPercent < 96:
 		return db.ValOfPoint.VopMap[grp][95].Point
-	case achievedPercent <= 110:
+	case achievedPercent <= 111:
 		return db.ValOfPoint.VopMap[grp][110].Point
-	case achievedPercent <= 139:
+	case achievedPercent < 140:
 		return db.ValOfPoint.VopMap[grp][139].Point
 	case achievedPercent >= 140:
 		return db.ValOfPoint.VopMap[grp][140].Point
@@ -30,13 +30,13 @@ func (impl *SalesIncentiveImpl) getExtraPay(grp string, achievedPercent float64)
 	defer db.ValOfPoint.Mutex.RUnlock()
 
 	switch {
-	case achievedPercent >= 141 && achievedPercent <= 159:
+	case achievedPercent >= 141 && achievedPercent < 160:
 		return db.ValOfPoint.VopMap[grp][159].ExtraPay
-	case achievedPercent >= 160 && achievedPercent <= 179:
+	case achievedPercent >= 160 && achievedPercent < 180:
 		return db.ValOfPoint.VopMap[grp][179].ExtraPay
-	case achievedPercent >= 180 && achievedPercent <= 189:
+	case achievedPercent >= 180 && achievedPercent < 190:
 		return db.ValOfPoint.VopMap[grp][189].ExtraPay
-	case achievedPercent >= 190 && achievedPercent <= 199:
+	case achievedPercent >= 190 && achievedPercent < 200:
 		return db.ValOfPoint.VopMap[grp][199].ExtraPay
 	case achievedPercent >= 200:
 		return db.ValOfPoint.VopMap[grp][200].ExtraPay

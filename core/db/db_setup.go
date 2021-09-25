@@ -320,7 +320,7 @@ func (dbConn *DBImplementation) FetchValueOfPoint() error {
 	}
 	ValOfPoint.VopMap["HBB"][200] = &VOP{
 		Point:    0,
-		ExtraPay: 88,
+		ExtraPay: 87.5,
 	}
 
 	ValOfPoint.VopMap["BAQATI"][75] = &VOP{
@@ -353,7 +353,7 @@ func (dbConn *DBImplementation) FetchValueOfPoint() error {
 	}
 	ValOfPoint.VopMap["BAQATI"][189] = &VOP{
 		Point:    0,
-		ExtraPay: 52.5,
+		ExtraPay: 53,
 	}
 	ValOfPoint.VopMap["BAQATI"][199] = &VOP{
 		Point:    0,
@@ -361,7 +361,7 @@ func (dbConn *DBImplementation) FetchValueOfPoint() error {
 	}
 	ValOfPoint.VopMap["BAQATI"][200] = &VOP{
 		Point:    0,
-		ExtraPay: 88,
+		ExtraPay: 87.5,
 	}
 
 	ValOfPoint.VopMap["HAYYAK"][75] = &VOP{
@@ -386,23 +386,23 @@ func (dbConn *DBImplementation) FetchValueOfPoint() error {
 	}
 	ValOfPoint.VopMap["HAYYAK"][159] = &VOP{
 		Point:    0,
-		ExtraPay: 17.5,
+		ExtraPay: 11,
 	}
 	ValOfPoint.VopMap["HAYYAK"][179] = &VOP{
 		Point:    0,
-		ExtraPay: 35.0,
+		ExtraPay: 22,
 	}
 	ValOfPoint.VopMap["HAYYAK"][189] = &VOP{
 		Point:    0,
-		ExtraPay: 52.5,
+		ExtraPay: 33,
 	}
 	ValOfPoint.VopMap["HAYYAK"][199] = &VOP{
 		Point:    0,
-		ExtraPay: 70.0,
+		ExtraPay: 44,
 	}
 	ValOfPoint.VopMap["HAYYAK"][200] = &VOP{
 		Point:    0,
-		ExtraPay: 88,
+		ExtraPay: 55,
 	}
 
 	ValOfPoint.VopMap["UPGRADE"][75] = &VOP{
@@ -410,40 +410,40 @@ func (dbConn *DBImplementation) FetchValueOfPoint() error {
 		ExtraPay: 0,
 	}
 	ValOfPoint.VopMap["UPGRADE"][95] = &VOP{
-		Point:    0.15,
+		Point:    0.1,
 		ExtraPay: 0,
 	}
 	ValOfPoint.VopMap["UPGRADE"][110] = &VOP{
-		Point:    0.25,
+		Point:    0.15,
 		ExtraPay: 0,
 	}
 	ValOfPoint.VopMap["UPGRADE"][139] = &VOP{
-		Point:    0.45,
+		Point:    0.3,
 		ExtraPay: 0,
 	}
 	ValOfPoint.VopMap["UPGRADE"][140] = &VOP{
-		Point:    0.75,
+		Point:    0.5,
 		ExtraPay: 0,
 	}
 	ValOfPoint.VopMap["UPGRADE"][159] = &VOP{
 		Point:    0,
-		ExtraPay: 17.5,
+		ExtraPay: 4,
 	}
 	ValOfPoint.VopMap["UPGRADE"][179] = &VOP{
 		Point:    0,
-		ExtraPay: 35.0,
+		ExtraPay: 8,
 	}
 	ValOfPoint.VopMap["UPGRADE"][189] = &VOP{
 		Point:    0,
-		ExtraPay: 52.5,
+		ExtraPay: 12,
 	}
 	ValOfPoint.VopMap["UPGRADE"][199] = &VOP{
 		Point:    0,
-		ExtraPay: 70.0,
+		ExtraPay: 16,
 	}
 	ValOfPoint.VopMap["UPGRADE"][200] = &VOP{
 		Point:    0,
-		ExtraPay: 88,
+		ExtraPay: 20,
 	}
 
 	ValOfPoint.Mutex.Unlock()
