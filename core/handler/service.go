@@ -44,6 +44,7 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 	totalEmp--
 
 	resp := &db.TotalIncentive{}
+	totalPay := 0.0
 	// resp.HBB.Error = "nil"
 	// resp.Hayyak.Error = "nil"
 	// resp.Baqati.Error = "nil"
@@ -99,7 +100,7 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 				ind.ExtraPayout = impl.getExtraPay(grp, achieved)
 				ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
-				resp.TotalPay += ind.ExtraPayout
+				totalPay += ind.ExtraPayout
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
@@ -113,7 +114,7 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 				}
 
 				ind.Payout = math.Round(ind.Payout*100) / 100
-				resp.TotalPay += ind.Payout
+				totalPay += ind.Payout
 			}
 			resp.HBB = ind
 
@@ -134,7 +135,7 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 				ind.ExtraPayout = impl.getExtraPay(grp, achieved)
 				ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
-				resp.TotalPay += ind.ExtraPayout
+				totalPay += ind.ExtraPayout
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
@@ -148,7 +149,7 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 				}
 
 				ind.Payout = math.Round(ind.Payout*100) / 100
-				resp.TotalPay += ind.Payout
+				totalPay += ind.Payout
 			}
 			resp.Hayyak = ind
 
@@ -169,7 +170,7 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 				ind.ExtraPayout = impl.getExtraPay(grp, achieved)
 				ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
-				resp.TotalPay += ind.ExtraPayout
+				totalPay += ind.ExtraPayout
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
@@ -182,7 +183,7 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 					ind.Payout = max
 				}
 				ind.Payout = math.Round(ind.Payout*100) / 100
-				resp.TotalPay += ind.Payout
+				totalPay += ind.Payout
 			}
 			resp.Baqati = ind
 		}
@@ -203,7 +204,7 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 		ind.ExtraPayout = impl.getExtraPay(commons.UpgradeCategory, achieved)
 		ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
-		resp.TotalPay += ind.ExtraPayout
+		totalPay += ind.ExtraPayout
 
 		for currPlan, prevPlansMap := range upgradedPlans {
 			for prevPln, qty := range prevPlansMap {
@@ -218,10 +219,11 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 			ind.Payout = max
 		}
 		ind.Payout = math.Round(ind.Payout*100) / 100
-		resp.TotalPay += ind.Payout
+		totalPay += ind.Payout
 	}
 
 	resp.Upgrade = ind
+	resp.TotalPay = math.Round(totalPay*100) / 100
 
 	return resp, nil
 }
