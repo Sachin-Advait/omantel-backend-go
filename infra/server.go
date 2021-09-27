@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/rendezvousPoint/incentive_calculator/config"
 )
@@ -17,6 +18,50 @@ type ServerContext struct {
 func NewServerContext(server *config.Server) *ServerContext {
 	router := chi.NewRouter()
 
+	// router.Use(cors.Handler(cors.Options{
+	// 	AllowedOrigins: []string{"*"},
+	// 	AllowedMethods: []string{
+	// 		"POST",
+	// 		"GET",
+	// 		"DELETE",
+	// 		"PUT",
+	// 		"PATCH",
+	// 		"OPTIONS",
+	// 	},
+	// 	// AllowedHeaders
+	// 	AllowedHeaders: []string{
+	// 		"X-Requested-With",
+	// 		"X-CSRF-Token",
+	// 		"X-Auth-Token",
+	// 		"Content-Type",
+	// 		"Content-Length",
+	// 		"processData",
+	// 		"contentType",
+	// 		"Origin",
+	// 		"Authorization",
+	// 		"Accept",
+	// 		"Client-Security-Token",
+	// 		"Accept-Encoding",
+	// 		"timezone",
+	// 		"locale",
+	// 		"client_id",
+	// 	},
+	// 	//ExposedHeaders:   []string{"Link"},
+	// 	AllowCredentials: true,
+	// 	//MaxAge: 300, // Maximum value not ignored by any of major browsers
+	// }))
+
+	cors := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"X-PINGOTHER", "Accept", "Authorization", "Content-Type", "X-CSRF-Token", "client_id"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	})
+
+	router.Use(cors.Handler)
 	router.Use(middleware.Timeout(time.Duration(server.ApiTimeout) * time.Second))
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)

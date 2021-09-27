@@ -3,11 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils"
 )
@@ -30,7 +30,7 @@ func (context *SalesIncentiveContext) SafeClose() {}
 func (context *SalesIncentiveContext) NewSalesIncentiveRouter() http.Handler {
 	r := chi.NewRouter()
 
-	r.Get("/single-client", context.GetSingleUserIncentive)
+	r.Post("/single-client", context.GetSingleUserIncentive)
 
 	return r
 }
@@ -38,23 +38,55 @@ func (context *SalesIncentiveContext) NewSalesIncentiveRouter() http.Handler {
 func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWriter, req *http.Request) {
 	logs := utils.LogHelper(req)
 
-	clientID := req.Header.Get(commons.ClientIDHeader)
-	if clientID == "" {
-		utils.LogObj.Error(logs.RequestID, " : ClientID not found in header")
-		w.Write([]byte(`{"error": "ClientID not found in header"}`))
-		w.WriteHeader(http.StatusBadRequest)
+	var request struct {
+		ClientId string `json:"client_id"`
+	}
 
-		logs.ResponseStatus = http.StatusBadRequest
+	dataByte, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to read req body")
+		w.Write([]byte(`{"error": "internal error failed to read req body"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+
+		logs.ResponseStatus = http.StatusInternalServerError
 		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
-		logs.ResponseBody = string([]byte(`{"error": "ClientID not found in header"}`))
+		logs.ResponseBody = string([]byte(`{"error": "internal error failed to read req body"}`))
 
 		//utils.LogObj.WriteLogs(logs)
 		return
 	}
 
-	id, err := strconv.Atoi(clientID)
+	err = json.Unmarshal(dataByte, &request)
 	if err != nil {
-		utils.LogObj.Error(logs.RequestID, " : incorrect clientID type, id: "+clientID)
+		utils.LogObj.Error(logs.RequestID, " : failed to unmarshall request")
+		w.Write([]byte(`{"error": "internal request unmarshalling error"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+
+		logs.ResponseStatus = http.StatusInternalServerError
+		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		logs.ResponseBody = string([]byte(`{"error": "internal request unmarshalling error"}`))
+
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	// clientID := req.Header.Get(commons.ClientIDHeader)
+	if request.ClientId == "" {
+		utils.LogObj.Error(logs.RequestID, " : ClientID not found in body")
+		w.Write([]byte(`{"error": "ClientID not found in body"}`))
+		w.WriteHeader(http.StatusBadRequest)
+
+		logs.ResponseStatus = http.StatusBadRequest
+		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		logs.ResponseBody = string([]byte(`{"error": "ClientID not found in body"}`))
+
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	id, err := strconv.Atoi(request.ClientId)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : incorrect clientID type, id: "+request.ClientId)
 		w.Write([]byte(`{"error": "incorrect clientID type"}`))
 		w.WriteHeader(http.StatusBadRequest)
 
@@ -68,7 +100,7 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 
 	incentive, err := context.SalesIncentiveService.FetchSingleUserIncentive(id)
 	if err != nil {
-		utils.LogObj.Error(logs.RequestID, " : failed to fetch user incentive, err: "+err.Error()+" id: "+clientID)
+		utils.LogObj.Error(logs.RequestID, " : failed to fetch user incentive, err: "+err.Error()+" id: "+request.ClientId)
 		w.WriteHeader(http.StatusInternalServerError)
 
 		logs.ResponseStatus = http.StatusInternalServerError
@@ -80,7 +112,7 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 
 	byteRsp, err := json.Marshal(incentive)
 	if err != nil {
-		utils.LogObj.Error(logs.RequestID, " : failed to marshal client resp, err: "+err.Error()+" id: "+clientID)
+		utils.LogObj.Error(logs.RequestID, " : failed to marshal client resp, err: "+err.Error()+" id: "+request.ClientId)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -92,7 +124,7 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 	logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
 	logs.ResponseBody = string(byteRsp)
 
-	utils.LogObj.Info(logs.RequestID, " : Response fetched successfully for clientId: "+clientID)
+	utils.LogObj.Info(logs.RequestID, " : Response fetched successfully for clientId: "+request.ClientId)
 
 	//utils.LogObj.WriteLogs(logs)
 }

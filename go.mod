@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/go-chi/chi v1.5.4
+	github.com/go-chi/cors v1.2.0
 	github.com/jasonlvhit/gocron v0.0.1
 	github.com/lib/pq v1.10.3
 	github.com/rs/xid v1.3.0
