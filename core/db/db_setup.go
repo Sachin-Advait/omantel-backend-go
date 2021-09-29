@@ -496,7 +496,7 @@ func (dbConn *DBImplementation) FetchMaxPayout() error {
 func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, error) {
 
 	// rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and position!= $3", region, outlet, commons.OutletManager)
-	rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2", region, outlet)
+	rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'", region, outlet)
 	if err != nil {
 		return -1, err
 	}
