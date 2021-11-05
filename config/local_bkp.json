@@ -1,0 +1,17 @@
+{
+  "server": {
+    "host": "",
+    "port": 8090,
+    "api_timeout": 3,
+    "max_server_requests": 1000
+  },
+  "database": {
+    "host": "localhost",
+    "name": "sales",
+    "port": 5432,
+    "username": "postgres",
+    "password": "pass@123",
+    "maxIdelConn": 20,
+    "maxOpenConn": 100
+  }
+}

@@ -38,7 +38,7 @@ func NewCronServices(conf *config.Database) *CronImpl {
 }
 
 func (impl *CronImpl) HandleUserMasterInputFile() {
-	fmt.Println("input")
+
 	fileName := "./doc/Input.xlsx"
 
 	file, err := excelize.OpenFile(fileName)
@@ -203,6 +203,8 @@ func (impl *CronImpl) HandleDataInputFile() {
 			return
 		}
 	}
+
+	log.Println("sales record insertion complete")
 }
 
 func (impl *CronImpl) HandlePlansInputFile() {
