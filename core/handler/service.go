@@ -28,8 +28,7 @@ func NewSalesIncentiveService(conf *config.Database) *SalesIncentiveImpl {
 
 func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int, t time.Time, quarter int, isQuarterReport bool) (*db.TotalIncentive, error) {
 
-
-	trx, err := impl.DBService.FetchUserSales(clientID,int(t.Month()),t.Year(),quarter,isQuarterReport)
+	trx, err := impl.DBService.FetchUserSales(clientID, int(t.Month()), t.Year(), quarter, isQuarterReport)
 	if err != nil {
 		return nil, err
 	}
@@ -228,4 +227,54 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int, t time.Ti
 	resp.TotalPay = math.Round(totalPay*100) / 100
 
 	return resp, nil
+}
+
+func (impl *SalesIncentiveImpl) FetchSingleUserTargetChart(clientID int, t time.Time, quarter int, isQuarterReport bool) (*db.ChartDataResponse, error) {
+
+	trx, err := impl.DBService.FetchUserSales(clientID, int(t.Month()), t.Year(), quarter, isQuarterReport)
+	if err != nil {
+		return nil, err
+	}
+
+	totalEmp, err := impl.DBService.FetchTotalNonManagerialEmployees(trx.Region, trx.Outlet)
+	if err != nil {
+		return nil, err
+	} else if totalEmp == 0 {
+		return nil, errors.New("no employee found")
+	}
+
+	resp := &db.ChartDataResponse{}
+
+	for grp, rcds := range trx.SaleRecords {
+
+		data := &db.TargetAchievementData{}
+
+		for _, v := range rcds {
+			data.SalesCount += v.Quantity
+		}
+
+		target := float64(impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)) / float64(totalEmp)
+		if target <= 0 {
+			data.Error = fmt.Errorf("per employee target found is %f", target).Error()
+		}
+
+		data.AchievedPercentage = float64(data.SalesCount) * 100 / target
+
+		switch grp {
+		case commons.HBBCategory:
+			resp.HBB = data
+			return resp, nil
+		case commons.HayyakCategory:
+			resp.Hayyak = data
+			return resp, nil
+		case commons.BaqatiCategory:
+			resp.Baqati = data
+			return resp, nil
+		case commons.UpgradeCategory:
+			resp.Upgrade = data
+			return resp, nil
+		}
+	}
+
+	return nil, errors.New("no category found")
 }

@@ -15,8 +15,8 @@ type Transaction struct {
 	Quantity        int
 	Category        string
 	ProductGrp      string
-	SaleDate time.Time
-	Quarter int
+	SaleDate        time.Time
+	Quarter         int
 }
 
 type Employee struct {
@@ -55,6 +55,20 @@ type TotalIncentive struct {
 	Hayyak   *IndividualIncentive
 	Upgrade  *IndividualIncentive
 	TotalPay float64 `json:"total_pay"`
+}
+
+type TargetAchievementData struct {
+	SalesCount         int     `json:"sales_count"`
+	Target             int     `json:"target"`
+	AchievedPercentage float64 `json:"achieved_percentage"`
+	Error              string  `json:"error"`
+}
+
+type ChartDataResponse struct {
+	HBB     *TargetAchievementData
+	Baqati  *TargetAchievementData
+	Hayyak  *TargetAchievementData
+	Upgrade *TargetAchievementData
 }
 
 type ProductGrpTarget struct {

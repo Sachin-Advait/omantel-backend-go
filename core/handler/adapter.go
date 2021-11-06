@@ -71,7 +71,7 @@ func (impl *SalesIncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int,
 
 	var (
 		start int
-		end int
+		end   int
 	)
 
 	switch quarter {
@@ -99,22 +99,22 @@ func (impl *SalesIncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int,
 		result := 0
 		switch grp {
 		case commons.HBBCategory:
-			for ; start<=end; start++ {
+			for ; start <= end; start++ {
 				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].HBB
 			}
 			return result
 		case commons.HayyakCategory:
-			for ; start<=end; start++ {
+			for ; start <= end; start++ {
 				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].Hayyak
 			}
 			return result
 		case commons.BaqatiCategory:
-			for ; start<=end; start++ {
+			for ; start <= end; start++ {
 				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].Baqati
 			}
 			return result
 		case commons.UpgradeCategory:
-			for ; start<=end; start++ {
+			for ; start <= end; start++ {
 				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].Upgrade
 			}
 			return result

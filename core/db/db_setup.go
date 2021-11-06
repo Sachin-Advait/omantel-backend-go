@@ -202,7 +202,7 @@ func (dbConn *DBImplementation) FetchSaleTarget() error {
 	var (
 		region  string
 		outlet  string
-		month int
+		month   int
 		baqati  int
 		hBB     int
 		hayyak  int
@@ -519,7 +519,7 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 
 	var (
 		rows *sql.Rows
-		err error
+		err  error
 	)
 
 	if isQuarterReport {

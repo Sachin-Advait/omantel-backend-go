@@ -21,8 +21,8 @@ const (
 
 const (
 	ClientIDHeader = "client_id"
-	QuarterHeader = "quarter"
-	DateHeader = "date"
+	QuarterHeader  = "quarter"
+	DateHeader     = "date"
 )
 
 const (
