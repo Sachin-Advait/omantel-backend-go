@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	excelize "github.com/xuri/excelize/v2"
 	"gitlab.com/rendezvousPoint/incentive_calculator/config"
@@ -189,6 +190,16 @@ func (impl *CronImpl) HandleDataInputFile() {
 				trx.Category = strings.ToUpper(strings.TrimSpace(colCell))
 			case 8:
 				trx.ProductGrp = strings.ToUpper(strings.TrimSpace(colCell))
+			case 9:
+				t, err := time.Parse("", strings.TrimSpace(colCell))
+				if err != nil {
+					log.Println("Incorrect sales time error: " + err.Error() + " index: " + strconv.Itoa(index))
+					//break LOOP
+					return
+				}
+
+				trx.SaleDate = t
+				trx.Quarter = impl.getQuarterFromMonth(int(t.Month()))
 			}
 		}
 
@@ -440,4 +451,19 @@ func (impl *CronImpl) isRegion(region string) bool {
 	}
 
 	return false
+}
+
+func (impl *CronImpl) getQuarterFromMonth(month int)  int {
+	switch  {
+	case month>=1 && month <= 3:
+		return 1
+	case month>=4 && month <= 6:
+		return 2
+	case month>=7 && month <= 9:
+		return 3
+	case month>=10 && month <= 12:
+		return 4
+	}
+
+	return -1
 }

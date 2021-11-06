@@ -1,6 +1,9 @@
 package db
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 type Transaction struct {
 	Reqion          string
@@ -12,6 +15,8 @@ type Transaction struct {
 	Quantity        int
 	Category        string
 	ProductGrp      string
+	SaleDate time.Time
+	Quarter int
 }
 
 type Employee struct {
@@ -67,7 +72,7 @@ type ProductPlans struct {
 
 type SaleTarget struct {
 	Mutex         sync.RWMutex
-	SaleTargetMap map[string]map[string]*ProductGrpTarget
+	SaleTargetMap map[string]map[string][12]*ProductGrpTarget
 }
 
 type PlanRate struct {

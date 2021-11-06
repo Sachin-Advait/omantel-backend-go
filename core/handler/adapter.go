@@ -3,6 +3,7 @@ package handler
 import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
+	"time"
 )
 
 func (impl *SalesIncentiveImpl) getValueOfPoint(grp string, achievedPercent float64) float64 {
@@ -66,19 +67,70 @@ func (impl *SalesIncentiveImpl) getSIPRatePlan(planName string) float64 {
 	return 0
 }
 
-func (impl *SalesIncentiveImpl) getSaleTargetPerOutlet(grp, region, outlet string) int {
-	db.SalesTrgt.Mutex.Lock()
-	defer db.SalesTrgt.Mutex.Unlock()
+func (impl *SalesIncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int, isQuarterReport bool, grp, region, outlet string) int {
 
-	switch grp {
-	case commons.HBBCategory:
-		return db.SalesTrgt.SaleTargetMap[region][outlet].HBB
-	case commons.HayyakCategory:
-		return db.SalesTrgt.SaleTargetMap[region][outlet].Hayyak
-	case commons.BaqatiCategory:
-		return db.SalesTrgt.SaleTargetMap[region][outlet].Baqati
-	case commons.UpgradeCategory:
-		return db.SalesTrgt.SaleTargetMap[region][outlet].Upgrade
+	var (
+		start int
+		end int
+	)
+
+	switch quarter {
+	case 1:
+		start = 1
+		end = 3
+	case 2:
+		start = 4
+		end = 6
+	case 3:
+		start = 7
+		end = 9
+	case 4:
+		start = 10
+		end = 12
+	default:
+		return -1
+	}
+
+	db.SalesTrgt.Mutex.RLock()
+	defer db.SalesTrgt.Mutex.RUnlock()
+
+	if isQuarterReport {
+		//quarter target
+		result := 0
+		switch grp {
+		case commons.HBBCategory:
+			for ; start<=end; start++ {
+				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].HBB
+			}
+			return result
+		case commons.HayyakCategory:
+			for ; start<=end; start++ {
+				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].Hayyak
+			}
+			return result
+		case commons.BaqatiCategory:
+			for ; start<=end; start++ {
+				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].Baqati
+			}
+			return result
+		case commons.UpgradeCategory:
+			for ; start<=end; start++ {
+				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].Upgrade
+			}
+			return result
+		}
+	} else {
+		//month target
+		switch grp {
+		case commons.HBBCategory:
+			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month())].HBB
+		case commons.HayyakCategory:
+			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month())].Hayyak
+		case commons.BaqatiCategory:
+			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month())].Baqati
+		case commons.UpgradeCategory:
+			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month())].Upgrade
+		}
 	}
 
 	return -1

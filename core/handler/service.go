@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/config"
@@ -12,7 +13,7 @@ import (
 
 type DBService interface {
 	FetchTotalNonManagerialEmployees(region, outlet string) (int, error)
-	FetchUserSales(clientID int) (*db.SaleTransaction, error)
+	FetchUserSales(clientID, month, year, quarter int, isQuarterReport bool) (*db.SaleTransaction, error)
 }
 
 type SalesIncentiveImpl struct {
@@ -25,9 +26,10 @@ func NewSalesIncentiveService(conf *config.Database) *SalesIncentiveImpl {
 	return &SalesIncentiveImpl{DBService: dbConn}
 }
 
-func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.TotalIncentive, error) {
+func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int, t time.Time, quarter int, isQuarterReport bool) (*db.TotalIncentive, error) {
 
-	trx, err := impl.DBService.FetchUserSales(clientID)
+
+	trx, err := impl.DBService.FetchUserSales(clientID,int(t.Month()),t.Year(),quarter,isQuarterReport)
 	if err != nil {
 		return nil, err
 	}
@@ -86,9 +88,9 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("HBB sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet))
+			fmt.Println("HBB sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet))
 
-			target := float64(impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet)) / float64(totalEmp)
+			target := float64(impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)) / float64(totalEmp)
 			if target <= 0 {
 				ind.Error = fmt.Errorf("per employee target found is %f for HBB", target).Error()
 				break
@@ -122,9 +124,9 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("HAYYAK sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet))
+			fmt.Println("HAYYAK sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet))
 
-			target := float64(impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet)) / float64(totalEmp)
+			target := float64(impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)) / float64(totalEmp)
 			if target <= 0 {
 				ind.Error = fmt.Errorf("per employee target found is %f for HAYYAK", target).Error()
 			} else {
@@ -157,9 +159,9 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("BAQATI sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet))
+			fmt.Println("BAQATI sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet))
 
-			target := float64(impl.getSaleTargetPerOutlet(grp, trx.Region, trx.Outlet)) / float64(totalEmp)
+			target := float64(impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)) / float64(totalEmp)
 			if target <= 0 {
 				ind.Error = fmt.Errorf("per employee target found is %f for BAQATI", target).Error()
 			} else {
@@ -191,9 +193,9 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int) (*db.Tota
 
 	ind := &db.IndividualIncentive{}
 
-	fmt.Println("UPGRADE sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(commons.UpgradeCategory, trx.Region, trx.Outlet))
+	fmt.Println("UPGRADE sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, trx.Region, trx.Outlet))
 
-	target := float64(impl.getSaleTargetPerOutlet(commons.UpgradeCategory, trx.Region, trx.Outlet)) / float64(totalEmp)
+	target := float64(impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, trx.Region, trx.Outlet)) / float64(totalEmp)
 	if target <= 0 {
 		ind.Error = fmt.Errorf("per employee target found is %f for BAQATI", target).Error()
 	} else {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
@@ -13,7 +14,7 @@ import (
 )
 
 type SalesIncentiveService interface {
-	FetchSingleUserIncentive(int) (*db.TotalIncentive, error)
+	FetchSingleUserIncentive(clientID int, t time.Time, quarter int, isQuarterReport bool) (*db.TotalIncentive, error)
 }
 
 type SalesIncentiveContext struct {
@@ -31,6 +32,7 @@ func (context *SalesIncentiveContext) NewSalesIncentiveRouter() http.Handler {
 	r := chi.NewRouter()
 
 	r.Get("/single-client", context.GetSingleUserIncentive)
+	r.Get("/target-chart", context.GetSingleUserTargetChart)
 
 	return r
 }
@@ -98,7 +100,62 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 		return
 	}
 
-	incentive, err := context.SalesIncentiveService.FetchSingleUserIncentive(id)
+	var (
+		date time.Time
+		quarterInt int
+		isQuarterReport bool
+	)
+
+	quarter := req.Header.Get(commons.QuarterHeader)
+	if quarter != "" {
+		quarterInt, err = strconv.Atoi(quarter)
+		if err != nil {
+			utils.LogObj.Error(logs.RequestID, " : incorrect quarter header val, id: "+clientID+ " quarter: "+quarter)
+			w.Write([]byte(`{"error": "incorrect quarter format"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "incorrect quarter format"}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+
+		} else if quarterInt < 1 || quarterInt > 4 {
+			utils.LogObj.Error(logs.RequestID, " : incorrect quarter value, id: "+clientID+" quarter: "+quarter)
+			w.Write([]byte(`{"error": "incorrect quarter value"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "incorrect quarter value"}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
+		isQuarterReport = true
+		date = time.Now()
+	}
+
+	if !isQuarterReport {
+		dateHeader := req.Header.Get(commons.DateHeader)
+		date, err = time.Parse("", dateHeader)
+		if err != nil {
+			utils.LogObj.Error(logs.RequestID, " : incorrect saleDate, id: "+clientID+" saleDate: "+dateHeader)
+			w.Write([]byte(`{"error": "incorrect saleDate format"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "incorrect saleDate format"}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+	}
+
+	incentive, err := context.SalesIncentiveService.FetchSingleUserIncentive(id, date, quarterInt, isQuarterReport)
 	if err != nil {
 		utils.LogObj.Error(logs.RequestID, " : failed to fetch user incentive, err: "+err.Error()+" id: "+clientID)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -127,4 +184,8 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 	utils.LogObj.Info(logs.RequestID, " : Response fetched successfully for clientId: "+clientID)
 
 	//utils.LogObj.WriteLogs(logs)
+}
+
+func (context *SalesIncentiveContext) GetSingleUserTargetChart(w http.ResponseWriter, req *http.Request) {
+
 }
