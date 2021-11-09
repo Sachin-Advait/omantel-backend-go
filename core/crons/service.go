@@ -16,7 +16,7 @@ type DBService interface {
 	InsertUserMasterRecord(emp *db.Employee) error
 	InsertSaleTransaction(trx *db.Transaction) error
 	InsertProductPlans(plan *db.ProductPlans) error
-	InsertStoreTargets(region, outlet string, trgt *db.ProductGrpTarget) error
+	InsertStoreTargets(region, outlet string, month int, trgt *db.ProductGrpTarget) error
 	InsertValueOfPoints(category string, percent int, vop float64) (int64, error)
 
 	FetchSaleTarget() error
