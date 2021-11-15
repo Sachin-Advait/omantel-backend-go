@@ -73,7 +73,7 @@ func (dbConn *DBImplementation) InsertUserMasterRecord(emp *Employee) error {
 func (dbConn *DBImplementation) InsertSaleTransaction(trx *Transaction) error {
 
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-	query := "insert into Sale_Transaction_Table(created, modified, region, outlet, emp_id, category_type, prev_product, curr_product, quantity, category, product_group, sale_date, quarter) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,&12,&13)"
+	query := "insert into Sale_Transaction_Table(created, modified, region, outlet, emp_id, category_type, prev_product, curr_product, quantity, category, product_group, sales_date, quarter) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,&12,&13)"
 
 	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), trx.Reqion, trx.Outlet, trx.Id, trx.CategoryType, trx.PreviousProduct,
 		trx.CurrentProduct, trx.Quantity, trx.Category, trx.ProductGrp, trx.SaleDate, trx.Quarter)
@@ -129,7 +129,8 @@ func (dbConn *DBImplementation) DeleteStoreTargets() error {
 func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month int, trgt *ProductGrpTarget) error {
 
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-	query := "insert into Sales_Target_Table(created, modified, region, outlet, month, Baqati, HBB, Hayyak, Upgrade) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+
+	query := "insert into Sales_Target_Table(created, modified, region, outlet, months, Baqati, HBB, Hayyak, Upgrade) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
 
 	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), region, outlet, month, trgt.Baqati, trgt.HBB, trgt.Hayyak, trgt.Upgrade)
 	if err != nil {
@@ -194,7 +195,9 @@ func (dbConn *DBImplementation) FetchPlans() error {
 // FetchSaleTarget loads the global variable SalesTrgt with the target for each outlet
 func (dbConn *DBImplementation) FetchSaleTarget() error {
 
-	rows, err := dbConn.Operation.Query("select region, outlet, month, Baqati, HBB, Hayyak, Upgrade from Sales_Target_Table")
+	SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*ProductGrpTarget)
+
+	rows, err := dbConn.Operation.Query("select region, outlet, months, Baqati, HBB, Hayyak, Upgrade from Sales_Target_Table")
 	if err != nil {
 		return err
 	}
@@ -214,26 +217,35 @@ func (dbConn *DBImplementation) FetchSaleTarget() error {
 			return err
 		}
 
+		fmt.Println(region, outlet, month, baqati, hBB, hayyak, upgrade)
+
 		SalesTrgt.Mutex.Lock()
-		if SalesTrgt.SaleTargetMap == nil {
-			SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*ProductGrpTarget)
-		}
 
 		if SalesTrgt.SaleTargetMap[region] == nil {
+			fmt.Println("inside2")
 			SalesTrgt.SaleTargetMap[region] = make(map[string][12]*ProductGrpTarget)
 		}
 
-		v := SalesTrgt.SaleTargetMap[region][outlet]
-		v[month] = &ProductGrpTarget{
+		array, ok := SalesTrgt.SaleTargetMap[region][outlet]
+		if !ok {
+			var temp [12]*ProductGrpTarget
+			SalesTrgt.SaleTargetMap[region][outlet] = temp
+		}
+
+		array[month-1] = &ProductGrpTarget{
 			Baqati:  baqati,
 			HBB:     hBB,
 			Hayyak:  hayyak,
 			Upgrade: upgrade,
 		}
 
+		SalesTrgt.SaleTargetMap[region][outlet] = array
+
 		SalesTrgt.Mutex.Unlock()
 
 	}
+
+	fmt.Printf("map: %+v /n", SalesTrgt.SaleTargetMap)
 
 	return nil
 }
@@ -523,9 +535,9 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 	)
 
 	if isQuarterReport {
-		rows, err = dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and a.quarter= $2 and EXTRACT('year' from a.sale_date)= $3", clientID, quarter, year)
+		rows, err = dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and b.quarter= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, quarter, year)
 	} else {
-		rows, err = dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('month' from a.sale_date)= $2 and EXTRACT('year' from a.sale_date)= $3", clientID, month, year)
+		rows, err = dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('month' from b.sales_date)= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, month, year)
 	}
 
 	if err != nil {

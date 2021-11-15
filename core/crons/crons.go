@@ -31,8 +31,8 @@ func (ctx *CronContext) StartCrons() {
 	// 	utils.LogObj.Error("failed to initate upload pledge file task, err: " + err.Error())
 	// }
 
-	//go ctx.CronServices.HandleDataInputFile()
-	//go ctx.CronServices.HandleUserMasterInputFile()
+	go ctx.CronServices.HandleDataInputFile()
+	go ctx.CronServices.HandleUserMasterInputFile()
 	go ctx.CronServices.HandlePlansInputFile()
 	go ctx.CronServices.HandleTargetInputFile()
 	go ctx.CronServices.HandleScaleOrderInputFile()

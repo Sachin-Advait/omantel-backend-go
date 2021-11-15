@@ -59,16 +59,16 @@ type TotalIncentive struct {
 
 type TargetAchievementData struct {
 	SalesCount         int     `json:"sales_count"`
-	Target             int     `json:"target"`
+	Target             float64     `json:"target"`
 	AchievedPercentage float64 `json:"achieved_percentage"`
 	Error              string  `json:"error"`
 }
 
 type ChartDataResponse struct {
-	HBB     *TargetAchievementData
-	Baqati  *TargetAchievementData
-	Hayyak  *TargetAchievementData
-	Upgrade *TargetAchievementData
+	HBB     *TargetAchievementData `json:"HBB"`
+	Baqati  *TargetAchievementData `json:"Baqati"`
+	Hayyak  *TargetAchievementData `json:"Hayyak"`
+	Upgrade *TargetAchievementData `json:"Upgrade"`
 }
 
 type ProductGrpTarget struct {

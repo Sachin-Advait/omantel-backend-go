@@ -2,14 +2,10 @@ package crons
 
 import (
 	"fmt"
-	"log"
-	"strconv"
-	"strings"
-	"time"
-
-	excelize "github.com/xuri/excelize/v2"
+	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/config"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
+	"log"
 )
 
 type DBService interface {
@@ -40,182 +36,185 @@ func NewCronServices(conf *config.Database) *CronImpl {
 
 func (impl *CronImpl) HandleUserMasterInputFile() {
 
-	fileName := "./doc/Input.xlsx"
+	//fileName := "./doc/Input.xlsx"
+	//
+	//file, err := excelize.OpenFile(fileName)
+	//if err != nil {
+	//	log.Fatalf("could not open file, %v\n", err)
+	//}
+	//
+	//rows, err := file.Rows("CSR & Promoter")
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
+	//
+	////records := make([]*db.Transaction, 0)
+	//
+	//isFirstRow := true
+	//index := 0
+	//
+	//for rows.Next() {
+	//
+	//	index++
+	//
+	//	if isFirstRow {
+	//		rows.Columns()
+	//		isFirstRow = false
+	//		continue
+	//	}
+	//
+	//	row, err := rows.Columns()
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		return
+	//	}
+	//
+	//	emp := &db.Employee{}
+	//
+	//	//LOOP:
+	//	for i, colCell := range row {
+	//
+	//		switch i {
+	//
+	//		case 0:
+	//			num, err := strconv.Atoi(strings.TrimSpace(colCell))
+	//			if err != nil {
+	//				log.Println("ID conversion error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//				//break LOOP
+	//				return
+	//			}
+	//			emp.Id = num
+	//		case 1:
+	//			emp.Name = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 2:
+	//			emp.Region = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 3:
+	//			emp.Outlet = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 4:
+	//			emp.Position = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 5:
+	//			emp.Remark = strings.ToUpper(strings.TrimSpace(colCell))
+	//		}
+	//	}
+	//
+	//	if emp.Name == "" || emp.Region == "" || emp.Outlet == "" || emp.Position == "" {
+	//		log.Printf("ERROR: employee input record %+v\n", emp)
+	//		return
+	//	}
+	//
+	//	err = impl.DBService.InsertUserMasterRecord(emp)
+	//	if err != nil {
+	//		log.Println("insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
+	//		return
+	//	}
+	//}
 
-	file, err := excelize.OpenFile(fileName)
-	if err != nil {
-		log.Fatalf("could not open file, %v\n", err)
-	}
-
-	rows, err := file.Rows("CSR & Promoter")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	//records := make([]*db.Transaction, 0)
-
-	isFirstRow := true
-	index := 0
-
-	for rows.Next() {
-
-		index++
-
-		if isFirstRow {
-			rows.Columns()
-			isFirstRow = false
-			continue
-		}
-
-		row, err := rows.Columns()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		emp := &db.Employee{}
-
-		//LOOP:
-		for i, colCell := range row {
-
-			switch i {
-
-			case 0:
-				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-				if err != nil {
-					log.Println("ID conversion error: " + err.Error() + " index: " + strconv.Itoa(index))
-					//break LOOP
-					return
-				}
-				emp.Id = num
-			case 1:
-				emp.Name = strings.ToUpper(strings.TrimSpace(colCell))
-			case 2:
-				emp.Region = strings.ToUpper(strings.TrimSpace(colCell))
-			case 3:
-				emp.Outlet = strings.ToUpper(strings.TrimSpace(colCell))
-			case 4:
-				emp.Position = strings.ToUpper(strings.TrimSpace(colCell))
-			case 5:
-				emp.Remark = strings.ToUpper(strings.TrimSpace(colCell))
-			}
-		}
-
-		if emp.Name == "" || emp.Region == "" || emp.Outlet == "" || emp.Position == "" {
-			log.Printf("ERROR: employee input record %+v\n", emp)
-			return
-		}
-
-		err = impl.DBService.InsertUserMasterRecord(emp)
-		if err != nil {
-			log.Println("insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
-			return
-		}
-	}
+	fmt.Println("HandleUserMasterInputFile successfull")
 }
 
 func (impl *CronImpl) HandleDataInputFile() {
-	fmt.Println("input")
-	fileName := "./doc/Input.xlsx"
-
-	file, err := excelize.OpenFile(fileName)
-	if err != nil {
-		log.Fatalf("could not open file, %v\n", err)
-	}
-
-	rows, err := file.Rows("Data Q2 2021")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	//records := make([]*db.Transaction, 0)
-
-	isFirstRow := true
-	index := 0
-
-	for rows.Next() {
-
-		index++
-
-		if isFirstRow {
-			rows.Columns()
-			isFirstRow = false
-			continue
-		}
-
-		row, err := rows.Columns()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		trx := &db.Transaction{}
-
-		//LOOP:
-		for i, colCell := range row {
-
-			switch i {
-
-			case 0:
-				trx.Reqion = strings.ToUpper(strings.TrimSpace(colCell))
-			case 1:
-				trx.Outlet = strings.ToUpper(strings.TrimSpace(colCell))
-			case 2:
-				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-				if err != nil {
-					log.Println("ID conversion error: " + err.Error() + " index: " + strconv.Itoa(index))
-					//break LOOP
-					return
-				}
-				trx.Id = num
-			case 3:
-				trx.CategoryType = strings.ToUpper(strings.TrimSpace(colCell))
-			case 4:
-				// trx.PreviousProduct = strings.ToUpper(strings.TrimSpace(colCell))
-				trx.PreviousProduct = strings.TrimSpace(colCell)
-			case 5:
-				// trx.CurrentProduct = strings.ToUpper(strings.TrimSpace(colCell))
-				trx.CurrentProduct = strings.TrimSpace(colCell)
-			case 6:
-				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-				if err != nil {
-					log.Println("Quantity conversion error: " + err.Error() + " index: " + strconv.Itoa(index))
-					//break LOOP
-					return
-				}
-				trx.Quantity = num
-			case 7:
-				trx.Category = strings.ToUpper(strings.TrimSpace(colCell))
-			case 8:
-				trx.ProductGrp = strings.ToUpper(strings.TrimSpace(colCell))
-			case 9:
-				t, err := time.Parse("", strings.TrimSpace(colCell))
-				if err != nil {
-					log.Println("Incorrect sales time error: " + err.Error() + " index: " + strconv.Itoa(index))
-					//break LOOP
-					return
-				}
-
-				trx.SaleDate = t
-				trx.Quarter = impl.getQuarterFromMonth(int(t.Month()))
-			}
-		}
-
-		if trx.Reqion == "" || trx.Outlet == "" || trx.CategoryType == "" || trx.CurrentProduct == "" || trx.Category == "" || trx.ProductGrp == "" {
-			log.Printf("ERROR: sales input record %v\n", trx)
-			return
-		}
-
-		err = impl.DBService.InsertSaleTransaction(trx)
-		if err != nil {
-			log.Println("sales insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
-			return
-		}
-	}
-
-	log.Println("sales record insertion complete")
+	//fmt.Println("input")
+	//fileName := "./doc/Input.xlsx"
+	//
+	//file, err := excelize.OpenFile(fileName)
+	//if err != nil {
+	//	log.Fatalf("could not open file, %v\n", err)
+	//}
+	//
+	//rows, err := file.Rows("Data Q2 2021")
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
+	//
+	////records := make([]*db.Transaction, 0)
+	//
+	//isFirstRow := true
+	//index := 0
+	//
+	//for rows.Next() {
+	//
+	//	index++
+	//
+	//	if isFirstRow {
+	//		rows.Columns()
+	//		isFirstRow = false
+	//		continue
+	//	}
+	//
+	//	row, err := rows.Columns()
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		return
+	//	}
+	//
+	//	trx := &db.Transaction{}
+	//
+	//	//LOOP:
+	//	for i, colCell := range row {
+	//
+	//		switch i {
+	//
+	//		case 0:
+	//			trx.Reqion = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 1:
+	//			trx.Outlet = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 2:
+	//			num, err := strconv.Atoi(strings.TrimSpace(colCell))
+	//			if err != nil {
+	//				log.Println("ID conversion error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//				//break LOOP
+	//				return
+	//			}
+	//			trx.Id = num
+	//		case 3:
+	//			trx.CategoryType = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 4:
+	//			// trx.PreviousProduct = strings.ToUpper(strings.TrimSpace(colCell))
+	//			trx.PreviousProduct = strings.TrimSpace(colCell)
+	//		case 5:
+	//			// trx.CurrentProduct = strings.ToUpper(strings.TrimSpace(colCell))
+	//			trx.CurrentProduct = strings.TrimSpace(colCell)
+	//		case 6:
+	//			num, err := strconv.Atoi(strings.TrimSpace(colCell))
+	//			if err != nil {
+	//				log.Println("Quantity conversion error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//				//break LOOP
+	//				return
+	//			}
+	//			trx.Quantity = num
+	//		case 7:
+	//			trx.Category = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 8:
+	//			trx.ProductGrp = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 9:
+	//			t, err := time.Parse("", strings.TrimSpace(colCell))
+	//			if err != nil {
+	//				log.Println("Incorrect sales time error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//				//break LOOP
+	//				return
+	//			}
+	//
+	//			trx.SaleDate = t
+	//			trx.Quarter = impl.getQuarterFromMonth(int(t.Month()))
+	//		}
+	//	}
+	//
+	//	if trx.Reqion == "" || trx.Outlet == "" || trx.CategoryType == "" || trx.CurrentProduct == "" || trx.Category == "" || trx.ProductGrp == "" {
+	//		log.Printf("ERROR: sales input record %v\n", trx)
+	//		return
+	//	}
+	//
+	//	err = impl.DBService.InsertSaleTransaction(trx)
+	//	if err != nil {
+	//		log.Println("sales insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
+	//		return
+	//	}
+	//}
+	//
+	//log.Println("sales record insertion complete")
+	fmt.Println("HandleDataInputFile successfull")
 }
 
 func (impl *CronImpl) HandlePlansInputFile() {
@@ -288,105 +287,125 @@ func (impl *CronImpl) HandlePlansInputFile() {
 	if err := impl.DBService.FetchPlans(); err != nil {
 		log.Println("productPlan fetching failed: " + err.Error())
 	}
+	fmt.Println("HandlePlansInputFile successful")
 }
 
 func (impl *CronImpl) HandleTargetInputFile() {
-	// 	fileName := "./doc/Input.xlsx"
-
-	// 	file, err := excelize.OpenFile(fileName)
-	// 	if err != nil {
-	// 		log.Fatalf("could not open file, %v\n", err)
-	// 	}
-
-	// 	rows, err := file.Rows("Target")
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 		return
-	// 	}
-
-	// 	//records := make([]*db.Transaction, 0)
-
-	// 	impl.DBService.DeleteStoreTargets()
-
-	// 	isFirstRow := true
-	// 	index := 0
-
-	// 	region := ""
-	// LOOP:
-	// 	for rows.Next() {
-
-	// 		index++
-
-	// 		if isFirstRow {
-	// 			rows.Columns()
-	// 			isFirstRow = false
-	// 			continue
-	// 		}
-
-	// 		row, err := rows.Columns()
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 			return
-	// 		}
-
-	// 		trx := &db.ProductGrpTarget{}
-	// 		outlet := ""
-
-	// 		for i, colCell := range row {
-
-	// 			if impl.isRegion(strings.ToUpper(strings.TrimSpace(colCell))) {
-	// 				region = strings.ToUpper(strings.TrimSpace(colCell))
-	// 				continue LOOP
-	// 			}
-
-	// 			switch i {
-	// 			case 0:
-	// 				outlet = strings.ToUpper(strings.TrimSpace(colCell))
-	// 			case 1:
-	// 				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-	// 				if err != nil {
-	// 					log.Println("Baqati target error: " + err.Error() + " index: " + strconv.Itoa(index))
-	// 					return
-	// 				}
-	// 				trx.Baqati = num
-	// 			case 2:
-	// 				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-	// 				if err != nil {
-	// 					log.Println("HBB target error: " + err.Error() + " index: " + strconv.Itoa(index))
-	// 					return
-	// 				}
-	// 				trx.HBB = num
-	// 			case 3:
-	// 				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-	// 				if err != nil {
-	// 					log.Println("Hayyak target error: " + err.Error() + " index: " + strconv.Itoa(index))
-	// 					return
-	// 				}
-	// 				trx.Hayyak = num
-	// 			case 4:
-	// 				num, err := strconv.Atoi(strings.TrimSpace(colCell))
-	// 				if err != nil {
-	// 					log.Println("Upgrade target error: " + err.Error() + " index: " + strconv.Itoa(index))
-	// 					return
-	// 				}
-	// 				trx.Upgrade = num
-	// 			}
-	// 		}
-
-	// 		if trx.HBB == 0 || trx.Baqati == 0 || trx.Hayyak == 0 || trx.Upgrade == 0 {
-	// 			continue LOOP
-	// 		}
-
-	// 		err = impl.DBService.InsertStoreTargets(region, outlet, trx)
-	// 		if err != nil {
-	// 			log.Println("Target insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
-	// 			return
-	// 		}
-	// 	}
+//	fileName := "./doc/new_doc/q2_2021_monthly.xlsx"
+//
+//	file, err := excelize.OpenFile(fileName)
+//	if err != nil {
+//		log.Fatalf("could not open file, %v\n", err)
+//	}
+//
+//	rows, err := file.Rows("Target 2021")
+//	if err != nil {
+//		fmt.Println(err)
+//		return
+//	}
+//
+//	//records := make([]*db.Transaction, 0)
+//
+//	impl.DBService.DeleteStoreTargets()
+//
+//	index := 0
+//
+//	region := ""
+//	product := ""
+//	m := make(map[string]map[string][12]*db.ProductGrpTarget)
+//LOOP:
+//	for rows.Next() {
+//
+//		index++
+//		fmt.Println("index", index)
+//
+//		row, err := rows.Columns()
+//		if err != nil {
+//			fmt.Println(err)
+//			return
+//		}
+//
+//		outlet := ""
+//
+//		for i, colCell := range row {
+//
+//			if strings.TrimSpace(colCell) == "" || strings.Contains(strings.ToUpper(strings.TrimSpace(colCell)), "TOTAL") {
+//				continue LOOP
+//			}
+//
+//			if impl.isProduct(strings.ToUpper(strings.TrimSpace(colCell))) {
+//				product = strings.ToUpper(strings.TrimSpace(colCell))
+//				continue LOOP
+//			}
+//
+//			if impl.isRegion(strings.ToUpper(strings.TrimSpace(colCell))) {
+//				region = strings.ToUpper(strings.TrimSpace(colCell))
+//				continue LOOP
+//			}
+//
+//			if i > 12 {
+//				return
+//			}
+//
+//			if i == 0 {
+//				outlet = strings.ToUpper(strings.TrimSpace(colCell))
+//				continue
+//			}
+//
+//			num, err := strconv.Atoi(strings.TrimSpace(colCell))
+//			if err != nil {
+//				log.Println("conversion failed error: " + err.Error() + " index: " + strconv.Itoa(index))
+//				return
+//			} else if num == 0 {
+//				log.Println("emtpy value found error: " + err.Error() + " index: " + strconv.Itoa(index))
+//				return
+//			}
+//
+//			if m[region] == nil {
+//				m[region] = make(map[string][12]*db.ProductGrpTarget)
+//			}
+//
+//			v := m[region][outlet]
+//
+//			if v[i-1] == nil {
+//				v[i-1] = &db.ProductGrpTarget{}
+//			}
+//
+//			switch product {
+//			case commons.HBBCategory:
+//				v[i-1].HBB = num
+//			case commons.BaqatiCategory:
+//				v[i-1].Baqati = num
+//			case commons.HayyakCategory:
+//				v[i-1].Hayyak = num
+//			case commons.UpgradeCategory:
+//				v[i-1].Upgrade = num
+//			}
+//
+//			fmt.Println("break", region, outlet, v)
+//		}
+//
+//		fmt.Println("break outer")
+//	}
+//
+//	for regKey, regMap := range m {
+//		for outletKey, outletMap := range regMap {
+//			for month, rcrd := range outletMap {
+//				fmt.Println("debug: ", regKey, outletKey, month+1, rcrd.HBB, rcrd.Hayyak, rcrd.Baqati, rcrd.Upgrade)
+//				err = impl.DBService.InsertStoreTargets(regKey, outletKey, month+1, rcrd)
+//				if err != nil {
+//					log.Println("Target insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
+//					return
+//				}
+//			}
+//		}
+//	}
 
 	if err := impl.DBService.FetchSaleTarget(); err != nil {
 		log.Println("sale target fetching failed: " + err.Error())
 	}
+
+	fmt.Println("HandleTargetInputFile successfull")
 }
 
 func (impl *CronImpl) HandleScaleOrderInputFile() {
@@ -414,6 +433,7 @@ func (impl *CronImpl) HandleScaleOrderInputFile() {
 	// impl.DBService.InsertValueOfPoints(hbb, 75)
 
 	impl.DBService.FetchValueOfPoint()
+	fmt.Println("HandleScaleOrderInputFile successful")
 }
 
 func (impl *CronImpl) HandleMaxPayInputFile() {
@@ -441,6 +461,7 @@ func (impl *CronImpl) HandleMaxPayInputFile() {
 	// impl.DBService.InsertValueOfPoints(hbb, 75)
 
 	impl.DBService.FetchMaxPayout()
+	fmt.Println("HandleMaxPayInputFile successful")
 }
 
 func (impl *CronImpl) isRegion(region string) bool {
@@ -466,4 +487,13 @@ func (impl *CronImpl) getQuarterFromMonth(month int) int {
 	}
 
 	return -1
+}
+
+func (impl *CronImpl) isProduct(product string) bool {
+
+	if product == commons.HBBCategory || product == commons.BaqatiCategory || product == commons.HayyakCategory || product == commons.UpgradeCategory {
+		return true
+	}
+
+	return false
 }

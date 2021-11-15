@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
 	"time"
@@ -69,53 +70,66 @@ func (impl *SalesIncentiveImpl) getSIPRatePlan(planName string) float64 {
 
 func (impl *SalesIncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int, isQuarterReport bool, grp, region, outlet string) int {
 
+	fmt.Println("getSaleTargetPerOutlet: ",grp, region, outlet, isQuarterReport, quarter, t.Month())
+
 	var (
 		start int
 		end   int
 	)
 
-	switch quarter {
-	case 1:
-		start = 1
-		end = 3
-	case 2:
-		start = 4
-		end = 6
-	case 3:
-		start = 7
-		end = 9
-	case 4:
-		start = 10
-		end = 12
-	default:
-		return -1
+	if isQuarterReport {
+		switch quarter {
+		case 1:
+			start = 1
+			end = 3
+		case 2:
+			start = 4
+			end = 6
+		case 3:
+			start = 7
+			end = 9
+		case 4:
+			start = 10
+			end = 12
+		default:
+			return -1
+		}
 	}
 
 	db.SalesTrgt.Mutex.RLock()
 	defer db.SalesTrgt.Mutex.RUnlock()
+
+	rMap, ok := db.SalesTrgt.SaleTargetMap[region]
+	if !ok {
+		return -1
+	}
+
+	if _, ok := rMap[outlet]; !ok {
+		return -1
+	}
 
 	if isQuarterReport {
 		//quarter target
 		result := 0
 		switch grp {
 		case commons.HBBCategory:
-			for ; start <= end; start++ {
-				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].HBB
+			for i:=start-1; i < end; i++ {
+				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].HBB
 			}
 			return result
 		case commons.HayyakCategory:
-			for ; start <= end; start++ {
-				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].Hayyak
+			for i:=start-1; i < end; i++  {
+				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].Hayyak
 			}
 			return result
 		case commons.BaqatiCategory:
-			for ; start <= end; start++ {
-				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].Baqati
+			for i:=start-1; i < end; i++  {
+				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].Baqati
 			}
 			return result
 		case commons.UpgradeCategory:
-			for ; start <= end; start++ {
-				result += db.SalesTrgt.SaleTargetMap[region][outlet][start].Upgrade
+			for i:=start-1; i < end; i++  {
+				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].Upgrade
 			}
 			return result
 		}
@@ -123,13 +137,13 @@ func (impl *SalesIncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int,
 		//month target
 		switch grp {
 		case commons.HBBCategory:
-			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month())].HBB
+			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].HBB
 		case commons.HayyakCategory:
-			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month())].Hayyak
+			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].Hayyak
 		case commons.BaqatiCategory:
-			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month())].Baqati
+			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].Baqati
 		case commons.UpgradeCategory:
-			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month())].Upgrade
+			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].Upgrade
 		}
 	}
 

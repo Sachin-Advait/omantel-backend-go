@@ -33,18 +33,35 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int, t time.Ti
 		return nil, err
 	}
 
+	fmt.Println("data", clientID, int(t.Month()), t.Year(), quarter, isQuarterReport, trx.Region, trx.Outlet)
+
+	resp := &db.TotalIncentive{}
+
+	if trx.Region == "" || trx.Outlet == "" {
+		ind := &db.IndividualIncentive{Error: "no sales record found for this period"}
+		resp.HBB = ind
+		resp.Baqati = ind
+		resp.Hayyak = ind
+		resp.Upgrade = ind
+		return resp, nil
+	}
+
 	totalEmp, err := impl.DBService.FetchTotalNonManagerialEmployees(trx.Region, trx.Outlet)
 	if err != nil {
 		return nil, err
 	} else if totalEmp == 0 {
-		return nil, errors.New("no employee found")
+		ind := &db.IndividualIncentive{Error: "no employee found for this outlet - "+trx.Outlet}
+		resp.HBB = ind
+		resp.Baqati = ind
+		resp.Hayyak = ind
+		resp.Upgrade = ind
+		return resp, nil
 	}
 
 	fmt.Println("TotalEmp", totalEmp)
 
 	totalEmp--
 
-	resp := &db.TotalIncentive{}
 	totalPay := 0.0
 	// resp.HBB.Error = "nil"
 	// resp.Hayyak.Error = "nil"
@@ -81,15 +98,20 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int, t time.Ti
 
 	for grp, plans := range grpPlans {
 
+		targetPerOutlet := impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)
+		//if targetPerOutlet == -1 {
+		//	return nil, errors.New("outlet target not found")
+		//}
+
 		switch grp {
 
 		case commons.HBBCategory:
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("HBB sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet))
+			fmt.Println("HBB sales target in "+trx.Outlet, targetPerOutlet)
 
-			target := float64(impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)) / float64(totalEmp)
+			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
 				ind.Error = fmt.Errorf("per employee target found is %f for HBB", target).Error()
 				break
@@ -123,9 +145,9 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int, t time.Ti
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("HAYYAK sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet))
+			fmt.Println("HAYYAK sales target in "+trx.Outlet, targetPerOutlet)
 
-			target := float64(impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)) / float64(totalEmp)
+			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
 				ind.Error = fmt.Errorf("per employee target found is %f for HAYYAK", target).Error()
 			} else {
@@ -158,9 +180,9 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int, t time.Ti
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("BAQATI sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet))
+			fmt.Println("BAQATI sales target in "+trx.Outlet, targetPerOutlet)
 
-			target := float64(impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)) / float64(totalEmp)
+			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
 				ind.Error = fmt.Errorf("per employee target found is %f for BAQATI", target).Error()
 			} else {
@@ -192,11 +214,18 @@ func (impl *SalesIncentiveImpl) FetchSingleUserIncentive(clientID int, t time.Ti
 
 	ind := &db.IndividualIncentive{}
 
-	fmt.Println("UPGRADE sales target in"+trx.Outlet, impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, trx.Region, trx.Outlet))
+	targetPerOutlet := impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, trx.Region, trx.Outlet)
+	if targetPerOutlet == -1 {
+		ind.Error = "outlet target not found"
+		resp.Upgrade = ind
+		return resp, nil
+	}
 
-	target := float64(impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, trx.Region, trx.Outlet)) / float64(totalEmp)
+	fmt.Println("UPGRADE sales target in "+trx.Outlet, targetPerOutlet)
+
+	target := float64(targetPerOutlet) / float64(totalEmp)
 	if target <= 0 {
-		ind.Error = fmt.Errorf("per employee target found is %f for BAQATI", target).Error()
+		ind.Error = fmt.Errorf("per employee target found is %f for Upgrade", target).Error()
 	} else {
 		achieved := float64(totalActiveUpgrade) * 100 / float64(target)
 		vop := impl.getValueOfPoint(commons.UpgradeCategory, achieved)
@@ -236,14 +265,30 @@ func (impl *SalesIncentiveImpl) FetchSingleUserTargetChart(clientID int, t time.
 		return nil, err
 	}
 
+	fmt.Println("data", clientID, int(t.Month()), t.Year(), quarter, isQuarterReport, trx.Region, trx.Outlet)
+
+	resp := &db.ChartDataResponse{}
+
+	if trx.Region == "" || trx.Outlet == "" {
+		ind := &db.TargetAchievementData{Error: "no sales record found for this period"}
+		resp.HBB = ind
+		resp.Baqati = ind
+		resp.Hayyak = ind
+		resp.Upgrade = ind
+		return resp, nil
+	}
+
 	totalEmp, err := impl.DBService.FetchTotalNonManagerialEmployees(trx.Region, trx.Outlet)
 	if err != nil {
 		return nil, err
 	} else if totalEmp == 0 {
-		return nil, errors.New("no employee found")
+		ind := &db.TargetAchievementData{Error: "no employee found for this outlet - "+trx.Outlet}
+		resp.HBB = ind
+		resp.Baqati = ind
+		resp.Hayyak = ind
+		resp.Upgrade = ind
+		return resp, nil
 	}
-
-	resp := &db.ChartDataResponse{}
 
 	for grp, rcds := range trx.SaleRecords {
 
@@ -258,7 +303,8 @@ func (impl *SalesIncentiveImpl) FetchSingleUserTargetChart(clientID int, t time.
 			data.Error = fmt.Errorf("per employee target found is %f", target).Error()
 		}
 
-		data.AchievedPercentage = float64(data.SalesCount) * 100 / target
+		data.Target = math.Round(target*100)/100
+		data.AchievedPercentage = math.Round((float64(data.SalesCount) * 100 / target)*100)/100
 
 		switch grp {
 		case commons.HBBCategory:
@@ -276,5 +322,5 @@ func (impl *SalesIncentiveImpl) FetchSingleUserTargetChart(clientID int, t time.
 		}
 	}
 
-	return nil, errors.New("no category found")
+	return resp, errors.New("no category found")
 }
