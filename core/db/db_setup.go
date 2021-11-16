@@ -73,7 +73,7 @@ func (dbConn *DBImplementation) InsertUserMasterRecord(emp *Employee) error {
 func (dbConn *DBImplementation) InsertSaleTransaction(trx *Transaction) error {
 
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-	query := "insert into Sale_Transaction_Table(created, modified, region, outlet, emp_id, category_type, prev_product, curr_product, quantity, category, product_group, sales_date, quarter) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,&12,&13)"
+	query := "insert into Sale_Transaction_Table(created, modified, region, outlet, emp_id, category_type, prev_product, curr_product, quantity, category, product_group, sales_date, quarter) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
 
 	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), trx.Reqion, trx.Outlet, trx.Id, trx.CategoryType, trx.PreviousProduct,
 		trx.CurrentProduct, trx.Quantity, trx.Category, trx.ProductGrp, trx.SaleDate, trx.Quarter)
@@ -128,7 +128,7 @@ func (dbConn *DBImplementation) DeleteStoreTargets() error {
 // InsertStoreTargets reads data from target input file and inserts into table
 func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month int, trgt *ProductGrpTarget) error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Minute)
 
 	query := "insert into Sales_Target_Table(created, modified, region, outlet, months, Baqati, HBB, Hayyak, Upgrade) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
 
@@ -217,12 +217,9 @@ func (dbConn *DBImplementation) FetchSaleTarget() error {
 			return err
 		}
 
-		fmt.Println(region, outlet, month, baqati, hBB, hayyak, upgrade)
-
 		SalesTrgt.Mutex.Lock()
 
 		if SalesTrgt.SaleTargetMap[region] == nil {
-			fmt.Println("inside2")
 			SalesTrgt.SaleTargetMap[region] = make(map[string][12]*ProductGrpTarget)
 		}
 
@@ -244,8 +241,6 @@ func (dbConn *DBImplementation) FetchSaleTarget() error {
 		SalesTrgt.Mutex.Unlock()
 
 	}
-
-	fmt.Printf("map: %+v /n", SalesTrgt.SaleTargetMap)
 
 	return nil
 }

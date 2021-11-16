@@ -115,7 +115,7 @@ func (impl *CronImpl) HandleUserMasterInputFile() {
 
 func (impl *CronImpl) HandleDataInputFile() {
 	//fmt.Println("input")
-	//fileName := "./doc/Input.xlsx"
+	//fileName := "doc/new_doc/Q2,2021_Monthly_data.xlsx"
 	//
 	//file, err := excelize.OpenFile(fileName)
 	//if err != nil {
@@ -171,12 +171,20 @@ func (impl *CronImpl) HandleDataInputFile() {
 	//		case 3:
 	//			trx.CategoryType = strings.ToUpper(strings.TrimSpace(colCell))
 	//		case 4:
+	//			t, err := time.Parse("01-02-06", strings.TrimSpace(colCell))
+	//			if err != nil {
+	//				log.Println("date conversion error: " + err.Error() + " index: " + strconv.Itoa(index) + " cell "+strings.TrimSpace(colCell))
+	//				//break LOOP
+	//				return
+	//			}
+	//			trx.SaleDate = t
+	//		case 5:
 	//			// trx.PreviousProduct = strings.ToUpper(strings.TrimSpace(colCell))
 	//			trx.PreviousProduct = strings.TrimSpace(colCell)
-	//		case 5:
+	//		case 6:
 	//			// trx.CurrentProduct = strings.ToUpper(strings.TrimSpace(colCell))
 	//			trx.CurrentProduct = strings.TrimSpace(colCell)
-	//		case 6:
+	//		case 7:
 	//			num, err := strconv.Atoi(strings.TrimSpace(colCell))
 	//			if err != nil {
 	//				log.Println("Quantity conversion error: " + err.Error() + " index: " + strconv.Itoa(index))
@@ -184,11 +192,11 @@ func (impl *CronImpl) HandleDataInputFile() {
 	//				return
 	//			}
 	//			trx.Quantity = num
-	//		case 7:
-	//			trx.Category = strings.ToUpper(strings.TrimSpace(colCell))
 	//		case 8:
-	//			trx.ProductGrp = strings.ToUpper(strings.TrimSpace(colCell))
+	//			trx.Category = strings.ToUpper(strings.TrimSpace(colCell))
 	//		case 9:
+	//			trx.ProductGrp = strings.ToUpper(strings.TrimSpace(colCell))
+	//		case 10:
 	//			t, err := time.Parse("", strings.TrimSpace(colCell))
 	//			if err != nil {
 	//				log.Println("Incorrect sales time error: " + err.Error() + " index: " + strconv.Itoa(index))
@@ -201,10 +209,12 @@ func (impl *CronImpl) HandleDataInputFile() {
 	//		}
 	//	}
 	//
-	//	if trx.Reqion == "" || trx.Outlet == "" || trx.CategoryType == "" || trx.CurrentProduct == "" || trx.Category == "" || trx.ProductGrp == "" {
+	//	if trx.Reqion == "" || trx.Outlet == "" || trx.CategoryType == "" || trx.CurrentProduct == "" || trx.Category == "" || trx.ProductGrp == "" || trx.SaleDate.Year() == 1 {
 	//		log.Printf("ERROR: sales input record %v\n", trx)
 	//		return
 	//	}
+	//
+	//	trx.Quarter = impl.getQuarterFromMonth(int(trx.SaleDate.Month()))
 	//
 	//	err = impl.DBService.InsertSaleTransaction(trx)
 	//	if err != nil {
@@ -212,8 +222,8 @@ func (impl *CronImpl) HandleDataInputFile() {
 	//		return
 	//	}
 	//}
-	//
-	//log.Println("sales record insertion complete")
+
+	log.Println("sales record insertion complete")
 	fmt.Println("HandleDataInputFile successfull")
 }
 
@@ -291,7 +301,7 @@ func (impl *CronImpl) HandlePlansInputFile() {
 }
 
 func (impl *CronImpl) HandleTargetInputFile() {
-//	fileName := "./doc/new_doc/q2_2021_monthly.xlsx"
+//	fileName := "./doc/new_doc/q2_2021_monthly_temp.xlsx"
 //
 //	file, err := excelize.OpenFile(fileName)
 //	if err != nil {
@@ -330,15 +340,18 @@ func (impl *CronImpl) HandleTargetInputFile() {
 //		for i, colCell := range row {
 //
 //			if strings.TrimSpace(colCell) == "" || strings.Contains(strings.ToUpper(strings.TrimSpace(colCell)), "TOTAL") {
+//				fmt.Println("blank", index)
 //				continue LOOP
 //			}
 //
 //			if impl.isProduct(strings.ToUpper(strings.TrimSpace(colCell))) {
+//				fmt.Println("product", index)
 //				product = strings.ToUpper(strings.TrimSpace(colCell))
 //				continue LOOP
 //			}
 //
 //			if impl.isRegion(strings.ToUpper(strings.TrimSpace(colCell))) {
+//				fmt.Println("region", index)
 //				region = strings.ToUpper(strings.TrimSpace(colCell))
 //				continue LOOP
 //			}
@@ -365,6 +378,11 @@ func (impl *CronImpl) HandleTargetInputFile() {
 //				m[region] = make(map[string][12]*db.ProductGrpTarget)
 //			}
 //
+//			_, ok := m[region][outlet]
+//			if !ok {
+//				m[region][outlet] = [12]*db.ProductGrpTarget{}
+//			}
+//
 //			v := m[region][outlet]
 //
 //			if v[i-1] == nil {
@@ -381,6 +399,9 @@ func (impl *CronImpl) HandleTargetInputFile() {
 //			case commons.UpgradeCategory:
 //				v[i-1].Upgrade = num
 //			}
+//
+//
+//			m[region][outlet] = v
 //
 //			fmt.Println("break", region, outlet, v)
 //		}
@@ -466,7 +487,7 @@ func (impl *CronImpl) HandleMaxPayInputFile() {
 
 func (impl *CronImpl) isRegion(region string) bool {
 
-	if region == "BATINAH NORTH" || region == "BATINAH SOUTH" || region == "DAKHLIA & DAHIRAH " || region == "DHOFAR" ||
+	if region == "BATINAH NORTH" || region == "BATINAH SOUTH" || region == "DAKHLIA & DAHIRAH" || region == "DHOFAR" ||
 		region == "MUSCAT NORTH" || region == "MUSCAT SOUTH" || region == "SHARQIYA" || region == "GRAND TOTAL" {
 		return true
 	}

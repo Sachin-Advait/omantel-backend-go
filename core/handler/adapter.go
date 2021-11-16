@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
 	"time"
@@ -69,8 +68,6 @@ func (impl *SalesIncentiveImpl) getSIPRatePlan(planName string) float64 {
 }
 
 func (impl *SalesIncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int, isQuarterReport bool, grp, region, outlet string) int {
-
-	fmt.Println("getSaleTargetPerOutlet: ",grp, region, outlet, isQuarterReport, quarter, t.Month())
 
 	var (
 		start int
