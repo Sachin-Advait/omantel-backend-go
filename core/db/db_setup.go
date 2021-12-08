@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
+	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/config"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils"
 )
@@ -17,6 +19,8 @@ import (
 type PsqlOperation interface {
 	SetMaxIdleConns(n int)
 	SetMaxOpenConns(n int)
+	SetConnMaxIdleTime(d time.Duration)
+	SetConnMaxLifetime(d time.Duration)
 	PingContext(ctx context.Context) error
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
@@ -43,6 +47,8 @@ func NewDatabaseSetup(conf *config.Database) *DBImplementation {
 
 	dbConn.SetMaxIdleConns(conf.MaxIdelConn)
 	dbConn.SetMaxOpenConns(conf.MaxOpenConn)
+	dbConn.SetConnMaxIdleTime(90)
+	dbConn.SetConnMaxLifetime(30)
 	//dbConn.SetConnMaxLifetime(24 * time.Hour)
 
 	ctx := context.Background()
@@ -59,9 +65,9 @@ func NewDatabaseSetup(conf *config.Database) *DBImplementation {
 func (dbConn *DBImplementation) InsertUserMasterRecord(emp *Employee) error {
 
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-	query := "insert into User_Master_Table(created, modified, emp_id, name, usr_position, region, outlet, remark) values($1,$2,$3,$4,$5,$6,$7,$8)"
+	query := "insert into User_Master_Table(created, modified, emp_id, name, usr_position, region, outlet, mobile_number ,remark) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
 
-	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), emp.Id, emp.Name, emp.Position, emp.Region, emp.Outlet, emp.Remark)
+	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), emp.Id, emp.Name, emp.Position, emp.Region, emp.Outlet, emp.MobileNos, emp.Remark)
 	if err != nil {
 		return err
 	}
@@ -578,4 +584,279 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 	}
 
 	return trx, nil
+}
+
+// FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
+func (dbConn *DBImplementation) FetchEmployeeContactNumber(clientID int) (int, *commons.GenericError) {
+
+	rows, err := dbConn.Operation.Query("select mobile_number from User_Master_Table where emp_id= $1", clientID)
+	if err != nil {
+		return -1, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	var (
+		count         int
+		contactNumber string
+	)
+
+	for rows.Next() {
+
+		if count == 1 {
+			return -1, &commons.GenericError{Code: 1001, ErrorMessage: "found more than on record"}
+		}
+
+		if err := rows.Scan(&contactNumber); err != nil {
+			return -1, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+
+		count++
+	}
+
+	if contactNumber == "" {
+		return -1, &commons.GenericError{Code: 1003, ErrorMessage: "contact number not found"}
+	}
+
+	mobNum, err := strconv.Atoi(contactNumber)
+	if err != nil {
+		return -1, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	return mobNum, nil
+}
+
+func (dbConn *DBImplementation) InsertStaffOTP(otpModel *OtpModel) *commons.GenericError {
+	_, err := dbConn.Operation.Query("DELETE FROM user_authentication_table WHERE emp_id= $1", otpModel.StaffID)
+	if err != nil {
+		return &commons.GenericError{Code: 1001, ErrorMessage: "delete " + err.Error()}
+	}
+
+	_, err = dbConn.Operation.Query("INSERT INTO user_authentication_table(created, emp_id, expirytime, modified, otp, retry) VALUES ($1,$2,$3,$4,$5,$6);",
+		otpModel.CreatedTime,
+		otpModel.StaffID,
+		otpModel.ExpiryTime,
+		time.Now().Local(),
+		otpModel.OTP,
+		otpModel.Retry,
+	)
+
+	if err != nil {
+		return &commons.GenericError{Code: 1001, ErrorMessage: "insert " + err.Error()}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*OtpModel, *commons.GenericError) {
+
+	rows, err := dbConn.Operation.Query("select otp, retry, expiryTime from user_authentication_table where emp_id= $1", clientID)
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	var (
+		otp        int
+		retry      int
+		count      int
+		expiryTime time.Time
+	)
+
+	for rows.Next() {
+
+		if count == 1 {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: "found more than on record"}
+		}
+
+		if err := rows.Scan(&otp, &retry, &expiryTime); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+
+		count++
+	}
+
+	otModel := &OtpModel{
+		OTP:        otp,
+		Retry:      retry,
+		ExpiryTime: expiryTime,
+	}
+
+	return otModel, nil
+}
+
+// FetchAllGivenPositionEmpIdAndTheirManager returns an array of all employees of the given position along with their managers
+func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(position string) ([]*UserLead, *commons.GenericError) {
+
+	if !(position == commons.VicePresident || position == commons.GeneralManager || position == commons.SeniorManager || position == commons.Manager || position == commons.OutletManager || position == commons.Promoter) {
+		return nil, &commons.GenericError{Code: 1002, ErrorMessage: "incorrect position req- " + position}
+	}
+
+	rows, err := dbConn.Operation.Query("select a.emp_id, b.outlet_manager, b.manager, b.senior_manager, b.general_manager, b.vice_president from user_master_table a inner join user_hierarchy_table b on a.emp_id = b.emp_id where a.usr_position= $1", position)
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: "fetch emp nd manager err-" + err.Error()}
+	}
+
+	var (
+		id             int
+		outletManager  int
+		manager        int
+		seniorManager  int
+		generalManager int
+		vice_president int
+		usr            *UserLead
+		array          = make([]*UserLead, 0)
+	)
+
+	for rows.Next() {
+
+		if err := rows.Scan(&id, &outletManager, &manager, &seniorManager, &generalManager, &vice_president); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+
+		usr = &UserLead{
+			EmpID: id,
+		}
+
+		switch {
+		case vice_president != 0:
+			usr.ReportTo = vice_president
+			break
+		case generalManager != 0:
+			usr.ReportTo = generalManager
+			break
+		case manager != 0:
+			usr.ReportTo = manager
+			break
+		case outletManager != 0:
+			usr.ReportTo = outletManager
+			break
+		default:
+			break
+		}
+
+		array = append(array, usr)
+	}
+
+	return array, nil
+}
+
+// FetchAllEmployeesReportingToGivenManager returns all employees reporting to given manager
+func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(managerPosition string, managerID int) ([]int, *commons.GenericError) {
+
+	if !(managerPosition == "vice_president" || managerPosition == "general_manager" || managerPosition == "senior_manager" || managerPosition == "manager" || managerPosition == "outlet_manager") {
+		return nil, &commons.GenericError{Code: 1002, ErrorMessage: "incorrect position manager req- " + managerPosition}
+	}
+
+	query := "select distinct emp_id from user_hierarchy_table where " + managerPosition + "= $1"
+
+	rows, err := dbConn.Operation.Query(query, managerID)
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	var (
+		id    int
+		array = make([]int, 0)
+	)
+
+	for rows.Next() {
+
+		if err := rows.Scan(&id); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+
+		array = append(array, id)
+	}
+
+	return array, nil
+}
+
+// InsertEmployeeRecord inserts each users statistical daily in db, and is updated everyday once
+func (dbConn *DBImplementation) InsertEmployeeRecord(usr *UserRecord) *commons.GenericError {
+
+	// fmt.Printf("userRecord: %+v\n", *usr)
+
+	//add where clause
+	_, err := dbConn.Operation.Query("INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27);",
+		usr.EmpId,
+		usr.Created,
+		usr.ReportingManager,
+		usr.Isquarterly,
+		usr.Month,
+		usr.Quarter,
+		usr.Hayyak_sales_count,
+		usr.Hayyak_target,
+		usr.Hayyak_achieved_percentage,
+		usr.Hayyak_payout,
+		usr.Hayyak_extra_payout,
+		usr.Hbb_sales_count,
+		usr.Hbb_target,
+		usr.Hbb_achieved_percentage,
+		usr.Hbb_payout,
+		usr.Hbb_extra_payout,
+		usr.Baqati_sales_count,
+		usr.Baqati_target,
+		usr.Baqati_achieved_percentage,
+		usr.Baqati_payout,
+		usr.Baqati_extra_payout,
+		usr.Upgrade_sales_count,
+		usr.Upgrade_target,
+		usr.Uprade_achieved_percentage,
+		usr.Upgrade_payout,
+		usr.Upgrade_extra_payout,
+		usr.Total_payout,
+	)
+
+	if err != nil {
+		return &commons.GenericError{Code: 1001, ErrorMessage: "insert emp rcrd err-" + err.Error()}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*UserRecord, *commons.GenericError) {
+
+	rows, err := dbConn.Operation.Query("select reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1", id)
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	rcrds := make([]*UserRecord, 0)
+
+	for rows.Next() {
+
+		rcrd := &UserRecord{}
+
+		if err := rows.Scan(
+			&rcrd.ReportingManager,
+			&rcrd.Isquarterly,
+			&rcrd.Month,
+			&rcrd.Quarter,
+			&rcrd.Hayyak_sales_count,
+			&rcrd.Hayyak_target,
+			&rcrd.Hayyak_achieved_percentage,
+			&rcrd.Hayyak_payout,
+			&rcrd.Hayyak_extra_payout,
+			&rcrd.Hbb_sales_count,
+			&rcrd.Hbb_target,
+			&rcrd.Hbb_achieved_percentage,
+			&rcrd.Hbb_payout,
+			&rcrd.Hbb_extra_payout,
+			&rcrd.Baqati_sales_count,
+			&rcrd.Baqati_target,
+			&rcrd.Baqati_achieved_percentage,
+			&rcrd.Baqati_payout,
+			&rcrd.Baqati_extra_payout,
+			&rcrd.Upgrade_sales_count,
+			&rcrd.Upgrade_target,
+			&rcrd.Uprade_achieved_percentage,
+			&rcrd.Upgrade_payout,
+			&rcrd.Upgrade_extra_payout,
+			&rcrd.Total_payout,
+		); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+
+		rcrds = append(rcrds, rcrd)
+	}
+
+	return rcrds, nil
 }

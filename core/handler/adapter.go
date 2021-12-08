@@ -1,9 +1,10 @@
 package handler
 
 import (
+	"time"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
-	"time"
 )
 
 func (impl *SalesIncentiveImpl) getValueOfPoint(grp string, achievedPercent float64) float64 {
@@ -110,22 +111,22 @@ func (impl *SalesIncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int,
 		result := 0
 		switch grp {
 		case commons.HBBCategory:
-			for i:=start-1; i < end; i++ {
+			for i := start - 1; i < end; i++ {
 				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].HBB
 			}
 			return result
 		case commons.HayyakCategory:
-			for i:=start-1; i < end; i++  {
+			for i := start - 1; i < end; i++ {
 				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].Hayyak
 			}
 			return result
 		case commons.BaqatiCategory:
-			for i:=start-1; i < end; i++  {
+			for i := start - 1; i < end; i++ {
 				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].Baqati
 			}
 			return result
 		case commons.UpgradeCategory:
-			for i:=start-1; i < end; i++  {
+			for i := start - 1; i < end; i++ {
 				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].Upgrade
 			}
 			return result
@@ -152,4 +153,19 @@ func (impl *SalesIncentiveImpl) getMaxPayout(grp string) float64 {
 	defer db.MaxPay.Mutex.RUnlock()
 
 	return db.MaxPay.Payoutmap[grp]
+}
+
+func (impl *SalesIncentiveImpl) getQuarterFromMonth(month int) int {
+	switch {
+	case month >= 1 && month <= 3:
+		return 1
+	case month >= 4 && month <= 6:
+		return 2
+	case month >= 7 && month <= 9:
+		return 3
+	case month >= 10 && month <= 12:
+		return 4
+	}
+
+	return -1
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/config"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/crons"
@@ -29,6 +31,16 @@ func main() {
 
 	trxService := handler.NewSalesIncentiveService(&config.GetInstance().Database)
 	trxContext := handler.NewSalesIncentiveContext(trxService)
+
+	err := trxService.UpdateEachPromoterData()
+	if err != nil {
+		fmt.Println("promoter error:", err)
+	}
+
+	err = trxService.UpdateOtherManagersData()
+	if err != nil {
+		fmt.Println("manager error:", err)
+	}
 
 	defer trxContext.SafeClose()
 

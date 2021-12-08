@@ -6,16 +6,21 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
+	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils"
 )
 
 type SalesIncentiveService interface {
-	FetchSingleUserIncentive(clientID int, t time.Time, quarter int, isQuarterReport bool) (*db.TotalIncentive, error)
-	FetchSingleUserTargetChart(clientID int, t time.Time, quarter int, isQuarterReport bool) (*db.ChartDataResponse, error)
+	FetchPromoterUserIncentive(clientID int, t time.Time, quarter int, isQuarterReport bool) (*db.TotalIncentive, error)
+	FetchPromoterTargetChart(clientID int, t time.Time, quarter int, isQuarterReport bool) (*db.ChartDataResponse, error)
+	FetchSaleCountPerPlan(clientID int, group string, t time.Time, quarter int, isQuarterReport bool) ([]*db.SaleCountPerPlan, error)
+	GenerateOTP(clientID int, requestID string) *commons.GenericError
+	VefiryOTP(clientID, otp int) (bool, *commons.GenericError)
 }
 
 type SalesIncentiveContext struct {
@@ -34,6 +39,9 @@ func (context *SalesIncentiveContext) NewSalesIncentiveRouter() http.Handler {
 
 	r.Post("/client", context.GetSingleUserIncentive)
 	r.Post("/target-chart", context.GetSingleUserTargetChart)
+	r.Post("/sale-per-plan", context.GetSaleCountPerPlan)
+	r.Post("/generate-otp", context.GenerateOTP)
+	r.Post("/verify-otp", context.VerifyOTP)
 
 	return r
 }
@@ -42,9 +50,9 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 	logs := utils.LogHelper(req)
 
 	var request struct {
-		ClientId string `json:"client_id"`
-		Quarter int `json:"quarter"`
-		Date string `json:"date"`
+		ClientId  string `json:"client_id"`
+		Monthly   string `json:"monthly"`
+		Quarterly string `json:"quarterly"`
 	}
 
 	dataByte, err := ioutil.ReadAll(req.Body)
@@ -90,45 +98,74 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 	}
 
 	var (
-		isQuarterReport bool
-		date time.Time
+		isQuarterReport bool = true
+		date            time.Time
+		quarter         int
 	)
 
-	if request.Date == "" {
-		utils.LogObj.Error(logs.RequestID, " : date type is missing, id: "+request.Date)
-		w.Write([]byte(`{"error": "date type is missing"}`))
+	if request.Monthly == "" && request.Quarterly == "" {
+		utils.LogObj.Error(logs.RequestID, " : monthy and quarterly type found empty, id: "+request.ClientId)
+		w.Write([]byte(`{"error": "monthy and quartlerly type is blank"}`))
 		w.WriteHeader(http.StatusBadRequest)
 
 		logs.ResponseStatus = http.StatusBadRequest
 		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
-		logs.ResponseBody = string([]byte(`{"error": "date type is missing"}`))
+		logs.ResponseBody = string([]byte(`{"error": "monthy and quartlerly type is blank"}`))
 
 		//utils.LogObj.WriteLogs(logs)
 		return
 	}
 
-	date, err = time.Parse("01/2006", request.Date)
-	if err != nil {
+	if request.Monthly != "" {
 
-		date, err = time.Parse("2006", request.Date)
+		date, err = time.Parse("01-2006", strings.TrimSpace(request.Monthly))
 		if err != nil {
-			utils.LogObj.Error(logs.RequestID, " : incorrect saleDate, id: "+request.ClientId+" saleDate: "+request.Date)
-			w.Write([]byte(`{"error": "incorrect saleDate format: {for quarterly format use - '2006'} & {for monthly format use - '11/2006'}"}`))
+			utils.LogObj.Error(logs.RequestID, " : monthy type is incorrect, id: "+request.ClientId+" monthly: "+request.Monthly)
+			w.Write([]byte(`{"error": "monthy type is incorrect, use '06-2006' format."}`))
 			w.WriteHeader(http.StatusBadRequest)
 
 			logs.ResponseStatus = http.StatusBadRequest
 			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
-			logs.ResponseBody = string([]byte(`{"error": "incorrect saleDate format: {for quarterly format use - '2006'} & {for monthly format use - '11/2006'}"}`))
+			logs.ResponseBody = string([]byte(`{"error": "monthy type is incorrect, use '06-2006' format."}`))
 
 			//utils.LogObj.WriteLogs(logs)
 			return
 		}
 
-		isQuarterReport = true
+		isQuarterReport = false
 	}
 
-	if isQuarterReport && (request.Quarter < 1 || request.Quarter > 4) {
-			utils.LogObj.Error(logs.RequestID, " : incorrect quarter value, id: "+request.ClientId+" quarter: "+request.Date)
+	if isQuarterReport && request.Quarterly != "" {
+
+		req := strings.Split(strings.TrimSpace(request.Quarterly), "-")
+		if len(req) < 2 {
+			utils.LogObj.Error(logs.RequestID, " : quarterly type is incorrect, id: "+request.ClientId+" quarterly: "+request.Quarterly)
+			w.Write([]byte(`{"error": "quarterly type is incorrect, avoid spaces."}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "quarterly type is incorrect, avoid spaces."}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
+		quarter, err = strconv.Atoi(strings.TrimSpace(req[0]))
+		if err != nil {
+			utils.LogObj.Error(logs.RequestID, " : quarter value not found, id: "+request.ClientId+" quarterly: "+req[0]+".")
+			w.Write([]byte(`{"error": "quarter value not found"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "quarter value not found"}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+
+		} else if quarter < 1 || quarter > 4 {
+			utils.LogObj.Error(logs.RequestID, " : incorrect quarter value, id: "+request.ClientId+" quarter: "+req[0])
 			w.Write([]byte(`{"error": "incorrect quarter value - should be between 1 and 4"}`))
 			w.WriteHeader(http.StatusBadRequest)
 
@@ -138,9 +175,27 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 
 			//utils.LogObj.WriteLogs(logs)
 			return
+		}
+
+		date, err = time.Parse("2006", strings.TrimSpace(req[1]))
+		if err != nil {
+			utils.LogObj.Error(logs.RequestID, " : incorrect year value, id: "+request.ClientId+" year: "+req[1])
+			w.Write([]byte(`{"error": "incorrect year value"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "incorrect year value"}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
 	}
 
-	incentive, err := context.SalesIncentiveService.FetchSingleUserIncentive(id, date, request.Quarter, isQuarterReport)
+	fmt.Println("data", id, date, quarter, isQuarterReport)
+
+	incentive, err := context.SalesIncentiveService.FetchPromoterUserIncentive(id, date, quarter, isQuarterReport)
 	if err != nil {
 		utils.LogObj.Error(logs.RequestID, " : failed to fetch user incentive, err: "+err.Error()+" id: "+request.ClientId)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -167,7 +222,6 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 	logs.ResponseBody = string(byteRsp)
 
 	utils.LogObj.Info(logs.RequestID, " : Incentive Response fetched successfully for clientId: "+request.ClientId)
-
 	//utils.LogObj.WriteLogs(logs)
 }
 
@@ -176,9 +230,9 @@ func (context *SalesIncentiveContext) GetSingleUserTargetChart(w http.ResponseWr
 	logs := utils.LogHelper(req)
 
 	var request struct {
-		ClientId string `json:"client_id"`
-		Quarter int `json:"quarter"`
-		Date string `json:"date"`
+		ClientId  string `json:"client_id"`
+		Monthly   string `json:"monthly"`
+		Quarterly string `json:"quarterly"`
 	}
 
 	dataByte, err := ioutil.ReadAll(req.Body)
@@ -224,57 +278,102 @@ func (context *SalesIncentiveContext) GetSingleUserTargetChart(w http.ResponseWr
 	}
 
 	var (
-		isQuarterReport bool
-		date time.Time
+		isQuarterReport bool = true
+		date            time.Time
+		quarter         int
 	)
 
-	if request.Date == "" {
-		utils.LogObj.Error(logs.RequestID, " : date type is missing, id: "+request.Date)
-		w.Write([]byte(`{"error": "date type is missing"}`))
+	if request.Monthly == "" && request.Quarterly == "" {
+		utils.LogObj.Error(logs.RequestID, " : monthy and quarterly type found empty, id: "+request.ClientId)
+		w.Write([]byte(`{"error": "monthy and quartlerly type is blank"}`))
 		w.WriteHeader(http.StatusBadRequest)
 
 		logs.ResponseStatus = http.StatusBadRequest
 		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
-		logs.ResponseBody = string([]byte(`{"error": "date type is missing"}`))
+		logs.ResponseBody = string([]byte(`{"error": "monthy and quartlerly type is blank"}`))
 
 		//utils.LogObj.WriteLogs(logs)
 		return
 	}
 
-	date, err = time.Parse("01/2006", request.Date)
-	if err != nil {
+	if request.Monthly != "" {
 
-		date, err = time.Parse("2006", request.Date)
+		date, err = time.Parse("01-2006", strings.TrimSpace(request.Monthly))
 		if err != nil {
-			utils.LogObj.Error(logs.RequestID, " : incorrect saleDate, id: "+request.ClientId+" saleDate: "+request.Date)
-			w.Write([]byte(`{"error": "incorrect saleDate format: {for quarterly format use - '2006'} & {for monthly format use - '11/2006'}"}`))
+			utils.LogObj.Error(logs.RequestID, " : monthy type is incorrect, id: "+request.ClientId+" monthly: "+request.Monthly)
+			w.Write([]byte(`{"error": "monthy type is incorrect, use '06-2006' format."}`))
 			w.WriteHeader(http.StatusBadRequest)
 
 			logs.ResponseStatus = http.StatusBadRequest
 			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
-			logs.ResponseBody = string([]byte(`{"error": "incorrect saleDate format: {for quarterly format use - '2006'} & {for monthly format use - '11/2006'}"}`))
+			logs.ResponseBody = string([]byte(`{"error": "monthy type is incorrect, use '06-2006' format."}`))
 
 			//utils.LogObj.WriteLogs(logs)
 			return
 		}
 
-		isQuarterReport = true
+		isQuarterReport = false
 	}
 
-	if isQuarterReport && (request.Quarter < 1 || request.Quarter > 4) {
-		utils.LogObj.Error(logs.RequestID, " : incorrect quarter value, id: "+request.ClientId+" quarter: "+request.Date)
-		w.Write([]byte(`{"error": "incorrect quarter value - should be between 1 and 4"}`))
-		w.WriteHeader(http.StatusBadRequest)
+	if isQuarterReport && request.Quarterly != "" {
 
-		logs.ResponseStatus = http.StatusBadRequest
-		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
-		logs.ResponseBody = string([]byte(`{"error": "incorrect quarter value - should be between 1 and 4""}`))
+		req := strings.Split(strings.TrimSpace(request.Quarterly), "-")
+		if len(req) < 2 {
+			utils.LogObj.Error(logs.RequestID, " : quarterly type is incorrect, id: "+request.ClientId+" quarterly: "+request.Quarterly)
+			w.Write([]byte(`{"error": "quarterly type is incorrect, avoid spaces."}`))
+			w.WriteHeader(http.StatusBadRequest)
 
-		//utils.LogObj.WriteLogs(logs)
-		return
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "quarterly type is incorrect, avoid spaces."}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
+		quarter, err = strconv.Atoi(strings.TrimSpace(req[0]))
+		if err != nil {
+			utils.LogObj.Error(logs.RequestID, " : quarter value not found, id: "+request.ClientId+" quarterly: "+req[0]+".")
+			w.Write([]byte(`{"error": "quarter value not found"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "quarter value not found"}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+
+		} else if quarter < 1 || quarter > 4 {
+			utils.LogObj.Error(logs.RequestID, " : incorrect quarter value, id: "+request.ClientId+" quarter: "+req[0])
+			w.Write([]byte(`{"error": "incorrect quarter value - should be between 1 and 4"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "incorrect quarter value - should be between 1 and 4""}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
+		date, err = time.Parse("2006", strings.TrimSpace(req[1]))
+		if err != nil {
+			utils.LogObj.Error(logs.RequestID, " : incorrect year value, id: "+request.ClientId+" year: "+req[1])
+			w.Write([]byte(`{"error": "incorrect year value"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "incorrect year value"}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
 	}
 
-	targetData, err := context.SalesIncentiveService.FetchSingleUserTargetChart(id, date, request.Quarter, isQuarterReport)
+	targetData, err := context.SalesIncentiveService.FetchPromoterTargetChart(id, date, quarter, isQuarterReport)
 	if err != nil {
 		utils.LogObj.Error(logs.RequestID, " : failed to fetch user incentive, err: "+err.Error()+" id: "+request.ClientId)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -301,6 +400,390 @@ func (context *SalesIncentiveContext) GetSingleUserTargetChart(w http.ResponseWr
 	logs.ResponseBody = string(byteRsp)
 
 	utils.LogObj.Info(logs.RequestID, " : TargetChart Response fetched successfully for clientId: "+request.ClientId)
-
 	//utils.LogObj.WriteLogs(logs)
+}
+
+func (context *SalesIncentiveContext) GetSaleCountPerPlan(w http.ResponseWriter, req *http.Request) {
+
+	logs := utils.LogHelper(req)
+
+	var request struct {
+		ClientId  string `json:"client_id"`
+		Monthly   string `json:"monthly"`
+		Quarterly string `json:"quarterly"`
+		Product   string `json:"product"`
+	}
+
+	dataByte, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to read req body")
+		w.Write([]byte(`{"error": "internal error failed to read req body"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+
+		logs.ResponseStatus = http.StatusInternalServerError
+		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		logs.ResponseBody = string([]byte(`{"error": "internal error failed to read req body"}`))
+
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	err = json.Unmarshal(dataByte, &request)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to unmarshall request")
+		w.Write([]byte(`{"error": "internal request unmarshalling error"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+
+		logs.ResponseStatus = http.StatusInternalServerError
+		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		logs.ResponseBody = string([]byte(`{"error": "internal request unmarshalling error"}`))
+
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	id, err := strconv.Atoi(request.ClientId)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : incorrect clientID type, id: "+request.ClientId)
+		w.Write([]byte(`{"error": "incorrect clientID type"}`))
+		w.WriteHeader(http.StatusBadRequest)
+
+		logs.ResponseStatus = http.StatusBadRequest
+		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		logs.ResponseBody = string([]byte(`{"error": "incorrect clientID type"}`))
+
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	product := strings.ToUpper(request.Product)
+	if !(product == commons.HBBCategory || product == commons.BaqatiCategory || product == commons.HayyakCategory || product == commons.UpgradeCategory) {
+
+		utils.LogObj.Error(logs.RequestID, " : incorrect product type, id: "+request.ClientId+" productType: "+product)
+		w.Write([]byte(`{"error": "incorrect product type"}`))
+		w.WriteHeader(http.StatusBadRequest)
+
+		logs.ResponseStatus = http.StatusBadRequest
+		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		logs.ResponseBody = string([]byte(`{"error": "incorrect product type"}`))
+
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	var (
+		isQuarterReport bool = true
+		date            time.Time
+		quarter         int
+	)
+
+	if request.Monthly == "" && request.Quarterly == "" {
+		utils.LogObj.Error(logs.RequestID, " : monthy and quarterly type found empty, id: "+request.ClientId)
+		w.Write([]byte(`{"error": "monthy and quartlerly type is blank"}`))
+		w.WriteHeader(http.StatusBadRequest)
+
+		logs.ResponseStatus = http.StatusBadRequest
+		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		logs.ResponseBody = string([]byte(`{"error": "monthy and quartlerly type is blank"}`))
+
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	if request.Monthly != "" {
+
+		date, err = time.Parse("01-2006", strings.TrimSpace(request.Monthly))
+		if err != nil {
+			utils.LogObj.Error(logs.RequestID, " : monthy type is incorrect, id: "+request.ClientId+" monthly: "+request.Monthly)
+			w.Write([]byte(`{"error": "monthy type is incorrect, use '06-2006' format."}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "monthy type is incorrect, use '06-2006' format."}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
+		isQuarterReport = false
+	}
+
+	if isQuarterReport && request.Quarterly != "" {
+
+		req := strings.Split(strings.TrimSpace(request.Quarterly), "-")
+		if len(req) < 2 {
+			utils.LogObj.Error(logs.RequestID, " : quarterly type is incorrect, id: "+request.ClientId+" quarterly: "+request.Quarterly)
+			w.Write([]byte(`{"error": "quarterly type is incorrect, avoid spaces."}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "quarterly type is incorrect, avoid spaces."}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
+		quarter, err = strconv.Atoi(strings.TrimSpace(req[0]))
+		if err != nil {
+			utils.LogObj.Error(logs.RequestID, " : quarter value not found, id: "+request.ClientId+" quarterly: "+req[0]+".")
+			w.Write([]byte(`{"error": "quarter value not found"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "quarter value not found"}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+
+		} else if quarter < 1 || quarter > 4 {
+			utils.LogObj.Error(logs.RequestID, " : incorrect quarter value, id: "+request.ClientId+" quarter: "+req[0])
+			w.Write([]byte(`{"error": "incorrect quarter value - should be between 1 and 4"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "incorrect quarter value - should be between 1 and 4""}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
+		date, err = time.Parse("2006", strings.TrimSpace(req[1]))
+		if err != nil {
+			utils.LogObj.Error(logs.RequestID, " : incorrect year value, id: "+request.ClientId+" year: "+req[1])
+			w.Write([]byte(`{"error": "incorrect year value"}`))
+			w.WriteHeader(http.StatusBadRequest)
+
+			logs.ResponseStatus = http.StatusBadRequest
+			logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+			logs.ResponseBody = string([]byte(`{"error": "incorrect year value"}`))
+
+			//utils.LogObj.WriteLogs(logs)
+			return
+		}
+
+	}
+
+	respData, err := context.SalesIncentiveService.FetchSaleCountPerPlan(id, product, date, quarter, isQuarterReport)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to fetch user incentive, err: "+err.Error()+" id: "+request.ClientId)
+		w.WriteHeader(http.StatusInternalServerError)
+
+		logs.ResponseStatus = http.StatusInternalServerError
+		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	byteRsp, err := json.Marshal(respData)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to marshal client resp, err: "+err.Error()+" id: "+request.ClientId)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(byteRsp)
+	w.WriteHeader(http.StatusOK)
+
+	logs.ResponseStatus = http.StatusOK
+	logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+	logs.ResponseBody = string(byteRsp)
+
+	utils.LogObj.Info(logs.RequestID, " : SaleCountPerPlan Response fetched successfully for clientId: "+request.ClientId)
+	//utils.LogObj.WriteLogs(logs)
+}
+
+func (context *SalesIncentiveContext) GenerateOTP(w http.ResponseWriter, req *http.Request) {
+
+	logs := utils.LogHelper(req)
+
+	var request struct {
+		ClientId string `json:"client_id"`
+	}
+
+	dataByte, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to read req body "+err.Error())
+		w.Write([]byte(`{"error": "INTERNAL SERVER ERROR"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+
+		// logs.ResponseStatus = http.StatusInternalServerError
+		// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		// logs.ResponseBody = string([]byte(`{"error": "internal error failed to read req body"}`))
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	err = json.Unmarshal(dataByte, &request)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to unmarshall request "+err.Error())
+		w.Write([]byte(`{"error": "request unmarshalling error"}`))
+		w.WriteHeader(http.StatusBadRequest)
+
+		// logs.ResponseStatus = http.StatusBadRequest
+		// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		// logs.ResponseBody = string([]byte(`{"error": "request unmarshalling error"}`))
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	id, err := strconv.Atoi(request.ClientId)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : incorrect clientID type, id: "+request.ClientId)
+		w.Write([]byte(`{"error": "incorrect clientID type"}`))
+		w.WriteHeader(http.StatusBadRequest)
+
+		// logs.ResponseStatus = http.StatusBadRequest
+		// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		// logs.ResponseBody = string([]byte(`{"error": "incorrect clientID type"}`))
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	var resp struct {
+		Error string `json:"error"`
+	}
+
+	genErr := context.SalesIncentiveService.GenerateOTP(id, logs.RequestID)
+	if genErr != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to generate otp, err: "+genErr.ErrorMessage+" id: "+request.ClientId)
+
+		resp.Error = commons.ErrorMap[genErr.Code]
+		byteRsp, _ := json.Marshal(resp)
+
+		w.Write(byteRsp)
+
+		if genErr.Code == 1001 {
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+
+		// logs.ResponseStatus = http.StatusInternalServerError
+		// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	resp.Error = "nil"
+
+	byteRsp, _ := json.Marshal(resp)
+
+	w.Write(byteRsp)
+	w.WriteHeader(http.StatusOK)
+
+	// logs.ResponseStatus = http.StatusOK
+	// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+	// logs.ResponseBody = string(byteRsp)
+
+	utils.LogObj.Info(logs.RequestID, " : Generated Otp successfully for clientId: "+request.ClientId)
+}
+
+func (context *SalesIncentiveContext) VerifyOTP(w http.ResponseWriter, req *http.Request) {
+
+	logs := utils.LogHelper(req)
+
+	var request struct {
+		ClientId string `json:"client_id"`
+		Otp      int    `json:"otp"`
+	}
+
+	dataByte, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to read req body "+err.Error())
+		w.Write([]byte(`{"error": "internal error failed to read req body"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+
+		// logs.ResponseStatus = http.StatusInternalServerError
+		// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		// logs.ResponseBody = string([]byte(`{"error": "internal error failed to read req body"}`))
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	err = json.Unmarshal(dataByte, &request)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to unmarshall request "+err.Error())
+		w.Write([]byte(`{"error": "internal request unmarshalling error"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+
+		logs.ResponseStatus = http.StatusInternalServerError
+		logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		logs.ResponseBody = string([]byte(`{"error": "internal request unmarshalling error"}`))
+
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	id, err := strconv.Atoi(request.ClientId)
+	if err != nil {
+		utils.LogObj.Error(logs.RequestID, " : incorrect clientID type, id: "+request.ClientId)
+		w.Write([]byte(`{"error": "incorrect clientID type"}`))
+		w.WriteHeader(http.StatusBadRequest)
+
+		// logs.ResponseStatus = http.StatusBadRequest
+		// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		// logs.ResponseBody = string([]byte(`{"error": "incorrect clientID type"}`))
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	if request.Otp == 0 {
+		utils.LogObj.Error(logs.RequestID, " : incorrect otp, id: "+request.ClientId)
+		w.Write([]byte(`{"error": "incorrect OTP"}`))
+		w.WriteHeader(http.StatusBadRequest)
+
+		// logs.ResponseStatus = http.StatusBadRequest
+		// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		// logs.ResponseBody = string([]byte(`{"error": "incorrect OTP"}`))
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	var resp struct {
+		Authenticated bool   `json:"authenticated"`
+		Error         string `json:"error"`
+	}
+
+	isValid, genErr := context.SalesIncentiveService.VefiryOTP(id, request.Otp)
+	if genErr != nil {
+		utils.LogObj.Error(logs.RequestID, " : failed to validate otp, err: "+genErr.ErrorMessage+" id: "+request.ClientId)
+
+		resp.Authenticated = isValid
+		resp.Error = commons.ErrorMap[genErr.Code]
+
+		byteRsp, _ := json.Marshal(resp)
+
+		w.Write(byteRsp)
+
+		if genErr.Code == 1001 {
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+
+		// logs.ResponseStatus = http.StatusBadRequest
+		// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+		// logs.ResponseBody = string(byteRsp)
+		//utils.LogObj.WriteLogs(logs)
+		return
+	}
+
+	resp.Error = "nil"
+	resp.Authenticated = isValid
+
+	byteRsp, _ := json.Marshal(resp)
+
+	w.Write(byteRsp)
+	w.WriteHeader(http.StatusOK)
+
+	// logs.ResponseStatus = http.StatusOK
+	// logs.ResponseHeaderAndValues = fmt.Sprint(w.Header())
+	// logs.ResponseBody = string(byteRsp)
+
+	utils.LogObj.Info(logs.RequestID, " : Verified Otp successfully for clientId: "+request.ClientId)
 }

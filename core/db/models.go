@@ -5,6 +5,36 @@ import (
 	"time"
 )
 
+type UserRecord struct {
+	EmpId                      int
+	Created                    time.Time
+	ReportingManager           int
+	Isquarterly                bool
+	Month                      int
+	Quarter                    int
+	Hayyak_sales_count         int
+	Hayyak_target              float64
+	Hayyak_payout              float64
+	Hayyak_extra_payout        float64
+	Hayyak_achieved_percentage float64
+	Hbb_sales_count            int
+	Hbb_target                 float64
+	Hbb_payout                 float64
+	Hbb_extra_payout           float64
+	Hbb_achieved_percentage    float64
+	Baqati_sales_count         int
+	Baqati_target              float64
+	Baqati_payout              float64
+	Baqati_extra_payout        float64
+	Baqati_achieved_percentage float64
+	Upgrade_sales_count        int
+	Upgrade_target             float64
+	Upgrade_payout             float64
+	Upgrade_extra_payout       float64
+	Uprade_achieved_percentage float64
+	Total_payout               float64
+}
+
 type Transaction struct {
 	Reqion          string
 	Outlet          string
@@ -20,12 +50,13 @@ type Transaction struct {
 }
 
 type Employee struct {
-	Id       int
-	Name     string
-	Position string
-	Outlet   string
-	Region   string
-	Remark   string
+	Id        int
+	Name      string
+	Position  string
+	Outlet    string
+	Region    string
+	MobileNos string
+	Remark    string
 }
 
 type SaleRecord struct {
@@ -59,7 +90,7 @@ type TotalIncentive struct {
 
 type TargetAchievementData struct {
 	SalesCount         int     `json:"sales_count"`
-	Target             float64     `json:"target"`
+	Target             float64 `json:"target"`
 	AchievedPercentage float64 `json:"achieved_percentage"`
 	Error              string  `json:"error"`
 }
@@ -69,6 +100,12 @@ type ChartDataResponse struct {
 	Baqati  *TargetAchievementData `json:"Baqati"`
 	Hayyak  *TargetAchievementData `json:"Hayyak"`
 	Upgrade *TargetAchievementData `json:"Upgrade"`
+}
+
+type SaleCountPerPlan struct {
+	CurrentPlan string `json:"current_plan"`
+	//PreviousPlan string `json:"previous_plan"`
+	Quantity int `json:"qty"`
 }
 
 type ProductGrpTarget struct {
@@ -112,6 +149,24 @@ type ValueOfPoint struct {
 type MaxPayout struct {
 	Mutex     sync.RWMutex
 	Payoutmap map[string]float64
+}
+
+type OtpModel struct {
+	StaffID     int
+	OTP         int
+	Retry       int
+	CreatedTime time.Time
+	ExpiryTime  time.Time
+}
+
+type ManagerHierarchy struct {
+	ManagerID             int
+	UnderManagerEmployees []int
+}
+
+type UserLead struct {
+	EmpID    int
+	ReportTo int
 }
 
 var SalesTrgt SaleTarget

@@ -1,0 +1,41 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sen="http://www.omantel.om/esb/messages/sendnotification">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <sen:SendNotificationRq>
+         <sen:RequestHeader>
+            <FunctionId>17002004</FunctionId>
+            <TransactionId>0</TransactionId>
+            <RequestId>XXXX_1234567890</RequestId>
+            <RequestorChannelId>XXXX</RequestorChannelId>
+            <RequestorUserId>XXXX</RequestorUserId>
+            <Timestamp>2017-07-04T17:30:11.1234</Timestamp>
+         </sen:RequestHeader>
+         <sen:RequestBody>
+            <sen:Notification>
+               <NotificationType>SMS</NotificationType>
+               <NotificationDateTime>2015-12-31 23:59:59.334</NotificationDateTime>
+               <NotificationLanguage>1</NotificationLanguage>
+               <ShortCode>Omantel</ShortCode>
+               <IsDeliveryStatusRequired>1</IsDeliveryStatusRequired>
+               <NotificaitionValidityPeriod>2017-08-12T12:30:11.1234</NotificaitionValidityPeriod>
+               <Body>SMS Message content is here.</Body>
+               <!--0 for English text 
+				8 for other language text
+				4 for binary messages like WAP
+				16 for flash sms
+				and It will be commmon for all SMSs-->
+               <BodyCoding>0</BodyCoding>
+               <!--0 for English text
+						1 for other language text
+						2 for binary messages like WAP
+						It will be commmon for all SMSs-->
+               <BodyContentType>0</BodyContentType>
+               <ReceiverList>
+                  <!--One receiver only 8 digit Omantel MSISDN without country code-->
+                  <Receiver>92506938</Receiver>
+               </ReceiverList>
+            </sen:Notification>
+         </sen:RequestBody>
+      </sen:SendNotificationRq>
+   </soapenv:Body>
+</soapenv:Envelope>
