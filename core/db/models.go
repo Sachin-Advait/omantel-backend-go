@@ -6,33 +6,37 @@ import (
 )
 
 type UserRecord struct {
-	EmpId                      int
-	Created                    time.Time
-	ReportingManager           int
-	Isquarterly                bool
-	Month                      int
-	Quarter                    int
-	Hayyak_sales_count         int
-	Hayyak_target              float64
-	Hayyak_payout              float64
-	Hayyak_extra_payout        float64
-	Hayyak_achieved_percentage float64
-	Hbb_sales_count            int
-	Hbb_target                 float64
-	Hbb_payout                 float64
-	Hbb_extra_payout           float64
-	Hbb_achieved_percentage    float64
-	Baqati_sales_count         int
-	Baqati_target              float64
-	Baqati_payout              float64
-	Baqati_extra_payout        float64
-	Baqati_achieved_percentage float64
-	Upgrade_sales_count        int
-	Upgrade_target             float64
-	Upgrade_payout             float64
-	Upgrade_extra_payout       float64
-	Uprade_achieved_percentage float64
-	Total_payout               float64
+	EmpId                        int
+	Created                      time.Time
+	ReportingManager             int
+	Isquarterly                  bool
+	Month                        int
+	Quarter                      int
+	Hayyak_sales_count           int
+	Hayyak_target                float64
+	Hayyak_payout                float64
+	Hayyak_extra_payout          float64
+	Hayyak_achieved_percentage   float64
+	Hbb_sales_count              int
+	Hbb_target                   float64
+	Hbb_payout                   float64
+	Hbb_extra_payout             float64
+	Hbb_achieved_percentage      float64
+	Baqati_sales_count           int
+	Baqati_target                float64
+	Baqati_payout                float64
+	Baqati_extra_payout          float64
+	Baqati_achieved_percentage   float64
+	Upgrade_sales_count          int
+	Upgrade_target               float64
+	Upgrade_payout               float64
+	Upgrade_extra_payout         float64
+	Uprade_achieved_percentage   float64
+	Total_payout                 float64
+	HBBSaleCountPerPlanArray     string
+	HayyakSaleCountPerPlanArray  string
+	BaqatiSaleCountPerPlanArray  string
+	UpgradeSaleCountPerPlanArray string
 }
 
 type Transaction struct {
@@ -64,6 +68,7 @@ type SaleRecord struct {
 	CurrentProduct  string
 	Quantity        int
 	Category        string
+	SaleDate        time.Time
 }
 
 type SaleTransaction struct {
@@ -88,6 +93,15 @@ type TotalIncentive struct {
 	TotalPay float64 `json:"total_pay"`
 }
 
+type UserAllInfo struct {
+	TotalIncentive               *TotalIncentive
+	ChartDataResponse            *ChartDataResponse
+	HBBSaleCountPerPlanArray     map[string]int
+	HayyakSaleCountPerPlanArray  map[string]int
+	BaqatiSaleCountPerPlanArray  map[string]int
+	UpgradeSaleCountPerPlanArray map[string]int
+}
+
 type TargetAchievementData struct {
 	SalesCount         int     `json:"sales_count"`
 	Target             float64 `json:"target"`
@@ -106,6 +120,15 @@ type SaleCountPerPlan struct {
 	CurrentPlan string `json:"current_plan"`
 	//PreviousPlan string `json:"previous_plan"`
 	Quantity int `json:"qty"`
+}
+
+type UserHierarchy struct {
+	EmployeeID     int
+	OutletManager  int
+	Manager        int
+	SeniorManager  int
+	GeneralManager int
+	VicePresident  int
 }
 
 type ProductGrpTarget struct {
@@ -152,11 +175,13 @@ type MaxPayout struct {
 }
 
 type OtpModel struct {
-	StaffID     int
-	OTP         int
-	Retry       int
-	CreatedTime time.Time
-	ExpiryTime  time.Time
+	StaffID       int
+	StaffName     string
+	StaffPosition string
+	OTP           int
+	Retry         int
+	CreatedTime   time.Time
+	ExpiryTime    time.Time
 }
 
 type ManagerHierarchy struct {
@@ -167,6 +192,11 @@ type ManagerHierarchy struct {
 type UserLead struct {
 	EmpID    int
 	ReportTo int
+}
+
+type ReportingStaffIDAndName struct {
+	ID   int
+	Name string
 }
 
 var SalesTrgt SaleTarget

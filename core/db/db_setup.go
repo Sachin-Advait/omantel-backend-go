@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -21,6 +22,7 @@ type PsqlOperation interface {
 	SetMaxOpenConns(n int)
 	SetConnMaxIdleTime(d time.Duration)
 	SetConnMaxLifetime(d time.Duration)
+	Begin() (*sql.Tx, error)
 	PingContext(ctx context.Context) error
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
@@ -47,8 +49,8 @@ func NewDatabaseSetup(conf *config.Database) *DBImplementation {
 
 	dbConn.SetMaxIdleConns(conf.MaxIdelConn)
 	dbConn.SetMaxOpenConns(conf.MaxOpenConn)
-	dbConn.SetConnMaxIdleTime(90)
-	dbConn.SetConnMaxLifetime(30)
+	dbConn.SetConnMaxIdleTime(30)
+	dbConn.SetConnMaxLifetime(90)
 	//dbConn.SetConnMaxLifetime(24 * time.Hour)
 
 	ctx := context.Background()
@@ -586,6 +588,91 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 	return trx, nil
 }
 
+func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (map[int]*SaleTransaction, map[int]*SaleTransaction, error) {
+
+	rows, err := dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category, b.sales_date from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('year' from b.sales_date)= $2", clientID, time.Now().Year())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var (
+		position      string
+		outlet        string
+		region        string
+		prev_product  string
+		curr_product  string
+		quantity      int
+		product_group string
+		category      string
+		sale_date     time.Time
+	)
+
+	monthly := make(map[int]*SaleTransaction)
+	quarterly := make(map[int]*SaleTransaction)
+
+	for rows.Next() {
+		if err := rows.Scan(&position, &outlet, &region, &prev_product, &curr_product, &quantity, &product_group, &category, &sale_date); err != nil {
+			return nil, nil, err
+		}
+
+		rcrd := &SaleRecord{
+			Quantity:        quantity,
+			Category:        category,
+			PreviousProduct: prev_product,
+			CurrentProduct:  curr_product,
+			SaleDate:        sale_date,
+		}
+
+		v, ok := monthly[int(sale_date.Month())]
+		if !ok {
+			trx := &SaleTransaction{}
+			trx.EmpID = clientID
+			trx.Position = position
+			trx.Outlet = outlet
+			trx.Region = region
+			trx.SaleRecords = map[string][]*SaleRecord{
+				product_group: {rcrd},
+			}
+
+			monthly[int(sale_date.Month())] = trx
+		} else {
+
+			if v.SaleRecords[product_group] == nil {
+				v.SaleRecords[product_group] = make([]*SaleRecord, 0)
+			}
+
+			v.SaleRecords[product_group] = append(v.SaleRecords[product_group], rcrd)
+
+			monthly[int(sale_date.Month())] = v
+		}
+
+		v, ok = quarterly[getQuarterFromMonth(int(sale_date.Month()))]
+		if !ok {
+			trx := &SaleTransaction{}
+			trx.EmpID = clientID
+			trx.Position = position
+			trx.Outlet = outlet
+			trx.Region = region
+			trx.SaleRecords = map[string][]*SaleRecord{
+				product_group: {rcrd},
+			}
+
+			quarterly[getQuarterFromMonth(int(sale_date.Month()))] = trx
+		} else {
+
+			if v.SaleRecords[product_group] == nil {
+				v.SaleRecords[product_group] = make([]*SaleRecord, 0)
+			}
+
+			v.SaleRecords[product_group] = append(v.SaleRecords[product_group], rcrd)
+
+			quarterly[getQuarterFromMonth(int(sale_date.Month()))] = v
+		}
+	}
+
+	return monthly, quarterly, nil
+}
+
 // FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
 func (dbConn *DBImplementation) FetchEmployeeContactNumber(clientID int) (int, *commons.GenericError) {
 
@@ -648,17 +735,14 @@ func (dbConn *DBImplementation) InsertStaffOTP(otpModel *OtpModel) *commons.Gene
 
 func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*OtpModel, *commons.GenericError) {
 
-	rows, err := dbConn.Operation.Query("select otp, retry, expiryTime from user_authentication_table where emp_id= $1", clientID)
+	rows, err := dbConn.Operation.Query("select a.name, a.usr_position, b.otp, b.retry, b.expiryTime from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
 	if err != nil {
 		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
 	}
 
-	var (
-		otp        int
-		retry      int
-		count      int
-		expiryTime time.Time
-	)
+	var count int
+
+	otModel := &OtpModel{}
 
 	for rows.Next() {
 
@@ -666,70 +750,53 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*OtpModel, *comm
 			return nil, &commons.GenericError{Code: 1001, ErrorMessage: "found more than on record"}
 		}
 
-		if err := rows.Scan(&otp, &retry, &expiryTime); err != nil {
+		if err := rows.Scan(&otModel.StaffName, &otModel.StaffPosition, &otModel.OTP, &otModel.Retry, &otModel.ExpiryTime); err != nil {
 			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
 		}
 
 		count++
 	}
 
-	otModel := &OtpModel{
-		OTP:        otp,
-		Retry:      retry,
-		ExpiryTime: expiryTime,
-	}
-
 	return otModel, nil
 }
 
-// FetchAllGivenPositionEmpIdAndTheirManager returns an array of all employees of the given position along with their managers
+// FetchAllGivenPositionEmpIdAndTheirManager returns an array of all employees of the given position along with their managers, returns empty array if no records found
 func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(position string) ([]*UserLead, *commons.GenericError) {
 
 	if !(position == commons.VicePresident || position == commons.GeneralManager || position == commons.SeniorManager || position == commons.Manager || position == commons.OutletManager || position == commons.Promoter) {
 		return nil, &commons.GenericError{Code: 1002, ErrorMessage: "incorrect position req- " + position}
 	}
 
-	rows, err := dbConn.Operation.Query("select a.emp_id, b.outlet_manager, b.manager, b.senior_manager, b.general_manager, b.vice_president from user_master_table a inner join user_hierarchy_table b on a.emp_id = b.emp_id where a.usr_position= $1", position)
+	var query string
+
+	switch position {
+	case commons.VicePresident:
+		query = "select distinct vice_president, 0 from user_hierarchy_table"
+	case commons.GeneralManager:
+		query = "select distinct general_manager, vice_president from user_hierarchy_table"
+	case commons.SeniorManager:
+		query = "select distinct senior_manager, general_manager from user_hierarchy_table"
+	case commons.Manager:
+		query = "select distinct manager, senior_manager from user_hierarchy_table"
+	case commons.OutletManager:
+		query = "select distinct outlet_manager, manager from user_hierarchy_table"
+	case commons.Promoter:
+		query = "select distinct emp_id, outlet_manager from user_hierarchy_table"
+	}
+
+	rows, err := dbConn.Operation.Query(query)
 	if err != nil {
 		return nil, &commons.GenericError{Code: 1001, ErrorMessage: "fetch emp nd manager err-" + err.Error()}
 	}
 
-	var (
-		id             int
-		outletManager  int
-		manager        int
-		seniorManager  int
-		generalManager int
-		vice_president int
-		usr            *UserLead
-		array          = make([]*UserLead, 0)
-	)
+	var array = make([]*UserLead, 0)
 
 	for rows.Next() {
 
-		if err := rows.Scan(&id, &outletManager, &manager, &seniorManager, &generalManager, &vice_president); err != nil {
+		usr := &UserLead{}
+
+		if err := rows.Scan(&usr.EmpID, &usr.ReportTo); err != nil {
 			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
-		}
-
-		usr = &UserLead{
-			EmpID: id,
-		}
-
-		switch {
-		case vice_president != 0:
-			usr.ReportTo = vice_president
-			break
-		case generalManager != 0:
-			usr.ReportTo = generalManager
-			break
-		case manager != 0:
-			usr.ReportTo = manager
-			break
-		case outletManager != 0:
-			usr.ReportTo = outletManager
-			break
-		default:
-			break
 		}
 
 		array = append(array, usr)
@@ -738,14 +805,27 @@ func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(positi
 	return array, nil
 }
 
-// FetchAllEmployeesReportingToGivenManager returns all employees reporting to given manager
-func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(managerPosition string, managerID int) ([]int, *commons.GenericError) {
+// FetchAllEmployeesReportingToGivenManager returns all employees reporting to given manager, returns empty array if no records found
+func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(managerPosition string, managerID int) ([]*ReportingStaffIDAndName, *commons.GenericError) {
 
 	if !(managerPosition == "vice_president" || managerPosition == "general_manager" || managerPosition == "senior_manager" || managerPosition == "manager" || managerPosition == "outlet_manager") {
 		return nil, &commons.GenericError{Code: 1002, ErrorMessage: "incorrect position manager req- " + managerPosition}
 	}
 
-	query := "select distinct emp_id from user_hierarchy_table where " + managerPosition + "= $1"
+	var query string
+
+	switch managerPosition {
+	case "vice_president":
+		query = "select distinct a.general_manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.general_manager=b.emp_id where a.vice_president= $1"
+	case "general_manager":
+		query = "select distinct a.senior_manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.senior_manager=b.emp_id where a.general_manager= $1"
+	case "senior_manager":
+		query = "select distinct a.manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.manager=b.emp_id where a.senior_manager= $1"
+	case "manager":
+		query = "select distinct a.outlet_manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager= $1"
+	case "outlet_manager":
+		query = "select distinct a.emp_id, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.outlet_manager= $1"
+	}
 
 	rows, err := dbConn.Operation.Query(query, managerID)
 	if err != nil {
@@ -753,17 +833,18 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 	}
 
 	var (
-		id    int
-		array = make([]int, 0)
+		array = make([]*ReportingStaffIDAndName, 0)
 	)
 
 	for rows.Next() {
 
-		if err := rows.Scan(&id); err != nil {
-			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		usr := &ReportingStaffIDAndName{}
+
+		if err := rows.Scan(&usr.ID, &usr.Name); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: "FetchAllEmployeesReportingToGivenManagerRole next row err: " + err.Error()}
 		}
 
-		array = append(array, id)
+		array = append(array, usr)
 	}
 
 	return array, nil
@@ -775,7 +856,7 @@ func (dbConn *DBImplementation) InsertEmployeeRecord(usr *UserRecord) *commons.G
 	// fmt.Printf("userRecord: %+v\n", *usr)
 
 	//add where clause
-	_, err := dbConn.Operation.Query("INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27);",
+	_, err := dbConn.Operation.Query("INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31);",
 		usr.EmpId,
 		usr.Created,
 		usr.ReportingManager,
@@ -803,6 +884,10 @@ func (dbConn *DBImplementation) InsertEmployeeRecord(usr *UserRecord) *commons.G
 		usr.Upgrade_payout,
 		usr.Upgrade_extra_payout,
 		usr.Total_payout,
+		usr.HayyakSaleCountPerPlanArray,
+		usr.HBBSaleCountPerPlanArray,
+		usr.BaqatiSaleCountPerPlanArray,
+		usr.UpgradeSaleCountPerPlanArray,
 	)
 
 	if err != nil {
@@ -812,9 +897,132 @@ func (dbConn *DBImplementation) InsertEmployeeRecord(usr *UserRecord) *commons.G
 	return nil
 }
 
+// InsertEmployeeMultipleRecords inserts each users multiple statistical data daily in db, and is updated everyday once
+func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*UserRecord) *commons.GenericError {
+
+	if len(usr) == 0 {
+		return nil
+	}
+
+	valueStrings := []string{}
+	valueArgs := []interface{}{}
+
+	count := 0
+	for _, w := range usr {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v)", count+1, count+2, count+3, count+4, count+5, count+6, count+7, count+8, count+9, count+10, count+11, count+12, count+13, count+14, count+15, count+16, count+17, count+18, count+19, count+20, count+21, count+22, count+23, count+24, count+25, count+26, count+27, count+28, count+29, count+30, count+31))
+
+		valueArgs = append(valueArgs, w.EmpId)
+		valueArgs = append(valueArgs, w.Created)
+		valueArgs = append(valueArgs, w.ReportingManager)
+		valueArgs = append(valueArgs, w.Isquarterly)
+		valueArgs = append(valueArgs, w.Month)
+		valueArgs = append(valueArgs, w.Quarter)
+		valueArgs = append(valueArgs, w.Hayyak_sales_count)
+		valueArgs = append(valueArgs, w.Hayyak_target)
+		valueArgs = append(valueArgs, w.Hayyak_achieved_percentage)
+		valueArgs = append(valueArgs, w.Hayyak_payout)
+		valueArgs = append(valueArgs, w.Hayyak_extra_payout)
+		valueArgs = append(valueArgs, w.Hbb_sales_count)
+		valueArgs = append(valueArgs, w.Hbb_target)
+		valueArgs = append(valueArgs, w.Hbb_achieved_percentage)
+		valueArgs = append(valueArgs, w.Hbb_payout)
+		valueArgs = append(valueArgs, w.Hbb_extra_payout)
+		valueArgs = append(valueArgs, w.Baqati_sales_count)
+		valueArgs = append(valueArgs, w.Baqati_target)
+		valueArgs = append(valueArgs, w.Baqati_achieved_percentage)
+		valueArgs = append(valueArgs, w.Baqati_payout)
+		valueArgs = append(valueArgs, w.Baqati_extra_payout)
+		valueArgs = append(valueArgs, w.Upgrade_sales_count)
+		valueArgs = append(valueArgs, w.Upgrade_target)
+		valueArgs = append(valueArgs, w.Uprade_achieved_percentage)
+		valueArgs = append(valueArgs, w.Upgrade_payout)
+		valueArgs = append(valueArgs, w.Upgrade_extra_payout)
+		valueArgs = append(valueArgs, w.Total_payout)
+		valueArgs = append(valueArgs, w.HayyakSaleCountPerPlanArray)
+		valueArgs = append(valueArgs, w.HBBSaleCountPerPlanArray)
+		valueArgs = append(valueArgs, w.BaqatiSaleCountPerPlanArray)
+		valueArgs = append(valueArgs, w.UpgradeSaleCountPerPlanArray)
+
+		count += 31
+	}
+
+	smt := `INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan)
+    VALUES %s ON CONFLICT (emp_id, months, quarter) DO NOTHING`
+	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
+
+	tx, err := dbConn.Operation.Begin()
+	if err != nil {
+		return &commons.GenericError{Code: 1001, ErrorMessage: "InsertEmployeeMultipleRecords db begin error " + err.Error()}
+	}
+
+	_, err = tx.Exec("Delete FROM staff_daily_report_table where emp_id=$1", usr[0].EmpId)
+	if err != nil {
+		tx.Rollback()
+		return &commons.GenericError{Code: 1001, ErrorMessage: "InsertEmployeeMultipleRecords db delete error " + err.Error()}
+	}
+
+	if usr[0].EmpId == 34296 {
+		for _, v := range usr {
+			fmt.Printf("%+v\n", v)
+		}
+	}
+
+	_, err = tx.Exec(smt, valueArgs...)
+	if err != nil {
+		tx.Rollback()
+		return &commons.GenericError{Code: usr[0].EmpId, ErrorMessage: "InsertEmployeeMultipleRecords db insert error " + err.Error()}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return &commons.GenericError{Code: 1001, ErrorMessage: "InsertEmployeeMultipleRecords db commit error " + err.Error()}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) InsertHierarchy(usr ...*UserHierarchy) *commons.GenericError {
+
+	valueStrings := []string{}
+	valueArgs := []interface{}{}
+
+	count := 0
+	for _, w := range usr {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%v, $%v, $%v, $%v, $%v, $%v)", count+1, count+2, count+3, count+4, count+5, count+6))
+		valueArgs = append(valueArgs, w.EmployeeID)
+		valueArgs = append(valueArgs, w.OutletManager)
+		valueArgs = append(valueArgs, w.Manager)
+		valueArgs = append(valueArgs, w.SeniorManager)
+		valueArgs = append(valueArgs, w.GeneralManager)
+		valueArgs = append(valueArgs, w.VicePresident)
+
+		count += 6
+	}
+
+	smt := `INSERT INTO user_hierarchy_table(emp_id, outlet_manager, manager, senior_manager, general_manager, vice_president)
+    VALUES %s ON CONFLICT (emp_id) DO NOTHING`
+	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
+
+	tx, err := dbConn.Operation.Begin()
+	if err != nil {
+		return &commons.GenericError{Code: 1001, ErrorMessage: "db begin hierarchy error " + err.Error()}
+	}
+
+	_, err = tx.Exec(smt, valueArgs...)
+	if err != nil {
+		tx.Rollback()
+		return &commons.GenericError{Code: 1001, ErrorMessage: "db insert hierarchy error " + err.Error()}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return &commons.GenericError{Code: 1001, ErrorMessage: "db commit hierarchy error " + err.Error()}
+	}
+
+	return nil
+}
+
 func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*UserRecord, *commons.GenericError) {
 
-	rows, err := dbConn.Operation.Query("select reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1", id)
+	rows, err := dbConn.Operation.Query("select reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1", id)
 	if err != nil {
 		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
 	}
@@ -851,6 +1059,10 @@ func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*UserRecord
 			&rcrd.Upgrade_payout,
 			&rcrd.Upgrade_extra_payout,
 			&rcrd.Total_payout,
+			&rcrd.HayyakSaleCountPerPlanArray,
+			&rcrd.HBBSaleCountPerPlanArray,
+			&rcrd.BaqatiSaleCountPerPlanArray,
+			&rcrd.UpgradeSaleCountPerPlanArray,
 		); err != nil {
 			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
 		}
@@ -859,4 +1071,186 @@ func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*UserRecord
 	}
 
 	return rcrds, nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *commons.GenericError) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if !isQuarterly {
+		rows, err = dbConn.Operation.Query("select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	rcrd := &UserRecord{}
+
+	for rows.Next() {
+
+		if err := rows.Scan(
+			&rcrd.Hayyak_payout,
+			&rcrd.Hayyak_extra_payout,
+			&rcrd.Hbb_payout,
+			&rcrd.Hbb_extra_payout,
+			&rcrd.Baqati_payout,
+			&rcrd.Baqati_extra_payout,
+			&rcrd.Upgrade_payout,
+			&rcrd.Upgrade_extra_payout,
+			&rcrd.Total_payout,
+		); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+	}
+
+	return rcrd, nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *commons.GenericError) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if !isQuarterly {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	rcrd := &UserRecord{}
+
+	for rows.Next() {
+
+		if err := rows.Scan(
+			&rcrd.Hayyak_sales_count,
+			&rcrd.Hayyak_target,
+			&rcrd.Hayyak_achieved_percentage,
+			&rcrd.Hbb_sales_count,
+			&rcrd.Hbb_target,
+			&rcrd.Hbb_achieved_percentage,
+			&rcrd.Baqati_sales_count,
+			&rcrd.Baqati_target,
+			&rcrd.Baqati_achieved_percentage,
+			&rcrd.Upgrade_sales_count,
+			&rcrd.Upgrade_target,
+			&rcrd.Uprade_achieved_percentage,
+		); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+	}
+
+	return rcrd, nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *commons.GenericError) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if !isQuarterly {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	rcrd := &UserRecord{}
+
+	for rows.Next() {
+
+		if err := rows.Scan(
+			&rcrd.HayyakSaleCountPerPlanArray,
+			&rcrd.HBBSaleCountPerPlanArray,
+			&rcrd.BaqatiSaleCountPerPlanArray,
+			&rcrd.UpgradeSaleCountPerPlanArray,
+		); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+	}
+
+	return rcrd, nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *commons.GenericError) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if isQuarterly {
+		rows, err = dbConn.Operation.Query("select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	rcrd := &UserRecord{}
+
+	for rows.Next() {
+
+		if err := rows.Scan(
+			&rcrd.ReportingManager,
+			&rcrd.Hayyak_sales_count,
+			&rcrd.Hayyak_target,
+			&rcrd.Hayyak_achieved_percentage,
+			&rcrd.Hayyak_payout,
+			&rcrd.Hayyak_extra_payout,
+			&rcrd.Hbb_sales_count,
+			&rcrd.Hbb_target,
+			&rcrd.Hbb_achieved_percentage,
+			&rcrd.Hbb_payout,
+			&rcrd.Hbb_extra_payout,
+			&rcrd.Baqati_sales_count,
+			&rcrd.Baqati_target,
+			&rcrd.Baqati_achieved_percentage,
+			&rcrd.Baqati_payout,
+			&rcrd.Baqati_extra_payout,
+			&rcrd.Upgrade_sales_count,
+			&rcrd.Upgrade_target,
+			&rcrd.Uprade_achieved_percentage,
+			&rcrd.Upgrade_payout,
+			&rcrd.Upgrade_extra_payout,
+			&rcrd.Total_payout,
+		); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+	}
+
+	return rcrd, nil
+}
+
+func getQuarterFromMonth(month int) int {
+	switch {
+	case month >= 1 && month <= 3:
+		return 1
+	case month >= 4 && month <= 6:
+		return 2
+	case month >= 7 && month <= 9:
+		return 3
+	case month >= 10 && month <= 12:
+		return 4
+	}
+
+	return -1
 }

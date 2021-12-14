@@ -11,6 +11,7 @@ type CronServices interface {
 	HandleUserMasterInputFile()
 	HandleScaleOrderInputFile()
 	HandleMaxPayInputFile()
+	HandleHierarchyFile()
 }
 
 type CronContext struct {
@@ -37,6 +38,7 @@ func (ctx *CronContext) StartCrons() {
 	go ctx.CronServices.HandleTargetInputFile()
 	go ctx.CronServices.HandleScaleOrderInputFile()
 	go ctx.CronServices.HandleMaxPayInputFile()
+	go ctx.CronServices.HandleHierarchyFile()
 
 	<-gocron.Start()
 }

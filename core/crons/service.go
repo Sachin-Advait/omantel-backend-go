@@ -3,7 +3,10 @@ package crons
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
+	"github.com/xuri/excelize/v2"
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/config"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
@@ -15,6 +18,7 @@ type DBService interface {
 	InsertProductPlans(plan *db.ProductPlans) error
 	InsertStoreTargets(region, outlet string, month int, trgt *db.ProductGrpTarget) error
 	InsertValueOfPoints(category string, percent int, vop float64) (int64, error)
+	InsertHierarchy(usr ...*db.UserHierarchy) *commons.GenericError
 
 	FetchSaleTarget() error
 	FetchPlans() error
@@ -510,6 +514,117 @@ func (impl *CronImpl) HandleMaxPayInputFile() {
 
 	impl.DBService.FetchMaxPayout()
 	fmt.Println("HandleMaxPayInputFile successful")
+}
+
+func (impl *CronImpl) HandleHierarchyFile() {
+	fileName := "./doc/sales_hierarchy.xlsx"
+
+	file, err := excelize.OpenFile(fileName)
+	if err != nil {
+		log.Fatalf("could not open file, %v\n", err)
+	}
+
+	rows, err := file.Rows("Sheet1")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	isFirstRow := true
+	index := 0
+
+	usrs := make([]*db.UserHierarchy, 0)
+
+	for rows.Next() {
+
+		index++
+
+		if isFirstRow {
+			rows.Columns()
+			isFirstRow = false
+			continue
+		}
+
+		usr := &db.UserHierarchy{}
+
+		row, err := rows.Columns()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		for i, colCell := range row {
+
+			switch i {
+			case 0:
+				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+				if err != nil {
+					log.Println("hierarchy id parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+					return
+				}
+				usr.EmployeeID = id
+			case 1:
+				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+				if err != nil {
+					log.Println("hierarchy outletManager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+					return
+				}
+				usr.OutletManager = id
+			case 2:
+				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+				if err != nil {
+					log.Println("hierarchy manager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+					return
+				}
+				usr.Manager = id
+			case 3:
+				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+				if err != nil {
+					log.Println("hierarchy seniorManager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+					return
+				}
+				usr.SeniorManager = id
+			case 4:
+				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+				if err != nil {
+					log.Println("hierarchy generalManager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+					return
+				}
+				usr.GeneralManager = id
+			case 5:
+				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+				if err != nil {
+					log.Println("hierarchy vicePresident parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+					return
+				}
+				usr.VicePresident = id
+			}
+		}
+
+		if usr.EmployeeID != 0 {
+			usrs = append(usrs, usr)
+		}
+
+		// insert in batches of 50
+		if len(usrs)%50 == 0 {
+
+			errs := impl.DBService.InsertHierarchy(usrs...)
+			if errs != nil {
+				log.Println("hierarchy insertionError: " + errs.ErrorMessage + " index: " + strconv.Itoa(index))
+				return
+			}
+
+			usrs = usrs[:0]
+		}
+	}
+
+	errs := impl.DBService.InsertHierarchy(usrs...)
+	if errs != nil {
+		log.Println("hierarchy last insertionError: " + errs.ErrorMessage + " index: " + strconv.Itoa(index))
+		return
+	}
+
+	fmt.Println("HandleHierarchyFile successful")
 }
 
 func (impl *CronImpl) isRegion(region string) bool {
