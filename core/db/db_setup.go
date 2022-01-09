@@ -133,6 +133,18 @@ func (dbConn *DBImplementation) DeleteStoreTargets() error {
 	return nil
 }
 
+// DeleteHierarchy removes all hierarchy data from table
+func (dbConn *DBImplementation) DeleteHierarchy() error {
+
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM user_hierarchy_table")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // InsertStoreTargets reads data from target input file and inserts into table
 func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month int, trgt *ProductGrpTarget) error {
 
@@ -561,7 +573,10 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 	trx := &SaleTransaction{}
 	trx.SaleRecords = make(map[string][]*SaleRecord)
 
+	count := 0
+
 	for rows.Next() {
+		count++
 		if err := rows.Scan(&position, &outlet, &region, &prev_product, &curr_product, &quantity, &product_group, &category); err != nil {
 			return trx, err
 		}
@@ -590,7 +605,7 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 
 func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (map[int]*SaleTransaction, map[int]*SaleTransaction, error) {
 
-	rows, err := dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category, b.sales_date from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('year' from b.sales_date)= $2", clientID, time.Now().Year())
+	rows, err := dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category, b.sales_date from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('year' from b.sales_date)= $2", clientID, 2021)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -955,11 +970,11 @@ func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*UserRecord)
 		return &commons.GenericError{Code: 1001, ErrorMessage: "InsertEmployeeMultipleRecords db begin error " + err.Error()}
 	}
 
-	_, err = tx.Exec("Delete FROM staff_daily_report_table where emp_id=$1", usr[0].EmpId)
-	if err != nil {
-		tx.Rollback()
-		return &commons.GenericError{Code: 1001, ErrorMessage: "InsertEmployeeMultipleRecords db delete error " + err.Error()}
-	}
+	// _, err = tx.Exec("Delete FROM staff_daily_report_table where emp_id=$1", usr[0].EmpId)
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return &commons.GenericError{Code: 1001, ErrorMessage: "InsertEmployeeMultipleRecords db delete error " + err.Error()}
+	// }
 
 	if usr[0].EmpId == 34296 {
 		for _, v := range usr {

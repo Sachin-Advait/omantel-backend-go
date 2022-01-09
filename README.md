@@ -35,12 +35,14 @@
 /**** server details ****/
 ip: 93.115.22.132
 user: root
-pass: LGNt9TW5k7zdebu7!
+pass: MJh6VL4g5sK4tMve!
+      Bitool2021#$%
 
 
 /**** db details ****/
 user: postgres
-password: gis@123
+password: Secure@#!2021v
+          Oracle12#$%fget
 
 /*
 	VP
@@ -192,14 +194,13 @@ CONSTRAINT ADD UNIQUE (emp_id, months, quarter)
 
 CREATE TABLE IF NOT EXISTS public.user_hierarchy_table
 (
-    emp_id SERIAL,
+    emp_id INTEGER PRIMARY KEY,
 	outlet_manager integer NOT NULL DEFAULT 0,
 	manager        integer NOT NULL DEFAULT 0,
 	senior_manager  integer NOT NULL DEFAULT 0,
 	general_manager integer NOT NULL DEFAULT 0,
 	vice_president integer NOT NULL DEFAULT 0
 )
-ALter table public.user_hierarchy_table ADD UNIQUE (emp_id)
 
 
 

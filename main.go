@@ -30,15 +30,21 @@ func main() {
 	trxService := handler.NewSalesIncentiveService(&config.GetInstance().Database)
 	trxContext := handler.NewSalesIncentiveContext(trxService)
 
-	// err := trxService.UpdateEachPromoterData()
-	// if err != nil {
-	// 	fmt.Println("promoter error:", err)
-	// }
+	//err := trxService.UpdateEachPromoterData()
+	//if err != nil {
+	//	fmt.Println("promoter error:", err)
+	//	return
+	//}
 
-	// err = trxService.UpdateOtherManagersData()
-	// if err != nil {
-	// 	fmt.Println("manager error:", err)
-	// }
+	// fmt.Println("UpdateEachPromoterData success")
+
+	//err := trxService.UpdateOtherManagersData()
+	//if err != nil {
+	//	fmt.Println("manager error:", err)
+	//	return
+	//}
+
+	//fmt.Println("UpdateOtherManagersData success")
 
 	defer trxContext.SafeClose()
 

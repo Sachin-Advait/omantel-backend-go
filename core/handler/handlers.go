@@ -208,10 +208,9 @@ func (context *SalesIncentiveContext) GetSingleUserIncentive(w http.ResponseWrit
 			//utils.LogObj.WriteLogs(logs)
 			return
 		}
-
 	}
 
-	fmt.Println("data", id, date, quarter, isQuarterReport)
+	fmt.Printf("getSingleUserIncentive: id=%d, isQuarterReport=%v, date=%v, quarter=%d\n", id, isQuarterReport, date, quarter)
 
 	incentive, err := context.SalesIncentiveService.FetchPromoterUserIncentive(id, date, quarter, isQuarterReport)
 	if err != nil {

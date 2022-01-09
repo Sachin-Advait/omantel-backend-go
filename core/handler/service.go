@@ -52,7 +52,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 		return nil, err
 	}
 
-	fmt.Println("data", clientID, int(t.Month()), t.Year(), quarter, isQuarterReport, trx.Region, trx.Outlet)
+	fmt.Printf("fetchUserSales: id=%d, month=%d, year=%d quarter=%d isQuarterReport=%v, region=%s, outlet=%s\n", clientID, int(t.Month()), t.Year(), quarter, isQuarterReport, trx.Region, trx.Outlet)
 
 	resp := &db.TotalIncentive{}
 
@@ -77,9 +77,9 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 		return resp, nil
 	}
 
-	fmt.Println("TotalEmp", totalEmp)
-
 	totalEmp--
+
+	fmt.Printf("fetchTotalNonManagerialEmployees: total=%d\n", totalEmp)
 
 	totalPay := 0.0
 	// resp.HBB.Error = "nil"
@@ -95,6 +95,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 	for grp, rcds := range trx.SaleRecords {
 
+		//only 3 groups for now Hayyak, Hbb, Baqati
 		fmt.Println("Total Sales in "+grp, len(rcds))
 
 		for _, v := range rcds {
@@ -137,7 +138,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 				achieved := float64(totalActive[grp]) * 100 / float64(target)
 				vop := impl.getValueOfPoint(grp, achieved)
 
-				fmt.Println("HBB: target, achieved, percent, vop", target, totalActive[grp], achieved, vop)
+				fmt.Printf("HBB: target=%v, achieved=%d, percent=%v, vop=%v, extraPay=%v\n", target, totalActive[grp], achieved, vop, impl.getExtraPay(grp, achieved))
 
 				ind.ExtraPayout = impl.getExtraPay(grp, achieved)
 				ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
@@ -145,7 +146,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					fmt.Println("HBB planName  planRate qty pay: "+plan, rate, qty, float64(qty)*vop*rate)
+					fmt.Printf("HBB: planName=%s, planRate=%v, qty=%v pay=%v\n",plan, rate, qty, float64(qty)*vop*rate)
 					ind.Payout += float64(qty) * vop * rate
 				}
 
@@ -172,7 +173,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 				achieved := float64(totalActive[grp]) * 100 / float64(target)
 				vop := impl.getValueOfPoint(grp, achieved)
 
-				fmt.Println("HAYYAK: target, achieved, percent, vop", target, totalActive[grp], achieved, vop)
+				fmt.Printf("HAYYAK: target=%v, achieved=%d, percent=%v, vop=%v, extraPay=%v\n", target, totalActive[grp], achieved, vop, impl.getExtraPay(grp, achieved))
 
 				ind.ExtraPayout = impl.getExtraPay(grp, achieved)
 				ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
@@ -180,7 +181,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					fmt.Println("HAYYAK planName  planRate qty pay: "+plan, rate, qty, float64(qty)*vop*rate)
+					fmt.Printf("HAYYAK: planName=%s, planRate=%v, qty=%v pay=%v\n",plan, rate, qty, float64(qty)*vop*rate)
 					ind.Payout += float64(qty) * vop * rate
 				}
 
@@ -198,7 +199,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("BAQATI sales target in "+trx.Outlet, targetPerOutlet)
+			fmt.Println("BAQATI sales target in outlet:"+trx.Outlet+ " targetPerOutlet: ", targetPerOutlet)
 
 			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
@@ -207,7 +208,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 				achieved := float64(totalActive[grp]) * 100 / float64(target)
 				vop := impl.getValueOfPoint(grp, achieved)
 
-				fmt.Println("BAQATI: target, achieved, percent, vop", target, totalActive[grp], achieved, vop)
+				fmt.Printf("BAQATI: target=%v, achieved=%d, percent=%v, vop=%v, extraPay=%v\n", target, totalActive[grp], achieved, vop, impl.getExtraPay(grp, achieved))
 
 				ind.ExtraPayout = impl.getExtraPay(grp, achieved)
 				ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
@@ -215,7 +216,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					fmt.Println("BAQATI planName  planRate qty pay: "+plan, rate, qty, float64(qty)*vop*rate)
+					fmt.Printf("BAQATI: planName=%s, planRate=%v, qty=%v pay=%v\n",plan, rate, qty, float64(qty)*vop*rate)
 					ind.Payout += float64(qty) * vop * rate
 				}
 
@@ -248,7 +249,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 		achieved := float64(totalActiveUpgrade) * 100 / float64(target)
 		vop := impl.getValueOfPoint(commons.UpgradeCategory, achieved)
 
-		fmt.Println("UPGRADE: target, achieved, percent, vop", target, totalActiveUpgrade, achieved, vop)
+		fmt.Printf("UPGRADE: target=%v, achieved=%d, percent=%v, vop=%v, extraPay=%v\n", target, totalActiveUpgrade, achieved, vop, impl.getExtraPay(commons.UpgradeCategory, achieved))
 
 		ind.ExtraPayout = impl.getExtraPay(commons.UpgradeCategory, achieved)
 		ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
@@ -257,7 +258,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 		for currPlan, prevPlansMap := range upgradedPlans {
 			for prevPln, qty := range prevPlansMap {
 				rate := impl.getSIPRatePlan(currPlan) - impl.getSIPRatePlan(prevPln)
-				fmt.Println("UPGRADE currPlanName prevPlanName  currPlanRate  prevPlanRate rate qty pay: "+currPlan+" "+prevPln, impl.getSIPRatePlan(currPlan), impl.getSIPRatePlan(prevPln), rate, qty, float64(qty)*vop*rate)
+				fmt.Printf("UPGRADE: currPlanName=%s, prevPlanName=%s, currPlanRate=%s, prevPlanRate=%v, rate=%v, qty=%v pay=%v\n",currPlan, prevPln, impl.getSIPRatePlan(currPlan), impl.getSIPRatePlan(prevPln), rate, qty, float64(qty)*vop*rate)
 				ind.Payout += float64(qty) * vop * rate
 			}
 		}
@@ -641,6 +642,8 @@ func (impl *SalesIncentiveImpl) VefiryOTP(clientID, otp int) (*db.OtpModel, *com
 }
 
 func (impl *SalesIncentiveImpl) FetchMonthlyAndQuarterlyInfoAboutPromoter(clientID int) (map[int]*db.UserAllInfo, map[int]*db.UserAllInfo, error) {
+
+	//TODO: not jst for same year but for everytime new sales record are added this should be updated
 
 	monthly, quarterly, err := impl.DBService.FetchPromotersPresentYearSales(clientID)
 	if err != nil {

@@ -232,6 +232,11 @@ func (impl *SalesIncentiveImpl) UpdateEachPromoterData() *commons.GenericError {
 
 		}
 
+		if len(rcrds) == 0 {
+			fmt.Println(emp.EmpID, "no records found")
+			continue
+		}
+
 		if err := impl.DBService.InsertEmployeeMultipleRecords(rcrds); err != nil {
 			return err
 		}

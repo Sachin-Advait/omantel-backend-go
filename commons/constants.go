@@ -5,7 +5,7 @@ const (
 	DEV         = "DEV"
 	QA          = "QA"
 	PROD        = "PROD"
-	CONFIG_PATH = "local_bkp"
+	CONFIG_PATH = "local"
 	CONFIG_DIR  = "./config"
 )
 
