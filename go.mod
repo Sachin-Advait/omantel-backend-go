@@ -11,6 +11,5 @@ require (
 	github.com/rs/xid v1.3.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.9.0
-	github.com/xuri/excelize/v2 v2.4.1
 	go.uber.org/zap v1.19.1
 )

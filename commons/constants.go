@@ -39,6 +39,7 @@ const (
 	Manager        = "MANAGER"
 	OutletManager  = "OUTLET MANAGER"
 	Promoter       = "PROMOTER"
+	CSR            = "CSR"
 )
 
 const (
@@ -53,6 +54,28 @@ const (
 
 var (
 	Table = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
+)
+
+var (
+	ManagerMap = map[string]string{
+		OutletManager:  "outlet_manager",
+		Manager:        "manager",
+		SeniorManager:  "senior_manager",
+		GeneralManager: "general_manager",
+		VicePresident:  "vice_president",
+	}
+)
+
+var (
+	EmployeePositionMap = map[string]string{
+		Promoter:       "A",
+		CSR:            "A",
+		OutletManager:  "OM",
+		Manager:        "M",
+		SeniorManager:  "SM",
+		GeneralManager: "GM",
+		VicePresident:  "VP",
+	}
 )
 
 var GetTemplate = `

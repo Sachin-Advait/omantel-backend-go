@@ -511,148 +511,148 @@ func (impl *CronImpl) HandleMaxPayInputFile() {
 
 func (impl *CronImpl) HandleHierarchyFile() {
 	//fileName := "./doc/sales_hierarchy.xlsx"
-//	fileName := "./doc/latest/latest_Sales_Hierachies.xlsx"
-//
-//	file, err := excelize.OpenFile(fileName)
-//	if err != nil {
-//		log.Fatalf("could not open file, %v\n", err)
-//	}
-//
-//	rows, err := file.Rows("Sheet1 (2)")
-//	if err != nil {
-//		fmt.Println(err)
-//		return
-//	}
-//
-//	if err := impl.DBService.DeleteHierarchy(); err != nil {
-//		fmt.Println("delete hierarchy error: "+err.Error())
-//		return
-//	}
-//
-//	isFirstRow := true
-//	index := 0
-//
-//	usrs := make([]*db.UserHierarchy, 0)
-//
-//LOOP:
-//	for rows.Next() {
-//
-//		index++
-//
-//		if isFirstRow {
-//			rows.Columns()
-//			isFirstRow = false
-//			continue
-//		}
-//
-//		usr := &db.UserHierarchy{}
-//
-//		eachRowColumns, err := rows.Columns()
-//		if err != nil {
-//			fmt.Println(err)
-//			return
-//		}
-//
-//		for i, colCell := range eachRowColumns {
-//
-//			switch i {
-//			case 0:
-//				if strings.TrimSpace(colCell) == "" {
-//					continue LOOP
-//				}
-//
-//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
-//				if err != nil {
-//					log.Println("hierarchy id parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
-//					return
-//				}
-//				usr.EmployeeID = id
-//			case 1:
-//
-//				if strings.TrimSpace(colCell) == "" {
-//					continue
-//				}
-//
-//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
-//				if err != nil {
-//					log.Println("hierarchy outletManager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
-//					return
-//				}
-//				usr.OutletManager = id
-//			case 2:
-//
-//				if strings.TrimSpace(colCell) == "" {
-//					continue
-//				}
-//
-//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
-//				if err != nil {
-//					log.Println("hierarchy manager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
-//					return
-//				}
-//				usr.Manager = id
-//			case 3:
-//
-//				if strings.TrimSpace(colCell) == "" {
-//					continue
-//				}
-//
-//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
-//				if err != nil {
-//					log.Println("hierarchy seniorManager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
-//					return
-//				}
-//				usr.SeniorManager = id
-//			case 4:
-//
-//				if strings.TrimSpace(colCell) == "" {
-//					continue
-//				}
-//
-//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
-//				if err != nil {
-//					log.Println("hierarchy generalManager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
-//					return
-//				}
-//				usr.GeneralManager = id
-//			case 5:
-//
-//				if strings.TrimSpace(colCell) == "" {
-//					continue
-//				}
-//
-//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
-//				if err != nil {
-//					log.Println("hierarchy vicePresident parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
-//					return
-//				}
-//				usr.VicePresident = id
-//			}
-//		}
-//
-//		if usr.EmployeeID != 0 {
-//			fmt.Println(index, "id:", usr.EmployeeID)
-//			usrs = append(usrs, usr)
-//		}
-//
-//		// insert in batches of 50
-//		if len(usrs)%50 == 0 {
-//
-//			errs := impl.DBService.InsertHierarchy(usrs...)
-//			if errs != nil {
-//				log.Println("hierarchy insertionError: " + errs.ErrorMessage + " index: " + strconv.Itoa(index))
-//				return
-//			}
-//
-//			usrs = usrs[:0]
-//		}
-//	}
-//
-//	errs := impl.DBService.InsertHierarchy(usrs...)
-//	if errs != nil {
-//		log.Println("hierarchy last insertionError: " + errs.ErrorMessage + " index: " + strconv.Itoa(index))
-//		return
-//	}
+	//	fileName := "./doc/latest/latest_Sales_Hierachies.xlsx"
+	//
+	//	file, err := excelize.OpenFile(fileName)
+	//	if err != nil {
+	//		log.Fatalf("could not open file, %v\n", err)
+	//	}
+	//
+	//	rows, err := file.Rows("Sheet1 (2)")
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		return
+	//	}
+	//
+	//	if err := impl.DBService.DeleteHierarchy(); err != nil {
+	//		fmt.Println("delete hierarchy error: "+err.Error())
+	//		return
+	//	}
+	//
+	//	isFirstRow := true
+	//	index := 0
+	//
+	//	usrs := make([]*db.UserHierarchy, 0)
+	//
+	//LOOP:
+	//	for rows.Next() {
+	//
+	//		index++
+	//
+	//		if isFirstRow {
+	//			rows.Columns()
+	//			isFirstRow = false
+	//			continue
+	//		}
+	//
+	//		usr := &db.UserHierarchy{}
+	//
+	//		eachRowColumns, err := rows.Columns()
+	//		if err != nil {
+	//			fmt.Println(err)
+	//			return
+	//		}
+	//
+	//		for i, colCell := range eachRowColumns {
+	//
+	//			switch i {
+	//			case 0:
+	//				if strings.TrimSpace(colCell) == "" {
+	//					continue LOOP
+	//				}
+	//
+	//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+	//				if err != nil {
+	//					log.Println("hierarchy id parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//					return
+	//				}
+	//				usr.EmployeeID = id
+	//			case 1:
+	//
+	//				if strings.TrimSpace(colCell) == "" {
+	//					continue
+	//				}
+	//
+	//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+	//				if err != nil {
+	//					log.Println("hierarchy outletManager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//					return
+	//				}
+	//				usr.OutletManager = id
+	//			case 2:
+	//
+	//				if strings.TrimSpace(colCell) == "" {
+	//					continue
+	//				}
+	//
+	//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+	//				if err != nil {
+	//					log.Println("hierarchy manager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//					return
+	//				}
+	//				usr.Manager = id
+	//			case 3:
+	//
+	//				if strings.TrimSpace(colCell) == "" {
+	//					continue
+	//				}
+	//
+	//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+	//				if err != nil {
+	//					log.Println("hierarchy seniorManager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//					return
+	//				}
+	//				usr.SeniorManager = id
+	//			case 4:
+	//
+	//				if strings.TrimSpace(colCell) == "" {
+	//					continue
+	//				}
+	//
+	//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+	//				if err != nil {
+	//					log.Println("hierarchy generalManager parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//					return
+	//				}
+	//				usr.GeneralManager = id
+	//			case 5:
+	//
+	//				if strings.TrimSpace(colCell) == "" {
+	//					continue
+	//				}
+	//
+	//				id, err := strconv.Atoi(strings.TrimSpace(colCell))
+	//				if err != nil {
+	//					log.Println("hierarchy vicePresident parsing error: " + err.Error() + " index: " + strconv.Itoa(index))
+	//					return
+	//				}
+	//				usr.VicePresident = id
+	//			}
+	//		}
+	//
+	//		if usr.EmployeeID != 0 {
+	//			fmt.Println(index, "id:", usr.EmployeeID)
+	//			usrs = append(usrs, usr)
+	//		}
+	//
+	//		// insert in batches of 50
+	//		if len(usrs)%50 == 0 {
+	//
+	//			errs := impl.DBService.InsertHierarchy(usrs...)
+	//			if errs != nil {
+	//				log.Println("hierarchy insertionError: " + errs.ErrorMessage + " index: " + strconv.Itoa(index))
+	//				return
+	//			}
+	//
+	//			usrs = usrs[:0]
+	//		}
+	//	}
+	//
+	//	errs := impl.DBService.InsertHierarchy(usrs...)
+	//	if errs != nil {
+	//		log.Println("hierarchy last insertionError: " + errs.ErrorMessage + " index: " + strconv.Itoa(index))
+	//		return
+	//	}
 
 	fmt.Println("HandleHierarchyFile successful")
 }

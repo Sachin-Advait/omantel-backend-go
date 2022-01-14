@@ -33,6 +33,11 @@ type DBService interface {
 	FetchIndividualUserTargetReport(id, month, quarter int, isQuarterly bool) (*db.UserRecord, *commons.GenericError)
 	FetchIndividualUserSaleCountPerPlanReport(id, month, quarter int, isQuarterly bool) (*db.UserRecord, *commons.GenericError)
 	FetchIndividualUserOverAllReport(id int, month int, quarter int, isQuarterly bool) (*db.UserRecord, *commons.GenericError)
+	FetchProductSalesPerOutletManager(id, month, year, quarter int, isQuarterly bool) (*db.ProductWiseSalesCountPerOutlet, *commons.GenericError)
+	FetchAllOutletManagersReportingToGivenManagerRole(managerPosition string, managerID int) ([]*db.ReportingStaffIDAndName, *commons.GenericError)
+	FetchUserPosition(id int) (string, *commons.GenericError)
+	FetchUserName(id int) (string, *commons.GenericError)
+	FetchOutletDetails(outlet, region string) (float64, float64, *commons.GenericError)
 }
 
 type SalesIncentiveImpl struct {
@@ -146,7 +151,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					fmt.Printf("HBB: planName=%s, planRate=%v, qty=%v pay=%v\n",plan, rate, qty, float64(qty)*vop*rate)
+					fmt.Printf("HBB: planName=%s, planRate=%v, qty=%v pay=%v\n", plan, rate, qty, float64(qty)*vop*rate)
 					ind.Payout += float64(qty) * vop * rate
 				}
 
@@ -181,7 +186,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					fmt.Printf("HAYYAK: planName=%s, planRate=%v, qty=%v pay=%v\n",plan, rate, qty, float64(qty)*vop*rate)
+					fmt.Printf("HAYYAK: planName=%s, planRate=%v, qty=%v pay=%v\n", plan, rate, qty, float64(qty)*vop*rate)
 					ind.Payout += float64(qty) * vop * rate
 				}
 
@@ -199,7 +204,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("BAQATI sales target in outlet:"+trx.Outlet+ " targetPerOutlet: ", targetPerOutlet)
+			fmt.Println("BAQATI sales target in outlet:"+trx.Outlet+" targetPerOutlet: ", targetPerOutlet)
 
 			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
@@ -216,7 +221,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					fmt.Printf("BAQATI: planName=%s, planRate=%v, qty=%v pay=%v\n",plan, rate, qty, float64(qty)*vop*rate)
+					fmt.Printf("BAQATI: planName=%s, planRate=%v, qty=%v pay=%v\n", plan, rate, qty, float64(qty)*vop*rate)
 					ind.Payout += float64(qty) * vop * rate
 				}
 
@@ -258,7 +263,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 		for currPlan, prevPlansMap := range upgradedPlans {
 			for prevPln, qty := range prevPlansMap {
 				rate := impl.getSIPRatePlan(currPlan) - impl.getSIPRatePlan(prevPln)
-				fmt.Printf("UPGRADE: currPlanName=%s, prevPlanName=%s, currPlanRate=%s, prevPlanRate=%v, rate=%v, qty=%v pay=%v\n",currPlan, prevPln, impl.getSIPRatePlan(currPlan), impl.getSIPRatePlan(prevPln), rate, qty, float64(qty)*vop*rate)
+				fmt.Printf("UPGRADE: currPlanName=%s, prevPlanName=%s, currPlanRate=%v, prevPlanRate=%v, rate=%v, qty=%v pay=%v\n", currPlan, prevPln, impl.getSIPRatePlan(currPlan), impl.getSIPRatePlan(prevPln), rate, qty, float64(qty)*vop*rate)
 				ind.Payout += float64(qty) * vop * rate
 			}
 		}
@@ -635,6 +640,8 @@ func (impl *SalesIncentiveImpl) VefiryOTP(clientID, otp int) (*db.OtpModel, *com
 	if !otpModel.ExpiryTime.After(time.Now().Local()) {
 		return nil, &commons.GenericError{Code: 1021, ErrorMessage: "otp has expired"}
 	}
+
+	otpModel.StaffPosition = commons.EmployeePositionMap[otpModel.StaffPosition]
 
 	//retry count
 
@@ -1217,6 +1224,220 @@ func (impl *SalesIncentiveImpl) FetchMonthlyAndQuarterlyInfoAboutPromoter(client
 	}
 
 	return monthlyRecords, quarterlyRecords, nil
+}
+
+func (impl *SalesIncentiveImpl) FetchOutletTotalSalesCount(clientID int, t time.Time, quarter int, isQuarterReport bool) ([]*db.ProductWiseSalesCountPerOutlet, *commons.GenericError) {
+
+	position, err := impl.DBService.FetchUserPosition(clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	manger, ok := commons.ManagerMap[position]
+	if !ok {
+		return nil, &commons.GenericError{Code: 1101, ErrorMessage: "incorrect position"}
+	}
+
+	allDistinctOM, err := impl.DBService.FetchAllOutletManagersReportingToGivenManagerRole(manger, clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := make([]*db.ProductWiseSalesCountPerOutlet, 0)
+
+	for _, v := range allDistinctOM {
+
+		lat, lng, err := impl.DBService.FetchOutletDetails(v.Outlet, v.Region)
+		if err != nil {
+			return nil, err
+		}
+
+		trx, err := impl.DBService.FetchProductSalesPerOutletManager(v.ID, int(t.Month()), t.Year(), quarter, isQuarterReport)
+		if err != nil {
+			return nil, err
+		}
+
+		trx.Latitude = lat
+		trx.Longitude = lng
+		trx.Region = v.Region
+		trx.OutletName = v.Outlet
+
+		resp = append(resp, trx)
+	}
+
+	return resp, nil
+}
+
+func (impl *SalesIncentiveImpl) FetchOutletSalesAndTarget(clientID int, t time.Time, quarter int, isQuarterReport bool) ([]*db.ProductWiseSalesTargetPerOutlet, *commons.GenericError) {
+
+	position, err := impl.DBService.FetchUserPosition(clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	manger, ok := commons.ManagerMap[position]
+	if !ok {
+		return nil, &commons.GenericError{Code: 1101, ErrorMessage: "incorrect position"}
+	}
+
+	allDistinctOM, err := impl.DBService.FetchAllOutletManagersReportingToGivenManagerRole(manger, clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := make([]*db.ProductWiseSalesTargetPerOutlet, 0)
+
+	for _, v := range allDistinctOM {
+
+		trx, err := impl.DBService.FetchProductSalesPerOutletManager(v.ID, int(t.Month()), t.Year(), quarter, isQuarterReport)
+		if err != nil {
+			return nil, err
+		}
+
+		eachOutletResp := &db.ProductWiseSalesTargetPerOutlet{
+			OutletName:    v.Outlet,
+			Region:        v.Region,
+			HBBSales:      trx.HBB,
+			HayyakSales:   trx.Hayyak,
+			BaqatiSales:   trx.Baqati,
+			UpgradeSales:  trx.Upgrade,
+			TotalSales:    trx.Total,
+			HBBTarget:     impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.HBBCategory, v.Region, v.Outlet),
+			HayyakTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.HayyakCategory, v.Region, v.Outlet),
+			BaqatiTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.BaqatiCategory, v.Region, v.Outlet),
+			UpgradeTarget: impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, v.Region, v.Outlet),
+		}
+
+		eachOutletResp.TotalTarget = eachOutletResp.HBBTarget + eachOutletResp.HayyakTarget + eachOutletResp.BaqatiTarget + eachOutletResp.UpgradeTarget
+
+		eachOutletResp.HBBAchievedPercentage = math.Round(float64(eachOutletResp.HBBSales*100/eachOutletResp.HBBTarget)*100) / 100
+		eachOutletResp.HayyakAchievedPercentage = math.Round(float64(eachOutletResp.HayyakSales*100/eachOutletResp.HayyakTarget)*100) / 100
+		eachOutletResp.BaqatiAchievedPercentage = math.Round(float64(eachOutletResp.BaqatiSales*100/eachOutletResp.BaqatiTarget)*100) / 100
+		eachOutletResp.UpgradeAchievedPercentage = math.Round(float64(eachOutletResp.UpgradeSales*100/eachOutletResp.UpgradeTarget)*100) / 100
+		eachOutletResp.TotalAchievedPercentage = math.Round(float64(eachOutletResp.TotalSales*100/eachOutletResp.TotalTarget)*100) / 100
+
+		resp = append(resp, eachOutletResp)
+	}
+
+	return resp, nil
+}
+
+func (impl *SalesIncentiveImpl) FetchTopTenEmpProductSalesCount(clientID int, t time.Time, quarter int, isQuarterReport bool) ([]*db.ProductWiseSalesCountPerStaff, *commons.GenericError) {
+
+	position, err := impl.DBService.FetchUserPosition(clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	manger, ok := commons.ManagerMap[position]
+	if !ok {
+		return nil, &commons.GenericError{Code: 1101, ErrorMessage: "incorrect position"}
+	}
+
+	empList, err := impl.DBService.FetchAllEmployeesReportingToGivenManagerRole(manger, clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := make([]*db.ProductWiseSalesCountPerStaff, 0)
+
+	for _, v := range empList {
+
+		trx, err := impl.DBService.FetchIndividualUserTargetReport(v.ID, int(t.Month()), quarter, isQuarterReport)
+		if err != nil {
+			return nil, err
+		}
+
+		name, err := impl.DBService.FetchUserName(trx.EmpId)
+		if err != nil {
+			return nil, err
+		}
+
+		eachUser := &db.ProductWiseSalesCountPerStaff{
+			Name:    name,
+			HBB:     trx.Hbb_sales_count,
+			Hayyak:  trx.Hayyak_sales_count,
+			Baqati:  trx.Baqati_sales_count,
+			Upgrade: trx.Upgrade_sales_count,
+			Total:   trx.Hbb_sales_count + trx.Hayyak_sales_count + trx.Baqati_sales_count + trx.Upgrade_sales_count,
+		}
+
+		resp = append(resp, eachUser)
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].Total > resp[j].Total
+	})
+
+	if len(resp) > 10 {
+		resp = resp[:10]
+	}
+
+	return resp, nil
+}
+
+func (impl *SalesIncentiveImpl) FetchTopTenEmpSalesAndTarget(clientID int, t time.Time, quarter int, isQuarterReport bool) ([]*db.ProductWiseSalesTargetPerStaff, *commons.GenericError) {
+
+	position, err := impl.DBService.FetchUserPosition(clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	manger, ok := commons.ManagerMap[position]
+	if !ok {
+		return nil, &commons.GenericError{Code: 1101, ErrorMessage: "incorrect position"}
+	}
+
+	empList, err := impl.DBService.FetchAllEmployeesReportingToGivenManagerRole(manger, clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := make([]*db.ProductWiseSalesTargetPerStaff, 0)
+
+	for _, v := range empList {
+
+		trx, err := impl.DBService.FetchIndividualUserTargetReport(v.ID, int(t.Month()), quarter, isQuarterReport)
+		if err != nil {
+			return nil, err
+		}
+
+		name, err := impl.DBService.FetchUserName(trx.EmpId)
+		if err != nil {
+			return nil, err
+		}
+
+		eachUser := &db.ProductWiseSalesTargetPerStaff{
+			Name:                    name,
+			HBBSales:                trx.Hbb_sales_count,
+			HBBTarget:               math.Round(trx.Hbb_target*100) / 100,
+			HBBAchievedPercent:      math.Round(trx.Hbb_achieved_percentage*100) / 100,
+			HayyakSales:             trx.Hayyak_sales_count,
+			HayyakTarget:            math.Round(trx.Hayyak_target*100) / 100,
+			HayyakAchievedPercent:   math.Round(trx.Hayyak_achieved_percentage*100) / 100,
+			BaqatiSales:             trx.Baqati_sales_count,
+			BaqatiTarget:            math.Round(trx.Baqati_target*100) / 100,
+			BaqatiAchievedPercent:   math.Round(trx.Baqati_achieved_percentage*100) / 100,
+			UpgradeSales:            trx.Upgrade_sales_count,
+			UpgradeTarget:           math.Round(trx.Upgrade_target*100) / 100,
+			UpgradeAchievedPercent:  math.Round(trx.Uprade_achieved_percentage*100) / 100,
+			TotalSales:              trx.Hbb_sales_count + trx.Hayyak_sales_count + trx.Baqati_sales_count + trx.Upgrade_sales_count,
+			TotalTarget:             math.Round((trx.Hbb_target+trx.Hayyak_target+trx.Baqati_target+trx.Upgrade_target)*100) / 100,
+			TotalAchievedPercentage: math.Round(((trx.Hbb_achieved_percentage+trx.Hayyak_achieved_percentage+trx.Baqati_achieved_percentage+trx.Uprade_achieved_percentage)/4)*100) / 100,
+		}
+
+		resp = append(resp, eachUser)
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].TotalAchievedPercentage > resp[j].TotalAchievedPercentage
+	})
+
+	if len(resp) > 10 {
+		resp = resp[:10]
+	}
+
+	return resp, nil
 }
 
 func (impl *SalesIncentiveImpl) generateOTP(max int) (string, error) {

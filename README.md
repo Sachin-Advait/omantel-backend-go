@@ -202,10 +202,17 @@ CREATE TABLE IF NOT EXISTS public.user_hierarchy_table
 	vice_president integer NOT NULL DEFAULT 0
 )
 
-
-
-
-
+CREATE TABLE IF NOT EXISTS public.outlet_details_table
+(
+id INTEGER PRIMARY KEY,
+outlet character varying(32) COLLATE pg_catalog."default" NOT NULL,
+region character varying(64) COLLATE pg_catalog."default" NOT NULL,
+latitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
+longitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
+outlet_manager_id integer NOT NULL DEFAULT 0,
+non_managerial_emp integer NOT NULL DEFAULT 0,
+total_emp integer NOT NULL DEFAULT 0
+)
 
 
 

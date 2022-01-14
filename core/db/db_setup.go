@@ -865,6 +865,52 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 	return array, nil
 }
 
+func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRole(managerPosition string, managerID int) ([]*ReportingStaffIDAndName, *commons.GenericError) {
+
+	if !(managerPosition == "vice_president" || managerPosition == "general_manager" || managerPosition == "senior_manager" || managerPosition == "manager" || managerPosition == "outlet_manager") {
+		return nil, &commons.GenericError{Code: 1002, ErrorMessage: "incorrect position manager req- " + managerPosition}
+	}
+
+	var query string
+
+	switch managerPosition {
+	case "vice_president":
+		query = "select distinct a.outlet_manager, b.outlet, b.region from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.vice_president= $1"
+	case "general_manager":
+		query = "select distinct a.outlet_manager, b.outlet, b.region from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.general_manager= $1"
+	case "senior_manager":
+		query = "select distinct a.outlet_manager, b.outlet, b.region from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.senior_manager= $1"
+	case "manager":
+		query = "select distinct a.outlet_manager, b.outlet, b.region from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager= $1"
+	case "outlet_manager":
+		query = "select emp_id, outlet, region from user_master_table where emp_id= $1"
+	}
+
+	fmt.Println("check", managerPosition)
+
+	rows, err := dbConn.Operation.Query(query, managerID)
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	var (
+		array = make([]*ReportingStaffIDAndName, 0)
+	)
+
+	for rows.Next() {
+
+		usr := &ReportingStaffIDAndName{}
+
+		if err := rows.Scan(&usr.ID, &usr.Outlet, &usr.Region); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: "FetchAllOutletManagersReportingToGivenManagerRole next row err: " + err.Error()}
+		}
+
+		array = append(array, usr)
+	}
+
+	return array, nil
+}
+
 // InsertEmployeeRecord inserts each users statistical daily in db, and is updated everyday once
 func (dbConn *DBImplementation) InsertEmployeeRecord(usr *UserRecord) *commons.GenericError {
 
@@ -1046,7 +1092,9 @@ func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*UserRecord
 
 	for rows.Next() {
 
-		rcrd := &UserRecord{}
+		rcrd := &UserRecord{
+			EmpId: id,
+		}
 
 		if err := rows.Scan(
 			&rcrd.ReportingManager,
@@ -1105,7 +1153,9 @@ func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quart
 		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
 	}
 
-	rcrd := &UserRecord{}
+	rcrd := &UserRecord{
+		EmpId: id,
+	}
 
 	for rows.Next() {
 
@@ -1144,7 +1194,9 @@ func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quart
 		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
 	}
 
-	rcrd := &UserRecord{}
+	rcrd := &UserRecord{
+		EmpId: id,
+	}
 
 	for rows.Next() {
 
@@ -1186,7 +1238,7 @@ func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, mo
 		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
 	}
 
-	rcrd := &UserRecord{}
+	rcrd := &UserRecord{EmpId: id}
 
 	for rows.Next() {
 
@@ -1210,7 +1262,7 @@ func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quar
 		rows *sql.Rows
 	)
 
-	if isQuarterly {
+	if !isQuarterly {
 		rows, err = dbConn.Operation.Query("select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
 	} else {
 		rows, err = dbConn.Operation.Query("select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
@@ -1220,7 +1272,9 @@ func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quar
 		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
 	}
 
-	rcrd := &UserRecord{}
+	rcrd := &UserRecord{
+		EmpId: id,
+	}
 
 	for rows.Next() {
 
@@ -1253,6 +1307,131 @@ func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quar
 	}
 
 	return rcrd, nil
+}
+
+func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id, month, year, quarter int, isQuarterly bool) (*ProductWiseSalesCountPerOutlet, *commons.GenericError) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if !isQuarterly {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	var (
+		hayyak  int
+		hbb     int
+		baqati  int
+		upgrade int
+	)
+
+	rcrds := &ProductWiseSalesCountPerOutlet{}
+
+	for rows.Next() {
+
+		if err := rows.Scan(&hayyak, &hbb, &baqati, &upgrade); err != nil {
+			return nil, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+
+		rcrds.Hayyak += hayyak
+		rcrds.HBB += hbb
+		rcrds.Baqati += baqati
+		rcrds.Upgrade += upgrade
+	}
+
+	rcrds.Total = rcrds.Hayyak + rcrds.HBB + rcrds.Baqati + rcrds.Upgrade
+
+	return rcrds, nil
+}
+
+func (dbConn *DBImplementation) FetchUserPosition(id int) (string, *commons.GenericError) {
+
+	rows, err := dbConn.Operation.Query("select usr_position from user_master_table where emp_id=$1", id)
+	if err != nil {
+		return "", &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	var (
+		count    int
+		position string
+	)
+
+	for rows.Next() {
+		count++
+
+		if err := rows.Scan(&position); err != nil {
+			return "", &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+
+		if count > 1 {
+			return "", &commons.GenericError{Code: 1001, ErrorMessage: "more than one record found"}
+		}
+	}
+
+	return position, nil
+}
+
+func (dbConn *DBImplementation) FetchUserName(id int) (string, *commons.GenericError) {
+
+	rows, err := dbConn.Operation.Query("select name from user_master_table where emp_id=$1", id)
+	if err != nil {
+		return "", &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	var (
+		count int
+		name  string
+	)
+
+	for rows.Next() {
+		count++
+
+		if err := rows.Scan(&name); err != nil {
+			return "", &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+
+		if count > 1 {
+			return "", &commons.GenericError{Code: 1001, ErrorMessage: "more than one record found"}
+		}
+	}
+
+	return name, nil
+}
+
+func (dbConn *DBImplementation) FetchOutletDetails(outlet, region string) (float64, float64, *commons.GenericError) {
+
+	rows, err := dbConn.Operation.Query("select latitude, longitude from outlet_details_table where outlet=$1 and region=$2", outlet, region)
+	if err != nil {
+		return 0, 0, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+	}
+
+	var (
+		count     int
+		latitude  float64
+		longitude float64
+	)
+
+	for rows.Next() {
+		count++
+
+		if err := rows.Scan(&latitude, &longitude); err != nil {
+			return 0, 0, &commons.GenericError{Code: 1001, ErrorMessage: err.Error()}
+		}
+
+		if count > 1 {
+			return 0, 0, &commons.GenericError{Code: 1001, ErrorMessage: "more than one record found"}
+		}
+	}
+
+	return latitude, longitude, nil
 }
 
 func getQuarterFromMonth(month int) int {

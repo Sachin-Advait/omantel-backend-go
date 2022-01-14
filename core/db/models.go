@@ -138,6 +138,66 @@ type ProductGrpTarget struct {
 	Upgrade int
 }
 
+type ProductWiseSalesCountPerOutlet struct {
+	OutletName string
+	Region     string
+	Latitude   float64
+	Longitude  float64
+	Baqati     int
+	HBB        int
+	Hayyak     int
+	Upgrade    int
+	Total      int
+}
+
+type ProductWiseSalesCountPerStaff struct {
+	Name    string
+	Baqati  int
+	HBB     int
+	Hayyak  int
+	Upgrade int
+	Total   int
+}
+
+type ProductWiseSalesTargetPerStaff struct {
+	Name                    string
+	BaqatiSales             int
+	BaqatiTarget            float64
+	BaqatiAchievedPercent   float64
+	HBBSales                int
+	HBBTarget               float64
+	HBBAchievedPercent      float64
+	HayyakSales             int
+	HayyakTarget            float64
+	HayyakAchievedPercent   float64
+	UpgradeSales            int
+	UpgradeTarget           float64
+	UpgradeAchievedPercent  float64
+	TotalSales              int
+	TotalTarget             float64
+	TotalAchievedPercentage float64
+}
+
+type ProductWiseSalesTargetPerOutlet struct {
+	OutletName                string
+	Region                    string
+	BaqatiSales               int
+	BaqatiTarget              int
+	BaqatiAchievedPercentage  float64
+	HBBSales                  int
+	HBBTarget                 int
+	HBBAchievedPercentage     float64
+	HayyakSales               int
+	HayyakTarget              int
+	HayyakAchievedPercentage  float64
+	UpgradeSales              int
+	UpgradeTarget             int
+	UpgradeAchievedPercentage float64
+	TotalSales                int
+	TotalTarget               int
+	TotalAchievedPercentage   float64
+}
+
 type ProductPlans struct {
 	PlanName    string
 	PlanPrice   float64
@@ -195,8 +255,10 @@ type UserLead struct {
 }
 
 type ReportingStaffIDAndName struct {
-	ID   int
-	Name string
+	ID     int
+	Name   string
+	Outlet string
+	Region string
 }
 
 var SalesTrgt SaleTarget

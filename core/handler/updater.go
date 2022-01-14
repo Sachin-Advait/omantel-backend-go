@@ -247,15 +247,7 @@ func (impl *SalesIncentiveImpl) UpdateEachPromoterData() *commons.GenericError {
 
 func (impl *SalesIncentiveImpl) UpdateOtherManagersData() *commons.GenericError {
 
-	managerMap := map[string]string{
-		commons.OutletManager:  "outlet_manager",
-		commons.Manager:        "manager",
-		commons.SeniorManager:  "senior_manager",
-		commons.GeneralManager: "general_manager",
-		commons.VicePresident:  "vice_president",
-	}
-
-	for key, value := range managerMap {
+	for key, value := range commons.ManagerMap {
 
 		managers, err := impl.DBService.FetchAllGivenPositionEmpIdAndTheirManager(key)
 		if err != nil {
