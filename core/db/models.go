@@ -139,8 +139,8 @@ type ProductGrpTarget struct {
 }
 
 type ProductWiseSalesCountPerOutlet struct {
-	OutletName string
-	Region     string
+	OutletName string `json:"OutletName,omitempty"`
+	Region     string `json:"Region,omitempty"`
 	Latitude   float64
 	Longitude  float64
 	Baqati     int
@@ -179,8 +179,8 @@ type ProductWiseSalesTargetPerStaff struct {
 }
 
 type ProductWiseSalesTargetPerOutlet struct {
-	OutletName                string
-	Region                    string
+	OutletName                string `json:"OutletName,omitempty"`
+	Region                    string `json:"Region,omitempty"`
 	BaqatiSales               int
 	BaqatiTarget              int
 	BaqatiAchievedPercentage  float64

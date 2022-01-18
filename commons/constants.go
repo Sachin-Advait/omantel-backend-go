@@ -71,6 +71,7 @@ var (
 		Promoter:       "A",
 		CSR:            "A",
 		OutletManager:  "OM",
+		"TL":           "OM",
 		Manager:        "M",
 		SeniorManager:  "SM",
 		GeneralManager: "GM",
