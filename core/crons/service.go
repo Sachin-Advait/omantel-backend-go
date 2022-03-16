@@ -115,7 +115,7 @@ func (impl *CronImpl) HandleUserMasterInputFile() {
 }
 
 func (impl *CronImpl) HandleDataInputFile() {
-	//fileName := "doc/new_doc/q2_2021_monthly_data_orig.xlsx"
+	////fileName := "doc/new_doc/q2_2021_monthly_data_orig.xlsx"
 	//fileName := "doc/latest/latest_Q2_2021_Monthly_data_updated.xlsx"
 	//
 	//file, err := excelize.OpenFile(fileName)
@@ -244,6 +244,8 @@ func (impl *CronImpl) HandlePlansInputFile() {
 	//	return
 	//}
 	//
+	//fmt.Println("total rows: ", rows.TotalRows())
+	//
 	////records := make([]*db.Transaction, 0)
 	//impl.DBService.DeleteProductPlans()
 	//
@@ -296,7 +298,7 @@ func (impl *CronImpl) HandlePlansInputFile() {
 	//		return
 	//	}
 	//}
-	//
+
 	if err := impl.DBService.FetchPlans(); err != nil {
 		log.Println("productPlan fetching failed: " + err.Error())
 	}
@@ -304,7 +306,7 @@ func (impl *CronImpl) HandlePlansInputFile() {
 }
 
 func (impl *CronImpl) HandleTargetInputFile() {
-	//fileName := "./doc/new_doc/q2_2021_monthly_data_modify.xlsx"
+	////fileName := "./doc/new_doc/q2_2021_monthly_data_modify.xlsx"
 	//	fileName := "./doc/latest/latest_Monthly_Target_2021.xlsx"
 	//
 	//	file, err := excelize.OpenFile(fileName)
@@ -454,28 +456,28 @@ func (impl *CronImpl) HandleTargetInputFile() {
 }
 
 func (impl *CronImpl) HandleScaleOrderInputFile() {
-	// fileName := "./doc/Calculation logic.xlsx"
-
-	// file, err := excelize.OpenFile(fileName)
-	// if err != nil {
-	// 	log.Fatalf("could not open file, %v\n", err)
-	// }
-
-	// hbb, err := file.GetCellValue("Scale Order:", "A18")
-	// if err != nil {
-	// 	return
-	// }
-
-	// if hbb != "HBB" {
-	// 	return
-	// }
-
-	// hbb, err := file.GetCellValue("Scale Order:", "B10")
-	// if err != nil {
-	// 	return
-	// }
-
-	// impl.DBService.InsertValueOfPoints(hbb, 75)
+	//fileName := "./doc/Calculation logic.xlsx"
+	//
+	//file, err := excelize.OpenFile(fileName)
+	//if err != nil {
+	//	log.Fatalf("could not open file, %v\n", err)
+	//}
+	//
+	//hbb, err := file.GetCellValue("Scale Order:", "A18")
+	//if err != nil {
+	//	return
+	//}
+	//
+	//if hbb != "HBB" {
+	//	return
+	//}
+	//
+	//hbb, err := file.GetCellValue("Scale Order:", "B10")
+	//if err != nil {
+	//	return
+	//}
+	//
+	//impl.DBService.InsertValueOfPoints(hbb, 75)
 
 	impl.DBService.FetchValueOfPoint()
 	fmt.Println("HandleScaleOrderInputFile successful")
@@ -510,7 +512,7 @@ func (impl *CronImpl) HandleMaxPayInputFile() {
 }
 
 func (impl *CronImpl) HandleHierarchyFile() {
-	//fileName := "./doc/sales_hierarchy.xlsx"
+	////fileName := "./doc/sales_hierarchy.xlsx"
 	//	fileName := "./doc/latest/latest_Sales_Hierachies.xlsx"
 	//
 	//	file, err := excelize.OpenFile(fileName)

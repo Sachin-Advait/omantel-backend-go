@@ -134,7 +134,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("HBB sales target in "+trx.Outlet, targetPerOutlet)
+			fmt.Println("HBB sales target in "+trx.Outlet+" targetPerOutlet: ", targetPerOutlet)
 
 			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
@@ -169,7 +169,7 @@ func (impl *SalesIncentiveImpl) FetchPromoterUserIncentive(clientID int, t time.
 
 			ind := &db.IndividualIncentive{}
 
-			fmt.Println("HAYYAK sales target in "+trx.Outlet, targetPerOutlet)
+			fmt.Println("HAYYAK sales target in "+trx.Outlet+" targetPerOutlet: ", targetPerOutlet)
 
 			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {

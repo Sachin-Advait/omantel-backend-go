@@ -35,15 +35,15 @@ func main() {
 	//	fmt.Println("promoter error:", err)
 	//	return
 	//}
-
-	// fmt.Println("UpdateEachPromoterData success")
-
-	//err := trxService.UpdateOtherManagersData()
+	//
+	//fmt.Println("UpdateEachPromoterData success")
+	//
+	//err = trxService.UpdateOtherManagersData()
 	//if err != nil {
 	//	fmt.Println("manager error:", err)
 	//	return
 	//}
-
+	//
 	//fmt.Println("UpdateOtherManagersData success")
 
 	defer trxContext.SafeClose()

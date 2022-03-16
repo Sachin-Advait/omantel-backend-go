@@ -36,6 +36,7 @@
 ip: 93.115.22.132
 user: root
 pass: MJh6VL4g5sK4tMve!
+      USXXajHTzAKyaZkt!
       Bitool2021#$%
 
 
@@ -79,21 +80,20 @@ CREATE TABLE IF NOT EXISTS public.user_master_table
 
 CREATE TABLE IF NOT EXISTS public.sale_transaction_table
 (
-    created timestamp with time zone NOT NULL,
-    modified timestamp with time zone NOT NULL,
-    id integer NOT NULL DEFAULT nextval('sale_transaction_table_id_seq'::regclass),
-    region character varying(32) COLLATE pg_catalog."default" NOT NULL,
-    outlet character varying(64) COLLATE pg_catalog."default" NOT NULL,
-    emp_id bigint NOT NULL,
-    category_type character varying(32) COLLATE pg_catalog."default" NOT NULL,
-    prev_product character varying(64) COLLATE pg_catalog."default",
-    curr_product character varying(64) COLLATE pg_catalog."default" NOT NULL,
-    quantity smallint NOT NULL,
-    category character varying(32) COLLATE pg_catalog."default" NOT NULL,
-    product_group character varying(32) COLLATE pg_catalog."default" NOT NULL,
-    sales_date date NOT NULL DEFAULT CURRENT_DATE,
-    quarter integer NOT NULL DEFAULT 1,
-    CONSTRAINT sale_transaction_table_pkey PRIMARY KEY (id)
+created timestamp with time zone NOT NULL,
+modified timestamp with time zone NOT NULL,
+id SERIAL PRIMARY KEY,
+region character varying(32) COLLATE pg_catalog."default" NOT NULL,
+outlet character varying(64) COLLATE pg_catalog."default" NOT NULL,
+emp_id bigint NOT NULL,
+category_type character varying(32) COLLATE pg_catalog."default" NOT NULL,
+prev_product character varying(64) COLLATE pg_catalog."default",
+curr_product character varying(64) COLLATE pg_catalog."default" NOT NULL,
+quantity smallint NOT NULL,
+category character varying(32) COLLATE pg_catalog."default" NOT NULL,
+product_group character varying(32) COLLATE pg_catalog."default" NOT NULL,
+sales_date date NOT NULL DEFAULT CURRENT_DATE,
+quarter integer NOT NULL DEFAULT 1
 )
 
 

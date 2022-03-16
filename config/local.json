@@ -10,7 +10,7 @@
         "name": "postgres",
         "port": 5432,
         "username": "postgres",
-        "password": "gis@123",
+        "password": "Oracle12#$%fget",
         "maxIdelConn": 20,
         "maxOpenConn": 100
     }
