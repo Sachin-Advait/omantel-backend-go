@@ -40,6 +40,14 @@ pass: MJh6VL4g5sK4tMve!
       Bitool2021#$%
 
 
+/**** new server details ****/
+ip: 93.114.128.202
+user: root
+pass: 57utJeQc5rbeQpCp!     http://omantel.moheoman.live
+
+
+
+
 /**** db details ****/
 user: postgres
 password: Secure@#!2021v
@@ -224,3 +232,17 @@ insert into user_hierarchy_table(emp_id, outlet_manager, manager, senior_manager
 values(201,0,0,301,0,0)
 
 delete from user_hierarchy_table
+
+
+userid:     root
+login:      ssh root@93.114.128.202
+password:   fQdxzNQWj8LUgqad!
+
+Postgress
+Host- localhost
+User - gis
+Databases- gisdb
+Password- gis@#42746
+
+And port 8090 is routed on http://omantel.moheoman.live/
+

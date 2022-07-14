@@ -2,10 +2,14 @@ package crons
 
 import (
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+
+	excelize "github.com/xuri/excelize/v2"
 	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/config"
 	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
-	"log"
 )
 
 type DBService interface {
@@ -38,79 +42,80 @@ func NewCronServices(conf *config.Database) *CronImpl {
 
 func (impl *CronImpl) HandleUserMasterInputFile() {
 
-	//fileName := "./doc/Input.xlsx"
-	//
-	//file, err := excelize.OpenFile(fileName)
-	//if err != nil {
-	//	log.Fatalf("could not open file, %v\n", err)
-	//}
-	//
-	//rows, err := file.Rows("CSR & Promoter")
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//
-	////records := make([]*db.Transaction, 0)
-	//
-	//isFirstRow := true
-	//index := 0
-	//
-	//for rows.Next() {
-	//
-	//	index++
-	//
-	//	if isFirstRow {
-	//		rows.Columns()
-	//		isFirstRow = false
-	//		continue
-	//	}
-	//
-	//	row, err := rows.Columns()
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		return
-	//	}
-	//
-	//	emp := &db.Employee{}
-	//
-	//	//LOOP:
-	//	for i, colCell := range row {
-	//
-	//		switch i {
-	//
-	//		case 0:
-	//			num, err := strconv.Atoi(strings.TrimSpace(colCell))
-	//			if err != nil {
-	//				log.Println("ID conversion error: " + err.Error() + " index: " + strconv.Itoa(index))
-	//				//break LOOP
-	//				return
-	//			}
-	//			emp.Id = num
-	//		case 1:
-	//			emp.Name = strings.ToUpper(strings.TrimSpace(colCell))
-	//		case 2:
-	//			emp.Region = strings.ToUpper(strings.TrimSpace(colCell))
-	//		case 3:
-	//			emp.Outlet = strings.ToUpper(strings.TrimSpace(colCell))
-	//		case 4:
-	//			emp.Position = strings.ToUpper(strings.TrimSpace(colCell))
-	//		case 5:
-	//			emp.Remark = strings.ToUpper(strings.TrimSpace(colCell))
-	//		}
-	//	}
-	//
-	//	if emp.Name == "" || emp.Region == "" || emp.Outlet == "" || emp.Position == "" {
-	//		log.Printf("ERROR: employee input record %+v\n", emp)
-	//		return
-	//	}
-	//
-	//	err = impl.DBService.InsertUserMasterRecord(emp)
-	//	if err != nil {
-	//		log.Println("insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
-	//		return
-	//	}
-	//}
+	fileName := "./latest/master.xlsx"
+
+	file, err := excelize.OpenFile(fileName)
+	if err != nil {
+		log.Fatalf("could not open file, %v\n", err)
+	}
+
+	rows, err := file.Rows("CSR & Promoter")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	//records := make([]*db.Transaction, 0)
+
+	isFirstRow := true
+	index := 0
+
+	for rows.Next() {
+
+		index++
+
+		if isFirstRow {
+			rows.Columns()
+			isFirstRow = false
+			continue
+		}
+
+		row, err := rows.Columns()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		emp := &db.Employee{}
+
+		//LOOP:
+		for i, colCell := range row {
+
+			switch i {
+
+			case 0:
+				num, err := strconv.Atoi(strings.TrimSpace(colCell))
+				if err != nil {
+					log.Println("ID conversion error: " + err.Error() + " index: " + strconv.Itoa(index))
+					//break LOOP
+					return
+				}
+				emp.Id = num
+			case 1:
+				emp.Name = strings.ToUpper(strings.TrimSpace(colCell))
+			case 2:
+				emp.Region = strings.ToUpper(strings.TrimSpace(colCell))
+			case 3:
+				emp.Outlet = strings.ToUpper(strings.TrimSpace(colCell))
+			case 4:
+				emp.Position = strings.ToUpper(strings.TrimSpace(colCell))
+			case 5:
+				emp.Remark = strings.ToUpper(strings.TrimSpace(colCell))
+			}
+		}
+
+		if emp.Name == "" || emp.Region == "" || emp.Outlet == "" || emp.Position == "" {
+			log.Printf("ERROR: employee input record %+v\n", emp)
+			return
+		}
+
+		err = impl.DBService.InsertUserMasterRecord(emp)
+		if err != nil {
+			log.Println("insertionError: " + err.Error() + " index: " + strconv.Itoa(index))
+			return
+		}
+	}
+
 	fmt.Println("HandleUserMasterInputFile successfull")
 }
 
