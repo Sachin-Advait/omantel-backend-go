@@ -1,0 +1,11 @@
+level: "debug"
+consoleLoggingEnabled: false
+encodeLogsAsJson: true
+fileLoggingEnabled: true
+debugLoggingEnabled: true
+directory: Logs
+fileName: app.log
+maxSizeInMB: 100
+maxBackups: 1
+maxAgeInDays: 5
+compress: true

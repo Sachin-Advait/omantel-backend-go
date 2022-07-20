@@ -1,0 +1,1734 @@
+package psqldb
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// InsertUserMasterRecord reads data from user master input file and inserts into table
+func (dbConn *DBImplementation) InsertUserMasterRecord(emp *Employee) *errors.Error {
+
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	query := "insert into User_Master_Table(created, modified, emp_id, name, usr_position, region, outlet, mobile_number ,remark) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+
+	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), emp.Id, emp.Name, emp.Position, emp.Region, emp.Outlet, emp.MobileNos, emp.Remark)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertUserMasterRecord: failed",
+			Details:    "InsertUserMasterRecord: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// InsertSaleTransaction reads data from input file and inserts into table
+func (dbConn *DBImplementation) InsertSaleTransaction(trx *Transaction) *errors.Error {
+
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	query := "insert into Sale_Transaction_Table(created, modified, region, outlet, emp_id, category_type, prev_product, curr_product, quantity, category, product_group, sales_date, quarter) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
+
+	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), trx.Reqion, trx.Outlet, trx.Id, trx.CategoryType, trx.PreviousProduct,
+		trx.CurrentProduct, trx.Quantity, trx.Category, trx.ProductGrp, trx.SaleDate, trx.Quarter)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertSaleTransaction: failed",
+			Details:    "InsertSaleTransaction: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// DeleteProductPlans removes product plan data from table
+func (dbConn *DBImplementation) DeleteProductPlans() *errors.Error {
+
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM Product_Plans_Table")
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteProductPlans: failed",
+			Details:    "DeleteProductPlans: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// InsertProductPlans reads data from plan input file and inserts into table
+func (dbConn *DBImplementation) InsertProductPlans(plan *ProductPlans) *errors.Error {
+
+	// ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	// dbConn.Operation.ExecContext(ctx, "DELETE FROM Product_Plans_Table")
+
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	query := "insert into Product_Plans_Table(created, modified, plan_name, plan_price, sip_plan_rate) values($1,$2,$3,$4,$5)"
+
+	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), plan.PlanName, plan.PlanPrice, plan.SIPRatePlan)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertProductPlans: failed",
+			Details:    "InsertProductPlans: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// DeleteStoreTargets removes store target data from table
+func (dbConn *DBImplementation) DeleteStoreTargets() *errors.Error {
+
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM Sales_Target_Table")
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteStoreTargets: failed",
+			Details:    "DeleteStoreTargets: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// DeleteHierarchy removes all hierarchy data from table
+func (dbConn *DBImplementation) DeleteHierarchy() *errors.Error {
+
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM user_hierarchy_table")
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteHierarchy: failed",
+			Details:    "DeleteHierarchy: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// InsertStoreTargets reads data from target input file and inserts into table
+func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month int, trgt *ProductGrpTarget) *errors.Error {
+
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+
+	query := "insert into Sales_Target_Table(created, modified, region, outlet, months, Baqati, HBB, Hayyak, Upgrade) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+
+	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), region, outlet, month, trgt.Baqati, trgt.HBB, trgt.Hayyak, trgt.Upgrade)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertStoreTargets: failed",
+			Details:    "InsertStoreTargets: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// InsertValueOfPoints reads data from ScakeOrder input file and inserts into table
+func (dbConn *DBImplementation) InsertValueOfPoints(category string, percent int, vop float64) (int64, *errors.Error) {
+
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	query := "insert into Scale_Order_Table(category, percentage, vop) values($1,$2,$3)"
+
+	rslt, err := dbConn.Operation.ExecContext(ctx, query, category, percent, vop)
+	if err != nil {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertValueOfPoints: failed",
+			Details:    "InsertValueOfPoints: " + err.Error(),
+		}
+	}
+
+	id, err := rslt.LastInsertId()
+	if err != nil {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertValueOfPoints LastInsertId: failed",
+			Details:    "InsertValueOfPoints LastInsertId: " + err.Error(),
+		}
+	}
+
+	return id, nil
+}
+
+// FetchSaleTarget loads the global variable PlanRates with the rate plan for each plan type
+func (dbConn *DBImplementation) FetchPlans() *errors.Error {
+
+	rows, err := dbConn.Operation.Query("select id, plan_name, plan_price, sip_plan_rate from Product_Plans_Table")
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchPlans Query: failed",
+			Details:    "FetchPlans Query: " + err.Error(),
+		}
+	}
+
+	var (
+		id            int
+		plan_name     string
+		plan_price    float64
+		sip_plan_rate float64
+	)
+
+	for rows.Next() {
+		if err := rows.Scan(&id, &plan_name, &plan_price, &sip_plan_rate); err != nil {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchPlans Scan: failed",
+				Details:    "FetchPlans Scan: " + err.Error(),
+			}
+		}
+
+		PlanRates.Mutex.Lock()
+		if PlanRates.PlanRateMap == nil {
+			PlanRates.PlanRateMap = make(map[int]*ProductPlans)
+		}
+
+		PlanRates.PlanRateMap[id] = &ProductPlans{
+			PlanName:    plan_name,
+			PlanPrice:   plan_price,
+			SIPRatePlan: sip_plan_rate,
+		}
+
+		PlanRates.Mutex.Unlock()
+
+	}
+
+	return nil
+}
+
+// FetchSaleTarget loads the global variable SalesTrgt with the target for each outlet
+func (dbConn *DBImplementation) FetchSaleTarget() *errors.Error {
+
+	SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*ProductGrpTarget)
+
+	rows, err := dbConn.Operation.Query("select region, outlet, months, Baqati, HBB, Hayyak, Upgrade from Sales_Target_Table")
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchSaleTarget Query: failed",
+			Details:    "FetchSaleTarget Query: " + err.Error(),
+		}
+	}
+
+	var (
+		region  string
+		outlet  string
+		month   int
+		baqati  int
+		hBB     int
+		hayyak  int
+		upgrade int
+	)
+
+	for rows.Next() {
+		if err := rows.Scan(&region, &outlet, &month, &baqati, &hBB, &hayyak, &upgrade); err != nil {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchSaleTarget Scan: failed",
+				Details:    "FetchSaleTarget Scan: " + err.Error(),
+			}
+		}
+
+		SalesTrgt.Mutex.Lock()
+
+		if SalesTrgt.SaleTargetMap[region] == nil {
+			SalesTrgt.SaleTargetMap[region] = make(map[string][12]*ProductGrpTarget)
+		}
+
+		array, ok := SalesTrgt.SaleTargetMap[region][outlet]
+		if !ok {
+			var temp [12]*ProductGrpTarget
+			SalesTrgt.SaleTargetMap[region][outlet] = temp
+		}
+
+		array[month-1] = &ProductGrpTarget{
+			Baqati:  baqati,
+			HBB:     hBB,
+			Hayyak:  hayyak,
+			Upgrade: upgrade,
+		}
+
+		SalesTrgt.SaleTargetMap[region][outlet] = array
+
+		SalesTrgt.Mutex.Unlock()
+
+	}
+
+	return nil
+}
+
+// FetchValueOfPoint loads the global variable ValOfPoint with the value of point for each product type
+func (dbConn *DBImplementation) FetchValueOfPoint() *errors.Error {
+
+	// rows, err := dbConn.Operation.Query("select group, top_percentage, vop, extra_pay from Product_Plans_Table")
+	// if err != nil {
+	// 	return err
+	// }
+
+	// var (
+	// 	group          string
+	// 	top_percentage int
+	// 	vop            float64
+	// 	extra_pay      float64
+	// )
+
+	// for rows.Next() {
+	// 	if err := rows.Scan(&group, &top_percentage, &vop, &extra_pay); err != nil {
+	// 		return err
+	// 	}
+
+	// 	ValOfPoint.Mutex.Lock()
+	// 	if ValOfPoint.VopMap == nil {
+	// 		ValOfPoint.VopMap = make(map[string]map[int]*VOP)
+	// 	}
+
+	// 	if ValOfPoint.VopMap[group] == nil {
+	// 		ValOfPoint.VopMap[group] = make(map[int]*VOP)
+	// 	}
+
+	// 	ValOfPoint.VopMap[group][top_percentage] = &VOP{
+	// 		Point:    vop,
+	// 		ExtraPay: extra_pay,
+	// 	}
+
+	// 	ValOfPoint.Mutex.Unlock()
+
+	// }
+
+	ValOfPoint.Mutex.Lock()
+
+	ValOfPoint.VopMap = make(map[string]map[int]*VOP)
+	ValOfPoint.VopMap["HBB"] = make(map[int]*VOP)
+	ValOfPoint.VopMap["BAQATI"] = make(map[int]*VOP)
+	ValOfPoint.VopMap["HAYYAK"] = make(map[int]*VOP)
+	ValOfPoint.VopMap["UPGRADE"] = make(map[int]*VOP)
+
+	ValOfPoint.VopMap["HBB"][75] = &VOP{
+		Point:    0.0,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HBB"][95] = &VOP{
+		Point:    0.15,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HBB"][110] = &VOP{
+		Point:    0.25,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HBB"][139] = &VOP{
+		Point:    0.45,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HBB"][140] = &VOP{
+		Point:    0.75,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HBB"][159] = &VOP{
+		Point:    0,
+		ExtraPay: 17.5,
+	}
+	ValOfPoint.VopMap["HBB"][179] = &VOP{
+		Point:    0,
+		ExtraPay: 35.0,
+	}
+	ValOfPoint.VopMap["HBB"][189] = &VOP{
+		Point:    0,
+		ExtraPay: 52.5,
+	}
+	ValOfPoint.VopMap["HBB"][199] = &VOP{
+		Point:    0,
+		ExtraPay: 70.0,
+	}
+	ValOfPoint.VopMap["HBB"][200] = &VOP{
+		Point:    0,
+		ExtraPay: 87.5,
+	}
+
+	ValOfPoint.VopMap["BAQATI"][75] = &VOP{
+		Point:    0.0,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["BAQATI"][95] = &VOP{
+		Point:    0.15,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["BAQATI"][110] = &VOP{
+		Point:    0.25,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["BAQATI"][139] = &VOP{
+		Point:    0.45,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["BAQATI"][140] = &VOP{
+		Point:    0.75,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["BAQATI"][159] = &VOP{
+		Point:    0,
+		ExtraPay: 17.5,
+	}
+	ValOfPoint.VopMap["BAQATI"][179] = &VOP{
+		Point:    0,
+		ExtraPay: 35.0,
+	}
+	ValOfPoint.VopMap["BAQATI"][189] = &VOP{
+		Point:    0,
+		ExtraPay: 53,
+	}
+	ValOfPoint.VopMap["BAQATI"][199] = &VOP{
+		Point:    0,
+		ExtraPay: 70.0,
+	}
+	ValOfPoint.VopMap["BAQATI"][200] = &VOP{
+		Point:    0,
+		ExtraPay: 87.5,
+	}
+
+	ValOfPoint.VopMap["HAYYAK"][75] = &VOP{
+		Point:    0.0,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HAYYAK"][95] = &VOP{
+		Point:    0.15,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HAYYAK"][110] = &VOP{
+		Point:    0.25,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HAYYAK"][139] = &VOP{
+		Point:    0.45,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HAYYAK"][140] = &VOP{
+		Point:    0.75,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["HAYYAK"][159] = &VOP{
+		Point:    0,
+		ExtraPay: 11,
+	}
+	ValOfPoint.VopMap["HAYYAK"][179] = &VOP{
+		Point:    0,
+		ExtraPay: 22,
+	}
+	ValOfPoint.VopMap["HAYYAK"][189] = &VOP{
+		Point:    0,
+		ExtraPay: 33,
+	}
+	ValOfPoint.VopMap["HAYYAK"][199] = &VOP{
+		Point:    0,
+		ExtraPay: 44,
+	}
+	ValOfPoint.VopMap["HAYYAK"][200] = &VOP{
+		Point:    0,
+		ExtraPay: 55,
+	}
+
+	ValOfPoint.VopMap["UPGRADE"][75] = &VOP{
+		Point:    0.0,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["UPGRADE"][95] = &VOP{
+		Point:    0.1,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["UPGRADE"][110] = &VOP{
+		Point:    0.15,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["UPGRADE"][139] = &VOP{
+		Point:    0.3,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["UPGRADE"][140] = &VOP{
+		Point:    0.5,
+		ExtraPay: 0,
+	}
+	ValOfPoint.VopMap["UPGRADE"][159] = &VOP{
+		Point:    0,
+		ExtraPay: 4,
+	}
+	ValOfPoint.VopMap["UPGRADE"][179] = &VOP{
+		Point:    0,
+		ExtraPay: 8,
+	}
+	ValOfPoint.VopMap["UPGRADE"][189] = &VOP{
+		Point:    0,
+		ExtraPay: 12,
+	}
+	ValOfPoint.VopMap["UPGRADE"][199] = &VOP{
+		Point:    0,
+		ExtraPay: 16,
+	}
+	ValOfPoint.VopMap["UPGRADE"][200] = &VOP{
+		Point:    0,
+		ExtraPay: 20,
+	}
+
+	ValOfPoint.Mutex.Unlock()
+
+	return nil
+}
+
+// FetchMaxPayout loads the gloabal variable MaxPay with the maximum payout limit
+func (dbConn *DBImplementation) FetchMaxPayout() *errors.Error {
+
+	// rows, err := dbConn.Operation.Query("select group, percentage, max_pay from Max_Payout_Table")
+	// if err != nil {
+	// 	return err
+	// }
+
+	// var (
+	// 	group      string
+	// 	percentage int
+	// 	max_pay    int
+	// )
+
+	// for rows.Next() {
+	// 	if err := rows.Scan(&group, &percentage, &max_pay); err != nil {
+	// 		return err
+	// 	}
+
+	// 	MaxPay.Mutex.Lock()
+	// 	if MaxPay.Payoutmap == nil {
+	// 		MaxPay.Payoutmap = make(map[string]float64)
+	// 	}
+
+	// 	MaxPay.Payoutmap[group] = float64(percentage) * float64(max_pay) / 100
+
+	// 	MaxPay.Mutex.Unlock()
+
+	// }
+
+	MaxPay.Mutex.Lock()
+	MaxPay.Payoutmap = make(map[string]float64)
+	MaxPay.Payoutmap["HBB"] = 350
+	MaxPay.Payoutmap["BAQATI"] = 350
+	MaxPay.Payoutmap["HAYYAK"] = 220
+	MaxPay.Payoutmap["UPGRADE"] = 80
+	MaxPay.Mutex.Unlock()
+
+	return nil
+}
+
+// FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
+func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, *errors.Error) {
+
+	// rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and position!= $3", region, outlet, commons.OutletManager)
+	rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'", region, outlet)
+	if err != nil {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchTotalNonManagerialEmployees Query: failed",
+			Details:    "FetchTotalNonManagerialEmployees Query: " + err.Error(),
+		}
+	}
+
+	var count int
+
+	for rows.Next() {
+		if err := rows.Scan(&count); err != nil {
+			return -1, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchTotalNonManagerialEmployees Scan: failed",
+				Details:    "FetchTotalNonManagerialEmployees Scan: " + err.Error(),
+			}
+		}
+	}
+
+	return count, nil
+}
+
+// FetchUserSales returns all sale transaction of a given user
+func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter int, isQuarterReport bool) (*SaleTransaction, *errors.Error) {
+
+	var (
+		rows *sql.Rows
+		err  error
+	)
+
+	if isQuarterReport {
+		rows, err = dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and b.quarter= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, quarter, year)
+	} else {
+		rows, err = dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('month' from b.sales_date)= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, month, year)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchUserSales Query: failed",
+			Details:    "FetchUserSales Query: " + err.Error(),
+		}
+	}
+
+	var (
+		position      string
+		outlet        string
+		region        string
+		prev_product  string
+		curr_product  string
+		quantity      int
+		product_group string
+		category      string
+	)
+
+	trx := &SaleTransaction{}
+	trx.SaleRecords = make(map[string][]*SaleRecord)
+
+	count := 0
+
+	for rows.Next() {
+		count++
+		if err := rows.Scan(&position, &outlet, &region, &prev_product, &curr_product, &quantity, &product_group, &category); err != nil {
+			return trx, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserSales Scan: failed",
+				Details:    "FetchUserSales Scan: " + err.Error(),
+			}
+		}
+
+		trx.EmpID = clientID
+		trx.Position = position
+		trx.Outlet = outlet
+		trx.Region = region
+
+		rcrd := &SaleRecord{
+			Quantity:        quantity,
+			Category:        category,
+			PreviousProduct: prev_product,
+			CurrentProduct:  curr_product,
+		}
+
+		if trx.SaleRecords[product_group] == nil {
+			trx.SaleRecords[product_group] = make([]*SaleRecord, 0)
+		}
+
+		trx.SaleRecords[product_group] = append(trx.SaleRecords[product_group], rcrd)
+	}
+
+	return trx, nil
+}
+
+func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (map[int]*SaleTransaction, map[int]*SaleTransaction, *errors.Error) {
+
+	rows, err := dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category, b.sales_date from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('year' from b.sales_date)= $2", clientID, 2021)
+	if err != nil {
+		return nil, nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchPromotersPresentYearSales Query: failed",
+			Details:    "FetchPromotersPresentYearSales Query: " + err.Error(),
+		}
+	}
+
+	var (
+		position      string
+		outlet        string
+		region        string
+		prev_product  string
+		curr_product  string
+		quantity      int
+		product_group string
+		category      string
+		sale_date     time.Time
+	)
+
+	monthly := make(map[int]*SaleTransaction)
+	quarterly := make(map[int]*SaleTransaction)
+
+	for rows.Next() {
+		if err := rows.Scan(&position, &outlet, &region, &prev_product, &curr_product, &quantity, &product_group, &category, &sale_date); err != nil {
+			return nil, nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchPromotersPresentYearSales Scan: failed",
+				Details:    "FetchPromotersPresentYearSales Scan: " + err.Error(),
+			}
+		}
+
+		rcrd := &SaleRecord{
+			Quantity:        quantity,
+			Category:        category,
+			PreviousProduct: prev_product,
+			CurrentProduct:  curr_product,
+			SaleDate:        sale_date,
+		}
+
+		v, ok := monthly[int(sale_date.Month())]
+		if !ok {
+			trx := &SaleTransaction{}
+			trx.EmpID = clientID
+			trx.Position = position
+			trx.Outlet = outlet
+			trx.Region = region
+			trx.SaleRecords = map[string][]*SaleRecord{
+				product_group: {rcrd},
+			}
+
+			monthly[int(sale_date.Month())] = trx
+		} else {
+
+			if v.SaleRecords[product_group] == nil {
+				v.SaleRecords[product_group] = make([]*SaleRecord, 0)
+			}
+
+			v.SaleRecords[product_group] = append(v.SaleRecords[product_group], rcrd)
+
+			monthly[int(sale_date.Month())] = v
+		}
+
+		v, ok = quarterly[getQuarterFromMonth(int(sale_date.Month()))]
+		if !ok {
+			trx := &SaleTransaction{}
+			trx.EmpID = clientID
+			trx.Position = position
+			trx.Outlet = outlet
+			trx.Region = region
+			trx.SaleRecords = map[string][]*SaleRecord{
+				product_group: {rcrd},
+			}
+
+			quarterly[getQuarterFromMonth(int(sale_date.Month()))] = trx
+		} else {
+
+			if v.SaleRecords[product_group] == nil {
+				v.SaleRecords[product_group] = make([]*SaleRecord, 0)
+			}
+
+			v.SaleRecords[product_group] = append(v.SaleRecords[product_group], rcrd)
+
+			quarterly[getQuarterFromMonth(int(sale_date.Month()))] = v
+		}
+	}
+
+	return monthly, quarterly, nil
+}
+
+// FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
+func (dbConn *DBImplementation) FetchEmployeeContactNumber(clientID int) (int, *errors.Error) {
+
+	rows, err := dbConn.Operation.Query("select mobile_number from User_Master_Table where emp_id= $1", clientID)
+	if err != nil {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchEmployeeContactNumber Query: failed",
+			Details:    "FetchEmployeeContactNumber Query: " + err.Error(),
+		}
+	}
+
+	var (
+		count         int
+		contactNumber string
+	)
+
+	for rows.Next() {
+
+		if count == 1 {
+			return -1, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchEmployeeContactNumber: found more than on record",
+				Details:    "FetchEmployeeContactNumber: found more than on record",
+			}
+		}
+
+		if err := rows.Scan(&contactNumber); err != nil {
+			return -1, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchEmployeeContactNumber Scan: failed",
+				Details:    "FetchEmployeeContactNumber Scan: " + err.Error(),
+			}
+		}
+
+		count++
+	}
+
+	if contactNumber == "" {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchEmployeeContactNumber: contact number not found",
+			Details:    "FetchEmployeeContactNumber: contact number not found",
+		}
+	}
+
+	mobNum, err := strconv.Atoi(contactNumber)
+	if err != nil {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchEmployeeContactNumber: contact number parsing failed",
+			Details:    "FetchEmployeeContactNumber contact number parsing failed: " + err.Error(),
+		}
+	}
+
+	return mobNum, nil
+}
+
+func (dbConn *DBImplementation) InsertStaffOTP(otpModel *OtpModel) *errors.Error {
+	_, err := dbConn.Operation.Query("DELETE FROM user_authentication_table WHERE emp_id= $1", otpModel.StaffID)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertStaffOTP: delete failed",
+			Details:    "InsertStaffOTP delete failed: " + err.Error(),
+		}
+	}
+
+	_, err = dbConn.Operation.Query("INSERT INTO user_authentication_table(created, emp_id, expirytime, modified, otp, retry) VALUES ($1,$2,$3,$4,$5,$6);",
+		otpModel.CreatedTime,
+		otpModel.StaffID,
+		otpModel.ExpiryTime,
+		time.Now().Local(),
+		otpModel.OTP,
+		otpModel.Retry,
+	)
+
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertStaffOTP: insert failed",
+			Details:    "InsertStaffOTP insert failed: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*OtpModel, *errors.Error) {
+
+	rows, err := dbConn.Operation.Query("select a.name, a.usr_position, b.otp, b.retry, b.expiryTime from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchOTPValidity: query failed",
+			Details:    "FetchOTPValidity query failed: " + err.Error(),
+		}
+	}
+
+	var count int
+
+	otModel := &OtpModel{}
+
+	for rows.Next() {
+
+		if count == 1 {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchOTPValidity: found more than on record",
+				Details:    "FetchOTPValidity: found more than on record",
+			}
+		}
+
+		if err := rows.Scan(&otModel.StaffName, &otModel.StaffPosition, &otModel.OTP, &otModel.Retry, &otModel.ExpiryTime); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchOTPValidity: scan failed",
+				Details:    "FetchOTPValidity scan failed: " + err.Error(),
+			}
+		}
+
+		count++
+	}
+
+	return otModel, nil
+}
+
+// FetchAllGivenPositionEmpIdAndTheirManager returns an array of all employees of the given position along with their managers, returns empty array if no records found
+func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(position string) ([]*UserLead, *errors.Error) {
+
+	if !(position == commons.VicePresident || position == commons.GeneralManager || position == commons.SeniorManager || position == commons.Manager || position == commons.OutletManager || position == commons.Promoter) {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchAllGivenPositionEmpIdAndTheirManager: incorrect position",
+			Details:    "FetchAllGivenPositionEmpIdAndTheirManager: incorrect position req- " + position,
+		}
+	}
+
+	var query string
+
+	switch position {
+	case commons.VicePresident:
+		query = "select distinct vice_president, 0 from user_hierarchy_table"
+	case commons.GeneralManager:
+		query = "select distinct general_manager, vice_president from user_hierarchy_table"
+	case commons.SeniorManager:
+		query = "select distinct senior_manager, general_manager from user_hierarchy_table"
+	case commons.Manager:
+		query = "select distinct manager, senior_manager from user_hierarchy_table"
+	case commons.OutletManager:
+		query = "select distinct outlet_manager, manager from user_hierarchy_table"
+	case commons.Promoter:
+		query = "select distinct emp_id, outlet_manager from user_hierarchy_table"
+	}
+
+	rows, err := dbConn.Operation.Query(query)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchAllGivenPositionEmpIdAndTheirManager: query failed",
+			Details:    "FetchAllGivenPositionEmpIdAndTheirManager query failed: " + err.Error(),
+		}
+	}
+
+	var array = make([]*UserLead, 0)
+
+	for rows.Next() {
+
+		usr := &UserLead{}
+
+		if err := rows.Scan(&usr.EmpID, &usr.ReportTo); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchAllGivenPositionEmpIdAndTheirManager: scan failed failed",
+				Details:    "FetchAllGivenPositionEmpIdAndTheirManager scan failed: " + err.Error(),
+			}
+		}
+
+		array = append(array, usr)
+	}
+
+	return array, nil
+}
+
+// FetchAllEmployeesReportingToGivenManager returns all employees reporting to given manager, returns empty array if no records found
+func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(managerPosition string, managerID int) ([]*ReportingStaffIDAndName, *errors.Error) {
+
+	if !(managerPosition == "vice_president" || managerPosition == "general_manager" || managerPosition == "senior_manager" || managerPosition == "manager" || managerPosition == "outlet_manager") {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchAllEmployeesReportingToGivenManagerRole: incorrect position",
+			Details:    "FetchAllEmployeesReportingToGivenManagerRole: incorrect position req- " + managerPosition,
+		}
+	}
+
+	var query string
+
+	switch managerPosition {
+	case "vice_president":
+		query = "select distinct a.general_manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.general_manager=b.emp_id where a.vice_president= $1"
+	case "general_manager":
+		query = "select distinct a.senior_manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.senior_manager=b.emp_id where a.general_manager= $1"
+	case "senior_manager":
+		query = "select distinct a.manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.manager=b.emp_id where a.senior_manager= $1"
+	case "manager":
+		query = "select distinct a.outlet_manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager= $1"
+	case "outlet_manager":
+		query = "select distinct a.emp_id, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.outlet_manager= $1"
+	}
+
+	rows, err := dbConn.Operation.Query(query, managerID)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchAllEmployeesReportingToGivenManagerRole: query failed",
+			Details:    "FetchAllEmployeesReportingToGivenManagerRole query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		array = make([]*ReportingStaffIDAndName, 0)
+	)
+
+	for rows.Next() {
+
+		usr := &ReportingStaffIDAndName{}
+
+		if err := rows.Scan(&usr.ID, &usr.Name); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchAllEmployeesReportingToGivenManagerRole: scan failed failed",
+				Details:    "FetchAllEmployeesReportingToGivenManagerRole scan failed: " + err.Error(),
+			}
+		}
+
+		array = append(array, usr)
+	}
+
+	return array, nil
+}
+
+func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRole(managerPosition string, managerID int) ([]*ReportingStaffIDAndName, *errors.Error) {
+
+	if !(managerPosition == "vice_president" || managerPosition == "general_manager" || managerPosition == "senior_manager" || managerPosition == "manager" || managerPosition == "outlet_manager") {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchAllOutletManagersReportingToGivenManagerRole: incorrect position",
+			Details:    "FetchAllOutletManagersReportingToGivenManagerRole: incorrect position req- " + managerPosition,
+		}
+	}
+
+	var query string
+
+	switch managerPosition {
+	case "vice_president":
+		query = "select distinct a.outlet_manager, b.outlet, b.region from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.vice_president= $1"
+	case "general_manager":
+		query = "select distinct a.outlet_manager, b.outlet, b.region from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.general_manager= $1"
+	case "senior_manager":
+		query = "select distinct a.outlet_manager, b.outlet, b.region from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.senior_manager= $1"
+	case "manager":
+		query = "select distinct a.outlet_manager, b.outlet, b.region from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager= $1"
+	case "outlet_manager":
+		query = "select emp_id, outlet, region from user_master_table where emp_id= $1"
+	}
+
+	fmt.Println("check", managerPosition)
+
+	rows, err := dbConn.Operation.Query(query, managerID)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchAllOutletManagersReportingToGivenManagerRole: query failed",
+			Details:    "FetchAllOutletManagersReportingToGivenManagerRole query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		array = make([]*ReportingStaffIDAndName, 0)
+	)
+
+	for rows.Next() {
+
+		usr := &ReportingStaffIDAndName{}
+
+		if err := rows.Scan(&usr.ID, &usr.Outlet, &usr.Region); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchAllOutletManagersReportingToGivenManagerRole: scan failed failed",
+				Details:    "FetchAllOutletManagersReportingToGivenManagerRole scan failed: " + err.Error(),
+			}
+		}
+
+		array = append(array, usr)
+	}
+
+	return array, nil
+}
+
+// InsertEmployeeRecord inserts each users statistical daily in db, and is updated everyday once
+func (dbConn *DBImplementation) InsertEmployeeRecord(usr *UserRecord) *errors.Error {
+
+	// fmt.Printf("userRecord: %+v\n", *usr)
+
+	//add where clause
+	_, err := dbConn.Operation.Query("INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31);",
+		usr.EmpId,
+		usr.Created,
+		usr.ReportingManager,
+		usr.Isquarterly,
+		usr.Month,
+		usr.Quarter,
+		usr.Hayyak_sales_count,
+		usr.Hayyak_target,
+		usr.Hayyak_achieved_percentage,
+		usr.Hayyak_payout,
+		usr.Hayyak_extra_payout,
+		usr.Hbb_sales_count,
+		usr.Hbb_target,
+		usr.Hbb_achieved_percentage,
+		usr.Hbb_payout,
+		usr.Hbb_extra_payout,
+		usr.Baqati_sales_count,
+		usr.Baqati_target,
+		usr.Baqati_achieved_percentage,
+		usr.Baqati_payout,
+		usr.Baqati_extra_payout,
+		usr.Upgrade_sales_count,
+		usr.Upgrade_target,
+		usr.Uprade_achieved_percentage,
+		usr.Upgrade_payout,
+		usr.Upgrade_extra_payout,
+		usr.Total_payout,
+		usr.HayyakSaleCountPerPlanArray,
+		usr.HBBSaleCountPerPlanArray,
+		usr.BaqatiSaleCountPerPlanArray,
+		usr.UpgradeSaleCountPerPlanArray,
+	)
+
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertEmployeeRecord: failed",
+			Details:    "InsertEmployeeRecord failed: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// InsertEmployeeMultipleRecords inserts each users multiple statistical data daily in db, and is updated everyday once
+func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*UserRecord) *errors.Error {
+
+	if len(usr) == 0 {
+		return nil
+	}
+
+	valueStrings := []string{}
+	valueArgs := []interface{}{}
+
+	count := 0
+	for _, w := range usr {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v)", count+1, count+2, count+3, count+4, count+5, count+6, count+7, count+8, count+9, count+10, count+11, count+12, count+13, count+14, count+15, count+16, count+17, count+18, count+19, count+20, count+21, count+22, count+23, count+24, count+25, count+26, count+27, count+28, count+29, count+30, count+31))
+
+		valueArgs = append(valueArgs, w.EmpId)
+		valueArgs = append(valueArgs, w.Created)
+		valueArgs = append(valueArgs, w.ReportingManager)
+		valueArgs = append(valueArgs, w.Isquarterly)
+		valueArgs = append(valueArgs, w.Month)
+		valueArgs = append(valueArgs, w.Quarter)
+		valueArgs = append(valueArgs, w.Hayyak_sales_count)
+		valueArgs = append(valueArgs, w.Hayyak_target)
+		valueArgs = append(valueArgs, w.Hayyak_achieved_percentage)
+		valueArgs = append(valueArgs, w.Hayyak_payout)
+		valueArgs = append(valueArgs, w.Hayyak_extra_payout)
+		valueArgs = append(valueArgs, w.Hbb_sales_count)
+		valueArgs = append(valueArgs, w.Hbb_target)
+		valueArgs = append(valueArgs, w.Hbb_achieved_percentage)
+		valueArgs = append(valueArgs, w.Hbb_payout)
+		valueArgs = append(valueArgs, w.Hbb_extra_payout)
+		valueArgs = append(valueArgs, w.Baqati_sales_count)
+		valueArgs = append(valueArgs, w.Baqati_target)
+		valueArgs = append(valueArgs, w.Baqati_achieved_percentage)
+		valueArgs = append(valueArgs, w.Baqati_payout)
+		valueArgs = append(valueArgs, w.Baqati_extra_payout)
+		valueArgs = append(valueArgs, w.Upgrade_sales_count)
+		valueArgs = append(valueArgs, w.Upgrade_target)
+		valueArgs = append(valueArgs, w.Uprade_achieved_percentage)
+		valueArgs = append(valueArgs, w.Upgrade_payout)
+		valueArgs = append(valueArgs, w.Upgrade_extra_payout)
+		valueArgs = append(valueArgs, w.Total_payout)
+		valueArgs = append(valueArgs, w.HayyakSaleCountPerPlanArray)
+		valueArgs = append(valueArgs, w.HBBSaleCountPerPlanArray)
+		valueArgs = append(valueArgs, w.BaqatiSaleCountPerPlanArray)
+		valueArgs = append(valueArgs, w.UpgradeSaleCountPerPlanArray)
+
+		count += 31
+	}
+
+	smt := `INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan)
+    VALUES %s ON CONFLICT (emp_id, months, quarter) DO NOTHING`
+	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
+
+	tx, err := dbConn.Operation.Begin()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertEmployeeMultipleRecords: begin trx failed",
+			Details:    "InsertEmployeeMultipleRecords begin trx failed: " + err.Error(),
+		}
+	}
+
+	// _, err = tx.Exec("Delete FROM staff_daily_report_table where emp_id=$1", usr[0].EmpId)
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return &commons.GenericError{Code: 1001, ErrorMessage: "InsertEmployeeMultipleRecords db delete error " + err.Error()}
+	// }
+
+	if usr[0].EmpId == 34296 {
+		for _, v := range usr {
+			fmt.Printf("%+v\n", v)
+		}
+	}
+
+	_, err = tx.Exec(smt, valueArgs...)
+	if err != nil {
+		tx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertEmployeeMultipleRecords: exec failed",
+			Details:    "InsertEmployeeMultipleRecords exec failed: " + err.Error(),
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertEmployeeMultipleRecords: commit failed",
+			Details:    "InsertEmployeeMultipleRecords commit failed: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) InsertHierarchy(usr ...*UserHierarchy) *errors.Error {
+
+	valueStrings := []string{}
+	valueArgs := []interface{}{}
+
+	count := 0
+	for _, w := range usr {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%v, $%v, $%v, $%v, $%v, $%v)", count+1, count+2, count+3, count+4, count+5, count+6))
+		valueArgs = append(valueArgs, w.EmployeeID)
+		valueArgs = append(valueArgs, w.OutletManager)
+		valueArgs = append(valueArgs, w.Manager)
+		valueArgs = append(valueArgs, w.SeniorManager)
+		valueArgs = append(valueArgs, w.GeneralManager)
+		valueArgs = append(valueArgs, w.VicePresident)
+
+		count += 6
+	}
+
+	smt := `INSERT INTO user_hierarchy_table(emp_id, outlet_manager, manager, senior_manager, general_manager, vice_president)
+    VALUES %s ON CONFLICT (emp_id) DO NOTHING`
+	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
+
+	tx, err := dbConn.Operation.Begin()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertHierarchy: begin trx failed",
+			Details:    "InsertHierarchy begin trx failed: " + err.Error(),
+		}
+	}
+
+	_, err = tx.Exec(smt, valueArgs...)
+	if err != nil {
+		tx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertHierarchy: exec failed",
+			Details:    "InsertHierarchy exec failed: " + err.Error(),
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertHierarchy: commit failed",
+			Details:    "InsertHierarchy commit failed: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*UserRecord, *errors.Error) {
+
+	rows, err := dbConn.Operation.Query("select reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1", id)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchIndividualUserRecord: query failed",
+			Details:    "FetchIndividualUserRecord query failed: " + err.Error(),
+		}
+	}
+
+	rcrds := make([]*UserRecord, 0)
+
+	for rows.Next() {
+
+		rcrd := &UserRecord{
+			EmpId: id,
+		}
+
+		if err := rows.Scan(
+			&rcrd.ReportingManager,
+			&rcrd.Isquarterly,
+			&rcrd.Month,
+			&rcrd.Quarter,
+			&rcrd.Hayyak_sales_count,
+			&rcrd.Hayyak_target,
+			&rcrd.Hayyak_achieved_percentage,
+			&rcrd.Hayyak_payout,
+			&rcrd.Hayyak_extra_payout,
+			&rcrd.Hbb_sales_count,
+			&rcrd.Hbb_target,
+			&rcrd.Hbb_achieved_percentage,
+			&rcrd.Hbb_payout,
+			&rcrd.Hbb_extra_payout,
+			&rcrd.Baqati_sales_count,
+			&rcrd.Baqati_target,
+			&rcrd.Baqati_achieved_percentage,
+			&rcrd.Baqati_payout,
+			&rcrd.Baqati_extra_payout,
+			&rcrd.Upgrade_sales_count,
+			&rcrd.Upgrade_target,
+			&rcrd.Uprade_achieved_percentage,
+			&rcrd.Upgrade_payout,
+			&rcrd.Upgrade_extra_payout,
+			&rcrd.Total_payout,
+			&rcrd.HayyakSaleCountPerPlanArray,
+			&rcrd.HBBSaleCountPerPlanArray,
+			&rcrd.BaqatiSaleCountPerPlanArray,
+			&rcrd.UpgradeSaleCountPerPlanArray,
+		); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchIndividualUserRecord: scan failed",
+				Details:    "FetchIndividualUserRecord scan failed: " + err.Error(),
+			}
+		}
+
+		rcrds = append(rcrds, rcrd)
+	}
+
+	return rcrds, nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *errors.Error) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if !isQuarterly {
+		rows, err = dbConn.Operation.Query("select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchIndividualUserPayoutReport: query failed",
+			Details:    "FetchIndividualUserPayoutReport query failed: " + err.Error(),
+		}
+	}
+
+	rcrd := &UserRecord{
+		EmpId: id,
+	}
+
+	for rows.Next() {
+
+		if err := rows.Scan(
+			&rcrd.Hayyak_payout,
+			&rcrd.Hayyak_extra_payout,
+			&rcrd.Hbb_payout,
+			&rcrd.Hbb_extra_payout,
+			&rcrd.Baqati_payout,
+			&rcrd.Baqati_extra_payout,
+			&rcrd.Upgrade_payout,
+			&rcrd.Upgrade_extra_payout,
+			&rcrd.Total_payout,
+		); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchIndividualUserPayoutReport: scan failed",
+				Details:    "FetchIndividualUserPayoutReport scan failed: " + err.Error(),
+			}
+		}
+	}
+
+	return rcrd, nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *errors.Error) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if !isQuarterly {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchIndividualUserTargetReport: query failed",
+			Details:    "FetchIndividualUserTargetReport query failed: " + err.Error(),
+		}
+	}
+
+	rcrd := &UserRecord{
+		EmpId: id,
+	}
+
+	for rows.Next() {
+
+		if err := rows.Scan(
+			&rcrd.Hayyak_sales_count,
+			&rcrd.Hayyak_target,
+			&rcrd.Hayyak_achieved_percentage,
+			&rcrd.Hbb_sales_count,
+			&rcrd.Hbb_target,
+			&rcrd.Hbb_achieved_percentage,
+			&rcrd.Baqati_sales_count,
+			&rcrd.Baqati_target,
+			&rcrd.Baqati_achieved_percentage,
+			&rcrd.Upgrade_sales_count,
+			&rcrd.Upgrade_target,
+			&rcrd.Uprade_achieved_percentage,
+		); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchIndividualUserTargetReport: scan failed",
+				Details:    "FetchIndividualUserTargetReport scan failed: " + err.Error(),
+			}
+		}
+	}
+
+	return rcrd, nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *errors.Error) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if !isQuarterly {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchIndividualUserSaleCountPerPlanReport: query failed",
+			Details:    "FetchIndividualUserSaleCountPerPlanReport query failed: " + err.Error(),
+		}
+	}
+
+	rcrd := &UserRecord{EmpId: id}
+
+	for rows.Next() {
+
+		if err := rows.Scan(
+			&rcrd.HayyakSaleCountPerPlanArray,
+			&rcrd.HBBSaleCountPerPlanArray,
+			&rcrd.BaqatiSaleCountPerPlanArray,
+			&rcrd.UpgradeSaleCountPerPlanArray,
+		); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchIndividualUserSaleCountPerPlanReport: scan failed",
+				Details:    "FetchIndividualUserSaleCountPerPlanReport scan failed: " + err.Error(),
+			}
+		}
+	}
+
+	return rcrd, nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *errors.Error) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if !isQuarterly {
+		rows, err = dbConn.Operation.Query("select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchIndividualUserOverAllReport: query failed",
+			Details:    "FetchIndividualUserOverAllReport query failed: " + err.Error(),
+		}
+	}
+
+	rcrd := &UserRecord{
+		EmpId: id,
+	}
+
+	for rows.Next() {
+
+		if err := rows.Scan(
+			&rcrd.ReportingManager,
+			&rcrd.Hayyak_sales_count,
+			&rcrd.Hayyak_target,
+			&rcrd.Hayyak_achieved_percentage,
+			&rcrd.Hayyak_payout,
+			&rcrd.Hayyak_extra_payout,
+			&rcrd.Hbb_sales_count,
+			&rcrd.Hbb_target,
+			&rcrd.Hbb_achieved_percentage,
+			&rcrd.Hbb_payout,
+			&rcrd.Hbb_extra_payout,
+			&rcrd.Baqati_sales_count,
+			&rcrd.Baqati_target,
+			&rcrd.Baqati_achieved_percentage,
+			&rcrd.Baqati_payout,
+			&rcrd.Baqati_extra_payout,
+			&rcrd.Upgrade_sales_count,
+			&rcrd.Upgrade_target,
+			&rcrd.Uprade_achieved_percentage,
+			&rcrd.Upgrade_payout,
+			&rcrd.Upgrade_extra_payout,
+			&rcrd.Total_payout,
+		); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchIndividualUserOverAllReport: scan failed",
+				Details:    "FetchIndividualUserOverAllReport scan failed: " + err.Error(),
+			}
+		}
+	}
+
+	return rcrd, nil
+}
+
+func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id, month, year, quarter int, isQuarterly bool) (*ProductWiseSalesCountPerOutlet, *errors.Error) {
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if !isQuarterly {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and months= $2", id, month)
+	} else {
+		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and quarter= $2", id, quarter)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchProductSalesPerOutletManager: query failed",
+			Details:    "FetchProductSalesPerOutletManager query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		hayyak  int
+		hbb     int
+		baqati  int
+		upgrade int
+	)
+
+	rcrds := &ProductWiseSalesCountPerOutlet{}
+
+	for rows.Next() {
+
+		if err := rows.Scan(&hayyak, &hbb, &baqati, &upgrade); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchProductSalesPerOutletManager: scan failed",
+				Details:    "FetchProductSalesPerOutletManager scan failed: " + err.Error(),
+			}
+		}
+
+		rcrds.Hayyak += hayyak
+		rcrds.HBB += hbb
+		rcrds.Baqati += baqati
+		rcrds.Upgrade += upgrade
+	}
+
+	rcrds.Total = rcrds.Hayyak + rcrds.HBB + rcrds.Baqati + rcrds.Upgrade
+
+	return rcrds, nil
+}
+
+func (dbConn *DBImplementation) FetchUserPosition(id int) (string, *errors.Error) {
+
+	rows, err := dbConn.Operation.Query("select usr_position from user_master_table where emp_id=$1", id)
+	if err != nil {
+		return "", &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchUserPosition: query failed",
+			Details:    "FetchUserPosition query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		count    int
+		position string
+	)
+
+	for rows.Next() {
+		count++
+
+		if err := rows.Scan(&position); err != nil {
+			return "", &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserPosition: scan failed",
+				Details:    "FetchUserPosition scan failed: " + err.Error(),
+			}
+		}
+
+		if count > 1 {
+			return "", &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserPosition: more than one record found",
+				Details:    "FetchUserPosition: more than one record found",
+			}
+		}
+	}
+
+	return position, nil
+}
+
+func (dbConn *DBImplementation) FetchUserName(id int) (string, *errors.Error) {
+
+	rows, err := dbConn.Operation.Query("select name from user_master_table where emp_id=$1", id)
+	if err != nil {
+		return "", &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchUserName: query failed",
+			Details:    "FetchUserName query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		count int
+		name  string
+	)
+
+	for rows.Next() {
+		count++
+
+		if err := rows.Scan(&name); err != nil {
+			return "", &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserName: scan failed",
+				Details:    "FetchUserName scan failed: " + err.Error(),
+			}
+		}
+
+		if count > 1 {
+			return "", &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserName: more than one record found",
+				Details:    "FetchUserName: more than one record found",
+			}
+		}
+	}
+
+	return name, nil
+}
+
+func (dbConn *DBImplementation) FetchOutletDetails(outlet, region string) (float64, float64, *errors.Error) {
+
+	rows, err := dbConn.Operation.Query("select latitude, longitude from outlet_details_table where outlet=$1 and region=$2", outlet, region)
+	if err != nil {
+		return 0, 0, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchOutletDetails: query failed",
+			Details:    "FetchOutletDetails query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		count     int
+		latitude  float64
+		longitude float64
+	)
+
+	for rows.Next() {
+		count++
+
+		if err := rows.Scan(&latitude, &longitude); err != nil {
+			return 0, 0, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchOutletDetails: scan failed",
+				Details:    "FetchOutletDetails scan failed: " + err.Error(),
+			}
+		}
+
+		if count > 1 {
+			return 0, 0, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchOutletDetails: more than one record found",
+				Details:    "FetchOutletDetails: more than one record found",
+			}
+		}
+	}
+
+	return latitude, longitude, nil
+}
+
+func getQuarterFromMonth(month int) int {
+	switch {
+	case month >= 1 && month <= 3:
+		return 1
+	case month >= 4 && month <= 6:
+		return 2
+	case month >= 7 && month <= 9:
+		return 3
+	case month >= 10 && month <= 12:
+		return 4
+	}
+
+	return -1
+}
