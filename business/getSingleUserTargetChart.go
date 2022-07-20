@@ -3,26 +3,26 @@ package business
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"math"
 	"net/http"
 	"time"
 )
 
-func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) (*psqldb.ChartDataResponse, *errors.Error) {
+func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) (*models.ChartDataResponse, *errors.Error) {
 
 	trx, err := impl.PsqlDb.FetchUserSales(clientID, int(t.Month()), t.Year(), quarter, isQuarterReport)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &psqldb.ChartDataResponse{}
+	resp := &models.ChartDataResponse{}
 
 	if trx.Region == "" || trx.Outlet == "" {
-		ind := &psqldb.TargetAchievementData{Error: "no sales record found for this period"}
+		ind := &models.TargetAchievementData{Error: "no sales record found for this period"}
 		resp.HBB = ind
 		resp.Baqati = ind
 		resp.Hayyak = ind
@@ -34,7 +34,7 @@ func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, clientID, 
 	if err != nil {
 		return nil, err
 	} else if totalEmp == 0 {
-		ind := &psqldb.TargetAchievementData{Error: "no employee found for this outlet - " + trx.Outlet}
+		ind := &models.TargetAchievementData{Error: "no employee found for this outlet - " + trx.Outlet}
 		resp.HBB = ind
 		resp.Baqati = ind
 		resp.Hayyak = ind
@@ -49,7 +49,7 @@ func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, clientID, 
 
 	for grp, rcds := range trx.SaleRecords {
 
-		data := &psqldb.TargetAchievementData{}
+		data := &models.TargetAchievementData{}
 
 		for _, v := range rcds {
 			data.SalesCount += v.Quantity
@@ -64,13 +64,13 @@ func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, clientID, 
 		data.AchievedPercentage = math.Round((float64(data.SalesCount)*100/target)*100) / 100
 
 		switch grp {
-		case commons.HBBCategory:
+		case constant.HBBCategory:
 			resp.HBB = data
-		case commons.HayyakCategory:
+		case constant.HayyakCategory:
 			resp.Hayyak = data
-		case commons.BaqatiCategory:
+		case constant.BaqatiCategory:
 			resp.Baqati = data
-		case commons.UpgradeCategory:
+		case constant.UpgradeCategory:
 			resp.Upgrade = data
 		default:
 			return nil, &errors.Error{

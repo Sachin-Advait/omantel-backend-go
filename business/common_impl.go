@@ -3,8 +3,9 @@ package business
 import (
 	"crypto/rand"
 	"errors"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
-	"gitlab.com/rendezvousPoint/incentive_calculator/core/db"
+	"fmt"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/configs"
 	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"io"
@@ -16,7 +17,7 @@ type IncentiveImpl struct {
 	PsqlDb *psqldb.DBImplementation
 }
 
-func NewIncentiveService(config *configs.IncentiveConfig, dbConfig *psqldb.DbClientConfig) *IncentiveImpl {
+func NewIncentiveService(config *configs.IncentiveConfig, dbConfig *models.DbClientConfig) *IncentiveImpl {
 
 	return &IncentiveImpl{
 		Config: config,
@@ -25,40 +26,40 @@ func NewIncentiveService(config *configs.IncentiveConfig, dbConfig *psqldb.DbCli
 }
 
 func (impl *IncentiveImpl) getValueOfPoint(grp string, achievedPercent float64) float64 {
-	db.ValOfPoint.Mutex.RLock()
-	defer db.ValOfPoint.Mutex.RUnlock()
+	models.ValOfPoint.Mutex.RLock()
+	defer models.ValOfPoint.Mutex.RUnlock()
 
 	switch {
 	case achievedPercent < 75:
-		return db.ValOfPoint.VopMap[grp][75].Point
+		return models.ValOfPoint.VopMap[grp][75].Point
 	case achievedPercent < 96:
-		return db.ValOfPoint.VopMap[grp][95].Point
+		return models.ValOfPoint.VopMap[grp][95].Point
 	case achievedPercent <= 111:
-		return db.ValOfPoint.VopMap[grp][110].Point
+		return models.ValOfPoint.VopMap[grp][110].Point
 	case achievedPercent < 140:
-		return db.ValOfPoint.VopMap[grp][139].Point
+		return models.ValOfPoint.VopMap[grp][139].Point
 	case achievedPercent >= 140:
-		return db.ValOfPoint.VopMap[grp][140].Point
+		return models.ValOfPoint.VopMap[grp][140].Point
 	}
 
 	return 0
 }
 
 func (impl *IncentiveImpl) getExtraPay(grp string, achievedPercent float64) float64 {
-	db.ValOfPoint.Mutex.RLock()
-	defer db.ValOfPoint.Mutex.RUnlock()
+	models.ValOfPoint.Mutex.RLock()
+	defer models.ValOfPoint.Mutex.RUnlock()
 
 	switch {
 	case achievedPercent >= 141 && achievedPercent < 160:
-		return db.ValOfPoint.VopMap[grp][159].ExtraPay
+		return models.ValOfPoint.VopMap[grp][159].ExtraPay
 	case achievedPercent >= 160 && achievedPercent < 180:
-		return db.ValOfPoint.VopMap[grp][179].ExtraPay
+		return models.ValOfPoint.VopMap[grp][179].ExtraPay
 	case achievedPercent >= 180 && achievedPercent < 190:
-		return db.ValOfPoint.VopMap[grp][189].ExtraPay
+		return models.ValOfPoint.VopMap[grp][189].ExtraPay
 	case achievedPercent >= 190 && achievedPercent < 200:
-		return db.ValOfPoint.VopMap[grp][199].ExtraPay
+		return models.ValOfPoint.VopMap[grp][199].ExtraPay
 	case achievedPercent >= 200:
-		return db.ValOfPoint.VopMap[grp][200].ExtraPay
+		return models.ValOfPoint.VopMap[grp][200].ExtraPay
 	}
 
 	return 0
@@ -68,10 +69,10 @@ func (impl *IncentiveImpl) getSIPRatePlan(planName string) float64 {
 
 	planID := 0
 
-	db.PlanRates.Mutex.RLock()
-	defer db.PlanRates.Mutex.RUnlock()
+	models.PlanRates.Mutex.RLock()
+	defer models.PlanRates.Mutex.RUnlock()
 
-	for id, v := range db.PlanRates.PlanRateMap {
+	for id, v := range models.PlanRates.PlanRateMap {
 		if v.PlanName == planName {
 			planID = id
 			break
@@ -79,13 +80,15 @@ func (impl *IncentiveImpl) getSIPRatePlan(planName string) float64 {
 	}
 
 	if planID != 0 {
-		return db.PlanRates.PlanRateMap[planID].SIPRatePlan
+		return models.PlanRates.PlanRateMap[planID].SIPRatePlan
 	}
 
 	return 0
 }
 
 func (impl *IncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int, isQuarterReport bool, grp, region, outlet string) int {
+
+	fmt.Println("check ", t, quarter, isQuarterReport, grp, region, outlet)
 
 	var (
 		start int
@@ -111,15 +114,17 @@ func (impl *IncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int, isQu
 		}
 	}
 
-	db.SalesTrgt.Mutex.RLock()
-	defer db.SalesTrgt.Mutex.RUnlock()
+	models.SalesTrgt.Mutex.RLock()
+	defer models.SalesTrgt.Mutex.RUnlock()
 
-	rMap, ok := db.SalesTrgt.SaleTargetMap[region]
+	rMap, ok := models.SalesTrgt.SaleTargetMap[region]
 	if !ok {
+		fmt.Println("region")
 		return -1
 	}
 
 	if _, ok := rMap[outlet]; !ok {
+		fmt.Println("outlet")
 		return -1
 	}
 
@@ -127,49 +132,50 @@ func (impl *IncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int, isQu
 		//quarter target
 		result := 0
 		switch grp {
-		case commons.HBBCategory:
+		case constant.HBBCategory:
 			for i := start - 1; i < end; i++ {
-				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].HBB
+				result += models.SalesTrgt.SaleTargetMap[region][outlet][i].HBB
 			}
 			return result
-		case commons.HayyakCategory:
+		case constant.HayyakCategory:
 			for i := start - 1; i < end; i++ {
-				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].Hayyak
+				result += models.SalesTrgt.SaleTargetMap[region][outlet][i].Hayyak
 			}
 			return result
-		case commons.BaqatiCategory:
+		case constant.BaqatiCategory:
 			for i := start - 1; i < end; i++ {
-				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].Baqati
+				result += models.SalesTrgt.SaleTargetMap[region][outlet][i].Baqati
 			}
 			return result
-		case commons.UpgradeCategory:
+		case constant.UpgradeCategory:
 			for i := start - 1; i < end; i++ {
-				result += db.SalesTrgt.SaleTargetMap[region][outlet][i].Upgrade
+				result += models.SalesTrgt.SaleTargetMap[region][outlet][i].Upgrade
 			}
 			return result
 		}
 	} else {
 		//month target
 		switch grp {
-		case commons.HBBCategory:
-			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].HBB
-		case commons.HayyakCategory:
-			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].Hayyak
-		case commons.BaqatiCategory:
-			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].Baqati
-		case commons.UpgradeCategory:
-			return db.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].Upgrade
+		case constant.HBBCategory:
+			return models.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].HBB
+		case constant.HayyakCategory:
+			return models.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].Hayyak
+		case constant.BaqatiCategory:
+			return models.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].Baqati
+		case constant.UpgradeCategory:
+			return models.SalesTrgt.SaleTargetMap[region][outlet][int(t.Month()-1)].Upgrade
 		}
 	}
 
+	fmt.Println("here")
 	return -1
 }
 
 func (impl *IncentiveImpl) getMaxPayout(grp string) float64 {
-	db.MaxPay.Mutex.RLock()
-	defer db.MaxPay.Mutex.RUnlock()
+	models.MaxPay.Mutex.RLock()
+	defer models.MaxPay.Mutex.RUnlock()
 
-	return db.MaxPay.Payoutmap[grp]
+	return models.MaxPay.Payoutmap[grp]
 }
 
 func (impl *IncentiveImpl) getQuarterFromMonth(month int) int {
@@ -199,7 +205,7 @@ func (impl *IncentiveImpl) generateOTP(max int) (string, error) {
 	}
 
 	for i := 0; i < len(b); i++ {
-		b[i] = commons.Table[int(b[i])%len(commons.Table)]
+		b[i] = constant.Table[int(b[i])%len(constant.Table)]
 	}
 
 	return string(b), nil
@@ -217,7 +223,7 @@ func (impl *IncentiveImpl) isRegion(region string) bool {
 
 func (impl *IncentiveImpl) isProduct(product string) bool {
 
-	if product == commons.HBBCategory || product == commons.BaqatiCategory || product == commons.HayyakCategory || product == commons.UpgradeCategory {
+	if product == constant.HBBCategory || product == constant.BaqatiCategory || product == constant.HayyakCategory || product == constant.UpgradeCategory {
 		return true
 	}
 

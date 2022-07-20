@@ -5,7 +5,7 @@ fileLoggingEnabled: true
 debugLoggingEnabled: true
 directory: Logs
 fileName: app.log
-maxSizeInMB: 100
+maxSizeInMB: 500
 maxBackups: 1
 maxAgeInDays: 5
 compress: true

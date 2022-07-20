@@ -4,7 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"net/http"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 )
 
 // InsertUserMasterRecord reads data from user master input file and inserts into table
-func (dbConn *DBImplementation) InsertUserMasterRecord(emp *Employee) *errors.Error {
+func (dbConn *DBImplementation) InsertUserMasterRecord(emp *models.Employee) *errors.Error {
 
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 	query := "insert into User_Master_Table(created, modified, emp_id, name, usr_position, region, outlet, mobile_number ,remark) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
@@ -32,7 +33,7 @@ func (dbConn *DBImplementation) InsertUserMasterRecord(emp *Employee) *errors.Er
 }
 
 // InsertSaleTransaction reads data from input file and inserts into table
-func (dbConn *DBImplementation) InsertSaleTransaction(trx *Transaction) *errors.Error {
+func (dbConn *DBImplementation) InsertSaleTransaction(trx *models.Transaction) *errors.Error {
 
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 	query := "insert into Sale_Transaction_Table(created, modified, region, outlet, emp_id, category_type, prev_product, curr_product, quantity, category, product_group, sales_date, quarter) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
@@ -69,10 +70,7 @@ func (dbConn *DBImplementation) DeleteProductPlans() *errors.Error {
 }
 
 // InsertProductPlans reads data from plan input file and inserts into table
-func (dbConn *DBImplementation) InsertProductPlans(plan *ProductPlans) *errors.Error {
-
-	// ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-	// dbConn.Operation.ExecContext(ctx, "DELETE FROM Product_Plans_Table")
+func (dbConn *DBImplementation) InsertProductPlans(plan *models.ProductPlans) *errors.Error {
 
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 	query := "insert into Product_Plans_Table(created, modified, plan_name, plan_price, sip_plan_rate) values($1,$2,$3,$4,$5)"
@@ -125,7 +123,7 @@ func (dbConn *DBImplementation) DeleteHierarchy() *errors.Error {
 }
 
 // InsertStoreTargets reads data from target input file and inserts into table
-func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month int, trgt *ProductGrpTarget) *errors.Error {
+func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month int, trgt *models.ProductGrpTarget) *errors.Error {
 
 	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 
@@ -173,7 +171,7 @@ func (dbConn *DBImplementation) InsertValueOfPoints(category string, percent int
 	return id, nil
 }
 
-// FetchSaleTarget loads the global variable PlanRates with the rate plan for each plan type
+// FetchPlans loads the global variable PlanRates with the rate plan for each plan type
 func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 
 	rows, err := dbConn.Operation.Query("select id, plan_name, plan_price, sip_plan_rate from Product_Plans_Table")
@@ -203,18 +201,18 @@ func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 			}
 		}
 
-		PlanRates.Mutex.Lock()
-		if PlanRates.PlanRateMap == nil {
-			PlanRates.PlanRateMap = make(map[int]*ProductPlans)
+		models.PlanRates.Mutex.Lock()
+		if models.PlanRates.PlanRateMap == nil {
+			models.PlanRates.PlanRateMap = make(map[int]*models.ProductPlans)
 		}
 
-		PlanRates.PlanRateMap[id] = &ProductPlans{
+		models.PlanRates.PlanRateMap[id] = &models.ProductPlans{
 			PlanName:    plan_name,
 			PlanPrice:   plan_price,
 			SIPRatePlan: sip_plan_rate,
 		}
 
-		PlanRates.Mutex.Unlock()
+		models.PlanRates.Mutex.Unlock()
 
 	}
 
@@ -224,7 +222,7 @@ func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 // FetchSaleTarget loads the global variable SalesTrgt with the target for each outlet
 func (dbConn *DBImplementation) FetchSaleTarget() *errors.Error {
 
-	SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*ProductGrpTarget)
+	models.SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*models.ProductGrpTarget)
 
 	rows, err := dbConn.Operation.Query("select region, outlet, months, Baqati, HBB, Hayyak, Upgrade from Sales_Target_Table")
 	if err != nil {
@@ -256,28 +254,28 @@ func (dbConn *DBImplementation) FetchSaleTarget() *errors.Error {
 			}
 		}
 
-		SalesTrgt.Mutex.Lock()
+		models.SalesTrgt.Mutex.Lock()
 
-		if SalesTrgt.SaleTargetMap[region] == nil {
-			SalesTrgt.SaleTargetMap[region] = make(map[string][12]*ProductGrpTarget)
+		if models.SalesTrgt.SaleTargetMap[region] == nil {
+			models.SalesTrgt.SaleTargetMap[region] = make(map[string][12]*models.ProductGrpTarget)
 		}
 
-		array, ok := SalesTrgt.SaleTargetMap[region][outlet]
+		array, ok := models.SalesTrgt.SaleTargetMap[region][outlet]
 		if !ok {
-			var temp [12]*ProductGrpTarget
-			SalesTrgt.SaleTargetMap[region][outlet] = temp
+			var temp [12]*models.ProductGrpTarget
+			models.SalesTrgt.SaleTargetMap[region][outlet] = temp
 		}
 
-		array[month-1] = &ProductGrpTarget{
+		array[month-1] = &models.ProductGrpTarget{
 			Baqati:  baqati,
 			HBB:     hBB,
 			Hayyak:  hayyak,
 			Upgrade: upgrade,
 		}
 
-		SalesTrgt.SaleTargetMap[region][outlet] = array
+		models.SalesTrgt.SaleTargetMap[region][outlet] = array
 
-		SalesTrgt.Mutex.Unlock()
+		models.SalesTrgt.Mutex.Unlock()
 
 	}
 
@@ -322,179 +320,179 @@ func (dbConn *DBImplementation) FetchValueOfPoint() *errors.Error {
 
 	// }
 
-	ValOfPoint.Mutex.Lock()
+	models.ValOfPoint.Mutex.Lock()
 
-	ValOfPoint.VopMap = make(map[string]map[int]*VOP)
-	ValOfPoint.VopMap["HBB"] = make(map[int]*VOP)
-	ValOfPoint.VopMap["BAQATI"] = make(map[int]*VOP)
-	ValOfPoint.VopMap["HAYYAK"] = make(map[int]*VOP)
-	ValOfPoint.VopMap["UPGRADE"] = make(map[int]*VOP)
+	models.ValOfPoint.VopMap = make(map[string]map[int]*models.VOP)
+	models.ValOfPoint.VopMap["HBB"] = make(map[int]*models.VOP)
+	models.ValOfPoint.VopMap["BAQATI"] = make(map[int]*models.VOP)
+	models.ValOfPoint.VopMap["HAYYAK"] = make(map[int]*models.VOP)
+	models.ValOfPoint.VopMap["UPGRADE"] = make(map[int]*models.VOP)
 
-	ValOfPoint.VopMap["HBB"][75] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][75] = &models.VOP{
 		Point:    0.0,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HBB"][95] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][95] = &models.VOP{
 		Point:    0.15,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HBB"][110] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][110] = &models.VOP{
 		Point:    0.25,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HBB"][139] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][139] = &models.VOP{
 		Point:    0.45,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HBB"][140] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][140] = &models.VOP{
 		Point:    0.75,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HBB"][159] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][159] = &models.VOP{
 		Point:    0,
 		ExtraPay: 17.5,
 	}
-	ValOfPoint.VopMap["HBB"][179] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][179] = &models.VOP{
 		Point:    0,
 		ExtraPay: 35.0,
 	}
-	ValOfPoint.VopMap["HBB"][189] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][189] = &models.VOP{
 		Point:    0,
 		ExtraPay: 52.5,
 	}
-	ValOfPoint.VopMap["HBB"][199] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][199] = &models.VOP{
 		Point:    0,
 		ExtraPay: 70.0,
 	}
-	ValOfPoint.VopMap["HBB"][200] = &VOP{
+	models.ValOfPoint.VopMap["HBB"][200] = &models.VOP{
 		Point:    0,
 		ExtraPay: 87.5,
 	}
 
-	ValOfPoint.VopMap["BAQATI"][75] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][75] = &models.VOP{
 		Point:    0.0,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["BAQATI"][95] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][95] = &models.VOP{
 		Point:    0.15,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["BAQATI"][110] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][110] = &models.VOP{
 		Point:    0.25,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["BAQATI"][139] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][139] = &models.VOP{
 		Point:    0.45,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["BAQATI"][140] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][140] = &models.VOP{
 		Point:    0.75,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["BAQATI"][159] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][159] = &models.VOP{
 		Point:    0,
 		ExtraPay: 17.5,
 	}
-	ValOfPoint.VopMap["BAQATI"][179] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][179] = &models.VOP{
 		Point:    0,
 		ExtraPay: 35.0,
 	}
-	ValOfPoint.VopMap["BAQATI"][189] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][189] = &models.VOP{
 		Point:    0,
 		ExtraPay: 53,
 	}
-	ValOfPoint.VopMap["BAQATI"][199] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][199] = &models.VOP{
 		Point:    0,
 		ExtraPay: 70.0,
 	}
-	ValOfPoint.VopMap["BAQATI"][200] = &VOP{
+	models.ValOfPoint.VopMap["BAQATI"][200] = &models.VOP{
 		Point:    0,
 		ExtraPay: 87.5,
 	}
 
-	ValOfPoint.VopMap["HAYYAK"][75] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][75] = &models.VOP{
 		Point:    0.0,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HAYYAK"][95] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][95] = &models.VOP{
 		Point:    0.15,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HAYYAK"][110] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][110] = &models.VOP{
 		Point:    0.25,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HAYYAK"][139] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][139] = &models.VOP{
 		Point:    0.45,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HAYYAK"][140] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][140] = &models.VOP{
 		Point:    0.75,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["HAYYAK"][159] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][159] = &models.VOP{
 		Point:    0,
 		ExtraPay: 11,
 	}
-	ValOfPoint.VopMap["HAYYAK"][179] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][179] = &models.VOP{
 		Point:    0,
 		ExtraPay: 22,
 	}
-	ValOfPoint.VopMap["HAYYAK"][189] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][189] = &models.VOP{
 		Point:    0,
 		ExtraPay: 33,
 	}
-	ValOfPoint.VopMap["HAYYAK"][199] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][199] = &models.VOP{
 		Point:    0,
 		ExtraPay: 44,
 	}
-	ValOfPoint.VopMap["HAYYAK"][200] = &VOP{
+	models.ValOfPoint.VopMap["HAYYAK"][200] = &models.VOP{
 		Point:    0,
 		ExtraPay: 55,
 	}
 
-	ValOfPoint.VopMap["UPGRADE"][75] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][75] = &models.VOP{
 		Point:    0.0,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["UPGRADE"][95] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][95] = &models.VOP{
 		Point:    0.1,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["UPGRADE"][110] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][110] = &models.VOP{
 		Point:    0.15,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["UPGRADE"][139] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][139] = &models.VOP{
 		Point:    0.3,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["UPGRADE"][140] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][140] = &models.VOP{
 		Point:    0.5,
 		ExtraPay: 0,
 	}
-	ValOfPoint.VopMap["UPGRADE"][159] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][159] = &models.VOP{
 		Point:    0,
 		ExtraPay: 4,
 	}
-	ValOfPoint.VopMap["UPGRADE"][179] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][179] = &models.VOP{
 		Point:    0,
 		ExtraPay: 8,
 	}
-	ValOfPoint.VopMap["UPGRADE"][189] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][189] = &models.VOP{
 		Point:    0,
 		ExtraPay: 12,
 	}
-	ValOfPoint.VopMap["UPGRADE"][199] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][199] = &models.VOP{
 		Point:    0,
 		ExtraPay: 16,
 	}
-	ValOfPoint.VopMap["UPGRADE"][200] = &VOP{
+	models.ValOfPoint.VopMap["UPGRADE"][200] = &models.VOP{
 		Point:    0,
 		ExtraPay: 20,
 	}
 
-	ValOfPoint.Mutex.Unlock()
+	models.ValOfPoint.Mutex.Unlock()
 
 	return nil
 }
@@ -529,13 +527,13 @@ func (dbConn *DBImplementation) FetchMaxPayout() *errors.Error {
 
 	// }
 
-	MaxPay.Mutex.Lock()
-	MaxPay.Payoutmap = make(map[string]float64)
-	MaxPay.Payoutmap["HBB"] = 350
-	MaxPay.Payoutmap["BAQATI"] = 350
-	MaxPay.Payoutmap["HAYYAK"] = 220
-	MaxPay.Payoutmap["UPGRADE"] = 80
-	MaxPay.Mutex.Unlock()
+	models.MaxPay.Mutex.Lock()
+	models.MaxPay.Payoutmap = make(map[string]float64)
+	models.MaxPay.Payoutmap["HBB"] = 350
+	models.MaxPay.Payoutmap["BAQATI"] = 350
+	models.MaxPay.Payoutmap["HAYYAK"] = 220
+	models.MaxPay.Payoutmap["UPGRADE"] = 80
+	models.MaxPay.Mutex.Unlock()
 
 	return nil
 }
@@ -571,7 +569,7 @@ func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet 
 }
 
 // FetchUserSales returns all sale transaction of a given user
-func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter int, isQuarterReport bool) (*SaleTransaction, *errors.Error) {
+func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter int, isQuarterReport bool) (*models.SaleTransaction, *errors.Error) {
 
 	var (
 		rows *sql.Rows
@@ -604,8 +602,8 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 		category      string
 	)
 
-	trx := &SaleTransaction{}
-	trx.SaleRecords = make(map[string][]*SaleRecord)
+	trx := &models.SaleTransaction{}
+	trx.SaleRecords = make(map[string][]*models.SaleRecord)
 
 	count := 0
 
@@ -625,7 +623,7 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 		trx.Outlet = outlet
 		trx.Region = region
 
-		rcrd := &SaleRecord{
+		rcrd := &models.SaleRecord{
 			Quantity:        quantity,
 			Category:        category,
 			PreviousProduct: prev_product,
@@ -633,7 +631,7 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 		}
 
 		if trx.SaleRecords[product_group] == nil {
-			trx.SaleRecords[product_group] = make([]*SaleRecord, 0)
+			trx.SaleRecords[product_group] = make([]*models.SaleRecord, 0)
 		}
 
 		trx.SaleRecords[product_group] = append(trx.SaleRecords[product_group], rcrd)
@@ -642,7 +640,7 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 	return trx, nil
 }
 
-func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (map[int]*SaleTransaction, map[int]*SaleTransaction, *errors.Error) {
+func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (map[int]*models.SaleTransaction, map[int]*models.SaleTransaction, *errors.Error) {
 
 	rows, err := dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category, b.sales_date from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('year' from b.sales_date)= $2", clientID, 2021)
 	if err != nil {
@@ -666,8 +664,8 @@ func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (ma
 		sale_date     time.Time
 	)
 
-	monthly := make(map[int]*SaleTransaction)
-	quarterly := make(map[int]*SaleTransaction)
+	monthly := make(map[int]*models.SaleTransaction)
+	quarterly := make(map[int]*models.SaleTransaction)
 
 	for rows.Next() {
 		if err := rows.Scan(&position, &outlet, &region, &prev_product, &curr_product, &quantity, &product_group, &category, &sale_date); err != nil {
@@ -679,7 +677,7 @@ func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (ma
 			}
 		}
 
-		rcrd := &SaleRecord{
+		rcrd := &models.SaleRecord{
 			Quantity:        quantity,
 			Category:        category,
 			PreviousProduct: prev_product,
@@ -689,12 +687,12 @@ func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (ma
 
 		v, ok := monthly[int(sale_date.Month())]
 		if !ok {
-			trx := &SaleTransaction{}
+			trx := &models.SaleTransaction{}
 			trx.EmpID = clientID
 			trx.Position = position
 			trx.Outlet = outlet
 			trx.Region = region
-			trx.SaleRecords = map[string][]*SaleRecord{
+			trx.SaleRecords = map[string][]*models.SaleRecord{
 				product_group: {rcrd},
 			}
 
@@ -702,7 +700,7 @@ func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (ma
 		} else {
 
 			if v.SaleRecords[product_group] == nil {
-				v.SaleRecords[product_group] = make([]*SaleRecord, 0)
+				v.SaleRecords[product_group] = make([]*models.SaleRecord, 0)
 			}
 
 			v.SaleRecords[product_group] = append(v.SaleRecords[product_group], rcrd)
@@ -712,12 +710,12 @@ func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (ma
 
 		v, ok = quarterly[getQuarterFromMonth(int(sale_date.Month()))]
 		if !ok {
-			trx := &SaleTransaction{}
+			trx := &models.SaleTransaction{}
 			trx.EmpID = clientID
 			trx.Position = position
 			trx.Outlet = outlet
 			trx.Region = region
-			trx.SaleRecords = map[string][]*SaleRecord{
+			trx.SaleRecords = map[string][]*models.SaleRecord{
 				product_group: {rcrd},
 			}
 
@@ -725,7 +723,7 @@ func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (ma
 		} else {
 
 			if v.SaleRecords[product_group] == nil {
-				v.SaleRecords[product_group] = make([]*SaleRecord, 0)
+				v.SaleRecords[product_group] = make([]*models.SaleRecord, 0)
 			}
 
 			v.SaleRecords[product_group] = append(v.SaleRecords[product_group], rcrd)
@@ -800,7 +798,7 @@ func (dbConn *DBImplementation) FetchEmployeeContactNumber(clientID int) (int, *
 	return mobNum, nil
 }
 
-func (dbConn *DBImplementation) InsertStaffOTP(otpModel *OtpModel) *errors.Error {
+func (dbConn *DBImplementation) InsertStaffOTP(otpModel *models.OtpModel) *errors.Error {
 	_, err := dbConn.Operation.Query("DELETE FROM user_authentication_table WHERE emp_id= $1", otpModel.StaffID)
 	if err != nil {
 		return &errors.Error{
@@ -832,7 +830,7 @@ func (dbConn *DBImplementation) InsertStaffOTP(otpModel *OtpModel) *errors.Error
 	return nil
 }
 
-func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*OtpModel, *errors.Error) {
+func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*models.OtpModel, *errors.Error) {
 
 	rows, err := dbConn.Operation.Query("select a.name, a.usr_position, b.otp, b.retry, b.expiryTime from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
 	if err != nil {
@@ -846,7 +844,7 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*OtpModel, *erro
 
 	var count int
 
-	otModel := &OtpModel{}
+	otModel := &models.OtpModel{}
 
 	for rows.Next() {
 
@@ -875,9 +873,9 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*OtpModel, *erro
 }
 
 // FetchAllGivenPositionEmpIdAndTheirManager returns an array of all employees of the given position along with their managers, returns empty array if no records found
-func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(position string) ([]*UserLead, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(position string) ([]*models.UserLead, *errors.Error) {
 
-	if !(position == commons.VicePresident || position == commons.GeneralManager || position == commons.SeniorManager || position == commons.Manager || position == commons.OutletManager || position == commons.Promoter) {
+	if !(position == constant.VicePresident || position == constant.GeneralManager || position == constant.SeniorManager || position == constant.Manager || position == constant.OutletManager || position == constant.Promoter) {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
@@ -889,17 +887,17 @@ func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(positi
 	var query string
 
 	switch position {
-	case commons.VicePresident:
+	case constant.VicePresident:
 		query = "select distinct vice_president, 0 from user_hierarchy_table"
-	case commons.GeneralManager:
+	case constant.GeneralManager:
 		query = "select distinct general_manager, vice_president from user_hierarchy_table"
-	case commons.SeniorManager:
+	case constant.SeniorManager:
 		query = "select distinct senior_manager, general_manager from user_hierarchy_table"
-	case commons.Manager:
+	case constant.Manager:
 		query = "select distinct manager, senior_manager from user_hierarchy_table"
-	case commons.OutletManager:
+	case constant.OutletManager:
 		query = "select distinct outlet_manager, manager from user_hierarchy_table"
-	case commons.Promoter:
+	case constant.Promoter:
 		query = "select distinct emp_id, outlet_manager from user_hierarchy_table"
 	}
 
@@ -913,11 +911,11 @@ func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(positi
 		}
 	}
 
-	var array = make([]*UserLead, 0)
+	var array = make([]*models.UserLead, 0)
 
 	for rows.Next() {
 
-		usr := &UserLead{}
+		usr := &models.UserLead{}
 
 		if err := rows.Scan(&usr.EmpID, &usr.ReportTo); err != nil {
 			return nil, &errors.Error{
@@ -935,7 +933,7 @@ func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(positi
 }
 
 // FetchAllEmployeesReportingToGivenManager returns all employees reporting to given manager, returns empty array if no records found
-func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(managerPosition string, managerID int) ([]*ReportingStaffIDAndName, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(managerPosition string, managerID int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
 	if !(managerPosition == "vice_president" || managerPosition == "general_manager" || managerPosition == "senior_manager" || managerPosition == "manager" || managerPosition == "outlet_manager") {
 		return nil, &errors.Error{
@@ -972,12 +970,12 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 	}
 
 	var (
-		array = make([]*ReportingStaffIDAndName, 0)
+		array = make([]*models.ReportingStaffIDAndName, 0)
 	)
 
 	for rows.Next() {
 
-		usr := &ReportingStaffIDAndName{}
+		usr := &models.ReportingStaffIDAndName{}
 
 		if err := rows.Scan(&usr.ID, &usr.Name); err != nil {
 			return nil, &errors.Error{
@@ -994,7 +992,7 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 	return array, nil
 }
 
-func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRole(managerPosition string, managerID int) ([]*ReportingStaffIDAndName, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRole(managerPosition string, managerID int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
 	if !(managerPosition == "vice_president" || managerPosition == "general_manager" || managerPosition == "senior_manager" || managerPosition == "manager" || managerPosition == "outlet_manager") {
 		return nil, &errors.Error{
@@ -1033,12 +1031,12 @@ func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRol
 	}
 
 	var (
-		array = make([]*ReportingStaffIDAndName, 0)
+		array = make([]*models.ReportingStaffIDAndName, 0)
 	)
 
 	for rows.Next() {
 
-		usr := &ReportingStaffIDAndName{}
+		usr := &models.ReportingStaffIDAndName{}
 
 		if err := rows.Scan(&usr.ID, &usr.Outlet, &usr.Region); err != nil {
 			return nil, &errors.Error{
@@ -1056,7 +1054,7 @@ func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRol
 }
 
 // InsertEmployeeRecord inserts each users statistical daily in db, and is updated everyday once
-func (dbConn *DBImplementation) InsertEmployeeRecord(usr *UserRecord) *errors.Error {
+func (dbConn *DBImplementation) InsertEmployeeRecord(usr *models.UserRecord) *errors.Error {
 
 	// fmt.Printf("userRecord: %+v\n", *usr)
 
@@ -1108,7 +1106,7 @@ func (dbConn *DBImplementation) InsertEmployeeRecord(usr *UserRecord) *errors.Er
 }
 
 // InsertEmployeeMultipleRecords inserts each users multiple statistical data daily in db, and is updated everyday once
-func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*UserRecord) *errors.Error {
+func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*models.UserRecord) *errors.Error {
 
 	if len(usr) == 0 {
 		return nil
@@ -1205,7 +1203,7 @@ func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*UserRecord)
 	return nil
 }
 
-func (dbConn *DBImplementation) InsertHierarchy(usr ...*UserHierarchy) *errors.Error {
+func (dbConn *DBImplementation) InsertHierarchy(usr ...*models.UserHierarchy) *errors.Error {
 
 	valueStrings := []string{}
 	valueArgs := []interface{}{}
@@ -1260,7 +1258,207 @@ func (dbConn *DBImplementation) InsertHierarchy(usr ...*UserHierarchy) *errors.E
 	return nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) UpsertRegionRecord(dbReq *models.NewRegionRequest) *errors.Error {
+
+	query := `INSERT INTO regions_table(region_code, region_name) VALUES ($1, $2)`
+
+	if dbReq.IsUpdate {
+		query = `UPDATE regions_table SET region_name=$2 WHERE region_code=$1`
+	}
+
+	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.RegionCode, dbReq.RegionName)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertRegionRecord : failed",
+			Details:    "UpsertRegionRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertRegionRecord : rowsAffected failed",
+			Details:    "UpsertRegionRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertRegionRecord : rowsAffected not 1",
+			Details:    "UpsertRegionRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) UpsertOutletRecord(dbReq *models.NewOutletRequest) *errors.Error {
+
+	query := `INSERT INTO outlets_table(outlet_code, outlet_name, region_code, region_name, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6)`
+
+	if dbReq.IsUpdate {
+		query = `UPDATE outlets_table SET outlet_name=$2, region_code=$3, region_name=$4, latitude=$5, longitude=6$  WHERE outlet_code=$1`
+	}
+
+	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.OutletCode, dbReq.OutletName, dbReq.RegionCode, dbReq.RegionName, dbReq.Lat, dbReq.Lang)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertOutletRecord : failed",
+			Details:    "UpsertOutletRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertOutletRecord : rowsAffected failed",
+			Details:    "UpsertOutletRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertOutletRecord : rowsAffected not 1",
+			Details:    "UpsertOutletRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) UpsertProductRecord(dbReq *models.NewProductRequest) *errors.Error {
+
+	query := `INSERT INTO products_table(product_code, product_name, weightage) VALUES ($1, $2, $3)`
+
+	if dbReq.IsUpdate {
+		query = `UPDATE products_table SET product_name=$2, weightage=$3 WHERE product_code=$1`
+	}
+
+	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.ProductCode, dbReq.ProductName, dbReq.Weightage)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertProductRecord : failed",
+			Details:    "UpsertProductRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertProductRecord : rowsAffected failed",
+			Details:    "UpsertProductRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertProductRecord : rowsAffected not 1",
+			Details:    "UpsertProductRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) UpsertPlanRecord(dbReq *models.NewPlanRequest) *errors.Error {
+
+	query := `INSERT INTO plans_table(plan_code, plan_name, product_code, product_name, plan_price, sip_plan_rate) VALUES ($1, $2, $3, $4, $5, $6)`
+
+	if dbReq.IsUpdate {
+		query = `UPDATE plans_table SET plan_name=$2, product_code=$3 product_name=$4 plan_price=$5 sip_plan_rate=$6 WHERE plan_code=$1`
+	}
+
+	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.PlanCode, dbReq.PlanName, dbReq.ProductCode, dbReq.ProductName, dbReq.PlanPrice, dbReq.SIPPlanRate)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertPlansRecord : failed",
+			Details:    "UpsertPlansRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertPlansRecord : rowsAffected failed",
+			Details:    "UpsertPlansRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertPlansRecord : rowsAffected not 1",
+			Details:    "UpsertPlansRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) UpsertTargetRecord(dbReq *models.NewTargetRequest) *errors.Error {
+
+	query := `INSERT INTO sales_target_table(region, outlet, months, baqati, hbb, hayyak, upgrade, created, modified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+
+	if dbReq.IsUpdate {
+		query = `UPDATE sales_target_table SET baqati=$4, hbb=$5, hayyak=$6, upgrade=$7, created=$8, modified=$9 WHERE region=$1 AND outlet=$2 AND months=$3`
+	}
+
+	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.RegionName, dbReq.OutletName, dbReq.Month, dbReq.Baqati, dbReq.HBB, dbReq.Hayyak, dbReq.Upgrade, time.Now(), time.Now())
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertTargetRecord : failed",
+			Details:    "UpsertTargetRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertTargetRecord : rowsAffected failed",
+			Details:    "UpsertTargetRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "UpsertTargetRecord : rowsAffected not 1",
+			Details:    "UpsertTargetRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*models.UserRecord, *errors.Error) {
 
 	rows, err := dbConn.Operation.Query("select reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1", id)
 	if err != nil {
@@ -1272,11 +1470,11 @@ func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*UserRecord
 		}
 	}
 
-	rcrds := make([]*UserRecord, 0)
+	rcrds := make([]*models.UserRecord, 0)
 
 	for rows.Next() {
 
-		rcrd := &UserRecord{
+		rcrd := &models.UserRecord{
 			EmpId: id,
 		}
 
@@ -1325,7 +1523,7 @@ func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*UserRecord
 	return rcrds, nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
 	var (
 		err  error
@@ -1347,7 +1545,7 @@ func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quart
 		}
 	}
 
-	rcrd := &UserRecord{
+	rcrd := &models.UserRecord{
 		EmpId: id,
 	}
 
@@ -1376,7 +1574,7 @@ func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quart
 	return rcrd, nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
 	var (
 		err  error
@@ -1398,7 +1596,7 @@ func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quart
 		}
 	}
 
-	rcrd := &UserRecord{
+	rcrd := &models.UserRecord{
 		EmpId: id,
 	}
 
@@ -1430,7 +1628,7 @@ func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quart
 	return rcrd, nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
 	var (
 		err  error
@@ -1452,7 +1650,7 @@ func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, mo
 		}
 	}
 
-	rcrd := &UserRecord{EmpId: id}
+	rcrd := &models.UserRecord{EmpId: id}
 
 	for rows.Next() {
 
@@ -1474,7 +1672,7 @@ func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, mo
 	return rcrd, nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quarter int, isQuarterly bool) (*UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
 	var (
 		err  error
@@ -1496,7 +1694,7 @@ func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quar
 		}
 	}
 
-	rcrd := &UserRecord{
+	rcrd := &models.UserRecord{
 		EmpId: id,
 	}
 
@@ -1538,7 +1736,7 @@ func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quar
 	return rcrd, nil
 }
 
-func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id, month, year, quarter int, isQuarterly bool) (*ProductWiseSalesCountPerOutlet, *errors.Error) {
+func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id, month, year, quarter int, isQuarterly bool) (*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
 
 	var (
 		err  error
@@ -1567,7 +1765,7 @@ func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id, month, yea
 		upgrade int
 	)
 
-	rcrds := &ProductWiseSalesCountPerOutlet{}
+	rcrds := &models.ProductWiseSalesCountPerOutlet{}
 
 	for rows.Next() {
 
@@ -1677,7 +1875,7 @@ func (dbConn *DBImplementation) FetchUserName(id int) (string, *errors.Error) {
 
 func (dbConn *DBImplementation) FetchOutletDetails(outlet, region string) (float64, float64, *errors.Error) {
 
-	rows, err := dbConn.Operation.Query("select latitude, longitude from outlet_details_table where outlet=$1 and region=$2", outlet, region)
+	rows, err := dbConn.Operation.Query("select latitude, longitude from outlets_table where outlet_name=$1 and region_name=$2", outlet, region)
 	if err != nil {
 		return 0, 0, &errors.Error{
 			StatusCode: http.StatusInternalServerError,

@@ -3,7 +3,6 @@ package adapters
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
@@ -26,7 +25,7 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.SalesCountRequest) (int, 
 	}
 
 	product := strings.ToUpper(req.Product)
-	if !(product == commons.HBBCategory || product == commons.BaqatiCategory || product == commons.HayyakCategory || product == commons.UpgradeCategory) {
+	if !(product == constant.HBBCategory || product == constant.BaqatiCategory || product == constant.HayyakCategory || product == constant.UpgradeCategory) {
 		logger.FileLogger.CtxError(ctx).Err(errors.New("incorrect product type-" + product)).Stack().Msg("GetSaleCountPerPlan : incorrect product type")
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,

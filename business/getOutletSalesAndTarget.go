@@ -2,22 +2,22 @@ package business
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"math"
 	"net/http"
 	"time"
 )
 
-func (impl *IncentiveImpl) GetOutletSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*psqldb.ProductWiseSalesTargetPerOutlet, *errors.Error) {
+func (impl *IncentiveImpl) GetOutletSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error) {
 
 	position, err := impl.PsqlDb.FetchUserPosition(clientID)
 	if err != nil {
 		return nil, err
 	}
 
-	manger, ok := commons.ManagerMap[position]
+	manger, ok := constant.ManagerMap[position]
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -31,7 +31,7 @@ func (impl *IncentiveImpl) GetOutletSalesAndTarget(ctx *gin.Context, clientID, q
 		return nil, err
 	}
 
-	resp := make([]*psqldb.ProductWiseSalesTargetPerOutlet, 0)
+	resp := make([]*models.ProductWiseSalesTargetPerOutlet, 0)
 
 	for _, v := range allDistinctOM {
 
@@ -40,7 +40,7 @@ func (impl *IncentiveImpl) GetOutletSalesAndTarget(ctx *gin.Context, clientID, q
 			return nil, err
 		}
 
-		eachOutletResp := &psqldb.ProductWiseSalesTargetPerOutlet{
+		eachOutletResp := &models.ProductWiseSalesTargetPerOutlet{
 			OutletName:    v.Outlet,
 			Region:        v.Region,
 			HBBSales:      trx.HBB,
@@ -48,10 +48,10 @@ func (impl *IncentiveImpl) GetOutletSalesAndTarget(ctx *gin.Context, clientID, q
 			BaqatiSales:   trx.Baqati,
 			UpgradeSales:  trx.Upgrade,
 			TotalSales:    trx.Total,
-			HBBTarget:     impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.HBBCategory, v.Region, v.Outlet),
-			HayyakTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.HayyakCategory, v.Region, v.Outlet),
-			BaqatiTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.BaqatiCategory, v.Region, v.Outlet),
-			UpgradeTarget: impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, v.Region, v.Outlet),
+			HBBTarget:     impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.HBBCategory, v.Region, v.Outlet),
+			HayyakTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.HayyakCategory, v.Region, v.Outlet),
+			BaqatiTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.BaqatiCategory, v.Region, v.Outlet),
+			UpgradeTarget: impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.UpgradeCategory, v.Region, v.Outlet),
 		}
 
 		eachOutletResp.TotalTarget = eachOutletResp.HBBTarget + eachOutletResp.HayyakTarget + eachOutletResp.BaqatiTarget + eachOutletResp.UpgradeTarget

@@ -2,22 +2,22 @@ package business
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"math"
 	"net/http"
 	"time"
 )
 
-func (impl *IncentiveImpl) GetRegionSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*psqldb.ProductWiseSalesTargetPerOutlet, *errors.Error) {
+func (impl *IncentiveImpl) GetRegionSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error) {
 
 	position, err := impl.PsqlDb.FetchUserPosition(clientID)
 	if err != nil {
 		return nil, err
 	}
 
-	manger, ok := commons.ManagerMap[position]
+	manger, ok := constant.ManagerMap[position]
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -31,7 +31,7 @@ func (impl *IncentiveImpl) GetRegionSalesAndTarget(ctx *gin.Context, clientID, q
 		return nil, err
 	}
 
-	temp := make(map[string]*psqldb.ProductWiseSalesTargetPerOutlet)
+	temp := make(map[string]*models.ProductWiseSalesTargetPerOutlet)
 
 	for _, v := range allDistinctOM {
 
@@ -42,16 +42,16 @@ func (impl *IncentiveImpl) GetRegionSalesAndTarget(ctx *gin.Context, clientID, q
 
 		eachRegionRcrd, ok := temp[v.Region]
 		if !ok {
-			temp[v.Region] = &psqldb.ProductWiseSalesTargetPerOutlet{
+			temp[v.Region] = &models.ProductWiseSalesTargetPerOutlet{
 				Region:        v.Region,
 				HBBSales:      trx.HBB,
 				HayyakSales:   trx.Hayyak,
 				BaqatiSales:   trx.Baqati,
 				UpgradeSales:  trx.Upgrade,
-				HBBTarget:     impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.HBBCategory, v.Region, v.Outlet),
-				HayyakTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.HayyakCategory, v.Region, v.Outlet),
-				BaqatiTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.BaqatiCategory, v.Region, v.Outlet),
-				UpgradeTarget: impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, v.Region, v.Outlet),
+				HBBTarget:     impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.HBBCategory, v.Region, v.Outlet),
+				HayyakTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.HayyakCategory, v.Region, v.Outlet),
+				BaqatiTarget:  impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.BaqatiCategory, v.Region, v.Outlet),
+				UpgradeTarget: impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.UpgradeCategory, v.Region, v.Outlet),
 			}
 
 			continue
@@ -61,14 +61,14 @@ func (impl *IncentiveImpl) GetRegionSalesAndTarget(ctx *gin.Context, clientID, q
 		eachRegionRcrd.HayyakSales += trx.Hayyak
 		eachRegionRcrd.BaqatiSales += trx.Baqati
 		eachRegionRcrd.UpgradeSales += trx.Upgrade
-		eachRegionRcrd.HBBTarget += impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.HBBCategory, v.Region, v.Outlet)
-		eachRegionRcrd.HayyakTarget += impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.HayyakCategory, v.Region, v.Outlet)
-		eachRegionRcrd.BaqatiTarget += impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.BaqatiCategory, v.Region, v.Outlet)
-		eachRegionRcrd.UpgradeTarget += impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, v.Region, v.Outlet)
+		eachRegionRcrd.HBBTarget += impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.HBBCategory, v.Region, v.Outlet)
+		eachRegionRcrd.HayyakTarget += impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.HayyakCategory, v.Region, v.Outlet)
+		eachRegionRcrd.BaqatiTarget += impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.BaqatiCategory, v.Region, v.Outlet)
+		eachRegionRcrd.UpgradeTarget += impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.UpgradeCategory, v.Region, v.Outlet)
 
 	}
 
-	resp := make([]*psqldb.ProductWiseSalesTargetPerOutlet, 0)
+	resp := make([]*models.ProductWiseSalesTargetPerOutlet, 0)
 
 	for _, v := range temp {
 

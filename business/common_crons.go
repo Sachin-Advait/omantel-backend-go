@@ -3,9 +3,9 @@ package business
 import (
 	"fmt"
 	"github.com/xuri/excelize/v2"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"log"
 	"strconv"
 	"strings"
@@ -48,7 +48,7 @@ func (impl *IncentiveImpl) HandleUserMasterInputFile() {
 			return
 		}
 
-		emp := &psqldb.Employee{}
+		emp := &models.Employee{}
 
 		//LOOP:
 		for i, colCell := range row {
@@ -127,7 +127,7 @@ func (impl *IncentiveImpl) HandleDataInputFile() {
 			return
 		}
 
-		trx := &psqldb.Transaction{}
+		trx := &models.Transaction{}
 
 		//LOOP:
 		for i, colCell := range eachRowColumns {
@@ -523,7 +523,7 @@ func (impl *IncentiveImpl) HandleHierarchyFile() {
 	isFirstRow := true
 	index := 0
 
-	usrs := make([]*psqldb.UserHierarchy, 0)
+	usrs := make([]*models.UserHierarchy, 0)
 
 LOOP:
 	for rows.Next() {
@@ -536,7 +536,7 @@ LOOP:
 			continue
 		}
 
-		usr := &psqldb.UserHierarchy{}
+		usr := &models.UserHierarchy{}
 
 		eachRowColumns, err := rows.Columns()
 		if err != nil {

@@ -12,17 +12,10 @@ import (
 	jwthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/jwtHelper"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 	middlewares "gitlab.com/rendezvousPoint/incentive_calculator/utils/middlewares"
-	"gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"time"
 )
 
-const (
-	baseURL = "/sales/incentive"
-	health  = "/health"
-)
-
 func init() {
-	//utils.SetLoggerObj(commons.LOG_FILE_NAME)
 
 	initEnvConfigs()
 	initLogger()
@@ -137,7 +130,7 @@ func buildIncentiveProvider() models.IncentiveProvider {
 	}
 
 	//db config load
-	dbConfig := &psqldb.DbClientConfig{
+	dbConfig := &models.DbClientConfig{
 		Host:               applicationConfig.GetString(constant.PsqlHost),
 		Port:               applicationConfig.GetInt(constant.PsqlPort),
 		DbName:             applicationConfig.GetString(constant.PsqlDbName),

@@ -2,21 +2,21 @@ package business
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"net/http"
 	"time"
 )
 
-func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*psqldb.ProductWiseSalesCountPerOutlet, *errors.Error) {
+func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
 
 	position, err := impl.PsqlDb.FetchUserPosition(clientID)
 	if err != nil {
 		return nil, err
 	}
 
-	manger, ok := commons.ManagerMap[position]
+	manger, ok := constant.ManagerMap[position]
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -30,7 +30,7 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, clientID, 
 		return nil, err
 	}
 
-	resp := make([]*psqldb.ProductWiseSalesCountPerOutlet, 0)
+	resp := make([]*models.ProductWiseSalesCountPerOutlet, 0)
 
 	for _, v := range allDistinctOM {
 

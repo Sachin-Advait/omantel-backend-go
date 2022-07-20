@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 	"time"
 
@@ -29,7 +30,7 @@ type DBImplementation struct {
 }
 
 //NewDatabaseSetup start a new db connection
-func NewDatabaseSetup(conf *DbClientConfig) *DBImplementation {
+func NewDatabaseSetup(conf *models.DbClientConfig) *DBImplementation {
 
 	logger.FileLogger.Info().Interface("config", conf).Msg("PsqlDatabaseService - config")
 

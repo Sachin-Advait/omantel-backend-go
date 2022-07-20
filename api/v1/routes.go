@@ -51,6 +51,12 @@ func IncentiveRoutes(group *gin.RouterGroup) {
 	group.POST(constant.TopTenSalesCountPath, getTopTenEmpProductSalesCount)
 	group.POST(constant.TopTenSalesTargetPath, getTopTenEmpSalesAndTarget)
 
+	group.POST(constant.UpsertRegionPath, createNewRegion)
+	group.POST(constant.UpsertOutletPath, createNewOutlet)
+	group.POST(constant.UpsertProductPath, createNewProduct)
+	group.POST(constant.UpsertPlanPath, createNewPlan)
+	group.POST(constant.UpsertTargetPath, createNewTarget)
+
 	group.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 

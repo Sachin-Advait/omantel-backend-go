@@ -1,5 +1,8 @@
 # Incentive Calculator
 
+
+##File Operation
+
 1. Read sales input file containing following parameter:
     Id 
     Name     
@@ -28,6 +31,12 @@
 
 3. Target Table
         Region Outlet Baqati HBB Hayyak Upgrade
+
+
+
+## Db Details
+
+
 
 
 
@@ -222,7 +231,54 @@ non_managerial_emp integer NOT NULL DEFAULT 0,
 total_emp integer NOT NULL DEFAULT 0
 )
 
+CREATE TABLE IF NOT EXISTS public.regions_table
+(
+region_code character varying(32) PRIMARY KEY,
+region_name character varying(64) NOT NULL,
+)
 
+CREATE TABLE IF NOT EXISTS public.outlets_table
+(
+outlet_code character varying(32) PRIMARY KEY,
+outlet_name character varying(64) NOT NULL,
+region_code character varying(32) NOT NULL,
+region_name character varying(64) NOT NULL,
+latitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
+longitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
+CONSTRAINT fk_region FOREIGN KEY(region_code)
+REFERENCES regions_table(region_code)
+ON DELETE CASCADE
+ON UPDATE CASCADE
+)
+
+CREATE TABLE IF NOT EXISTS public.products_table
+(
+product_code character varying(32) PRIMARY KEY,
+product_name character varying(64) NOT NULL,
+weightage NUMERIC (10, 3) NOT NULL DEFAULT 0
+)
+
+CREATE TABLE IF NOT EXISTS public.plans_table
+(
+plan_code character varying(32) PRIMARY KEY,
+plan_name character varying(64) NOT NULL,
+product_code character varying(32) NOT NULL,
+product_name character varying(64) NOT NULL,
+plan_price NUMERIC (10, 3) NOT NULL DEFAULT 0,
+sip_plan_rate NUMERIC (10, 3) NOT NULL DEFAULT 0,
+CONSTRAINT fk_region FOREIGN KEY(product_code)
+REFERENCES products_table(product_code)
+ON DELETE CASCADE
+ON UPDATE CASCADE
+)
+
+CREATE TABLE IF NOT EXISTS public.targets_table
+(
+product_name character varying(64) PRIMARY KEY,
+plan_name character varying(64) NOT NULL,
+rate NUMERIC (10, 3) NOT NULL DEFAULT 0,
+sip_plan_rate NUMERIC (10, 3) NOT NULL DEFAULT 0
+)
 
 select a.emp_id, b.outlet_manager, b.manager, b.senior_manager, b.general_manager, b.vice_president from 
 user_master_table a inner join user_hierarchy_table b 

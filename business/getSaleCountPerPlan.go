@@ -2,14 +2,14 @@ package business
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"sort"
 	"time"
 )
 
-func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, clientID, quarter int, product string, isQuarterReport bool, t time.Time) ([]*psqldb.SaleCountPerPlan, *errors.Error) {
+func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, clientID, quarter int, product string, isQuarterReport bool, t time.Time) ([]*models.SaleCountPerPlan, *errors.Error) {
 
 	trx, err := impl.PsqlDb.FetchUserSales(clientID, int(t.Month()), t.Year(), quarter, isQuarterReport)
 	if err != nil {
@@ -20,7 +20,7 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, clientID, quart
 
 	for grp, rcds := range trx.SaleRecords {
 
-		if product != commons.UpgradeCategory && grp != product {
+		if product != constant.UpgradeCategory && grp != product {
 			continue
 		}
 
@@ -31,20 +31,20 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, clientID, quart
 				m[each.CurrentProduct] = each.Quantity
 			}
 
-			if grp == commons.UpgradeCategory && each.PreviousProduct != "" {
+			if grp == constant.UpgradeCategory && each.PreviousProduct != "" {
 				m[each.CurrentProduct] = v + each.Quantity
 			}
 
-			if grp != commons.UpgradeCategory && each.PreviousProduct == "" {
+			if grp != constant.UpgradeCategory && each.PreviousProduct == "" {
 				m[each.CurrentProduct] = v + each.Quantity
 			}
 		}
 	}
 
-	resp := make([]*psqldb.SaleCountPerPlan, 0)
+	resp := make([]*models.SaleCountPerPlan, 0)
 
 	for k, v := range m {
-		resp = append(resp, &psqldb.SaleCountPerPlan{
+		resp = append(resp, &models.SaleCountPerPlan{
 			CurrentPlan: k,
 			Quantity:    v,
 		})

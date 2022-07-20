@@ -3,25 +3,25 @@ package business
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"math"
 	"time"
 )
 
-func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) (*psqldb.TotalIncentive, *errors.Error) {
+func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) (*models.TotalIncentive, *errors.Error) {
 
 	trx, err := impl.PsqlDb.FetchUserSales(clientID, int(t.Month()), t.Year(), quarter, isQuarterReport)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &psqldb.TotalIncentive{}
+	resp := &models.TotalIncentive{}
 
 	if trx.Region == "" || trx.Outlet == "" {
-		ind := &psqldb.IndividualIncentive{Error: "no sales record found for this period"}
+		ind := &models.IndividualIncentive{Error: "no sales record found for this period"}
 		resp.HBB = ind
 		resp.Baqati = ind
 		resp.Hayyak = ind
@@ -33,7 +33,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 	if err != nil {
 		return nil, err
 	} else if totalEmp == 0 {
-		ind := &psqldb.IndividualIncentive{Error: "no employee found for this outlet - " + trx.Outlet}
+		ind := &models.IndividualIncentive{Error: "no employee found for this outlet - " + trx.Outlet}
 		resp.HBB = ind
 		resp.Baqati = ind
 		resp.Hayyak = ind
@@ -62,7 +62,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 			Str("category", grp).Int("saleCount", len(rcds)).Msg("GetSingleUserIncentive : groupSalesCount info")
 
 		for _, v := range rcds {
-			if v.Category != commons.UpgradeCategory {
+			if v.Category != constant.UpgradeCategory {
 				if grpPlans[grp] == nil {
 					grpPlans[grp] = make(map[string]int)
 				}
@@ -88,9 +88,9 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 
 		switch grp {
 
-		case commons.HBBCategory:
+		case constant.HBBCategory:
 
-			ind := &psqldb.IndividualIncentive{}
+			ind := &models.IndividualIncentive{}
 
 			/*
 					For each group like Baqati, Hayyak, HBB
@@ -140,9 +140,9 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 			}
 			resp.HBB = ind
 
-		case commons.HayyakCategory:
+		case constant.HayyakCategory:
 
-			ind := &psqldb.IndividualIncentive{}
+			ind := &models.IndividualIncentive{}
 
 			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
@@ -179,9 +179,9 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 			}
 			resp.Hayyak = ind
 
-		case commons.BaqatiCategory:
+		case constant.BaqatiCategory:
 
-			ind := &psqldb.IndividualIncentive{}
+			ind := &models.IndividualIncentive{}
 
 			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
@@ -219,9 +219,9 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 		}
 	}
 
-	ind := &psqldb.IndividualIncentive{}
+	ind := &models.IndividualIncentive{}
 
-	targetPerOutlet := impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, commons.UpgradeCategory, trx.Region, trx.Outlet)
+	targetPerOutlet := impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, constant.UpgradeCategory, trx.Region, trx.Outlet)
 	if targetPerOutlet == -1 {
 		ind.Error = "outlet target not found"
 		resp.Upgrade = ind
@@ -235,14 +235,14 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 			Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("GetSingleUserIncentive : UPGRADE sales error")
 	} else {
 		achieved := float64(totalActiveUpgrade) * 100 / float64(target)
-		vop := impl.getValueOfPoint(commons.UpgradeCategory, achieved)
+		vop := impl.getValueOfPoint(constant.UpgradeCategory, achieved)
 
 		logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 			Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Float64("indTarget", target).
 			Int("achievedCount", totalActiveUpgrade).Float64("achievedPercent", achieved).Float64("vop", vop).
-			Float64("extraPay", impl.getExtraPay(commons.UpgradeCategory, achieved)).Msg("GetSingleUserIncentive : UPGRADE sales info")
+			Float64("extraPay", impl.getExtraPay(constant.UpgradeCategory, achieved)).Msg("GetSingleUserIncentive : UPGRADE sales info")
 
-		ind.ExtraPayout = impl.getExtraPay(commons.UpgradeCategory, achieved)
+		ind.ExtraPayout = impl.getExtraPay(constant.UpgradeCategory, achieved)
 		ind.ExtraPayout = math.Round(ind.ExtraPayout*100) / 100
 		totalPay += ind.ExtraPayout
 
@@ -257,7 +257,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 			}
 		}
 
-		max := impl.getMaxPayout(commons.UpgradeCategory)
+		max := impl.getMaxPayout(constant.UpgradeCategory)
 		if ind.Payout > max {
 			ind.Payout = max
 		}

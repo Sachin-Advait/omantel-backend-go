@@ -82,3 +82,24 @@ const (
 
 	DataNotFound = "DATA NOT FOUND"
 )
+
+var ErrorMap = map[int]string{
+	1001: "INTERNAL SERVER ERROR",
+	1002: "BAD REQUEST",
+	1003: "CONTACT NUMBER NOT FOUND",
+	1004: "NO RECORDS FOUND",
+	1020: "INCORRECT CONTACT NUMBER FORMAT",
+	1021: "OTP HAS EXPIRED",
+	1022: "OTP IS INVALID",
+}
+
+type GenericError struct {
+	ErrorMessage string
+	Code         int
+}
+
+const (
+	BAD_REQUEST_CODE      = 400
+	UNAUTHORISED_REQUEST  = 401
+	INTERNAL_SERVER_ERROR = 500
+)

@@ -2,23 +2,23 @@ package business
 
 import (
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/commons"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
 	"math"
 	"net/http"
 	"sort"
 	"time"
 )
 
-func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*psqldb.ProductWiseSalesTargetPerStaff, *errors.Error) {
+func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error) {
 
 	position, err := impl.PsqlDb.FetchUserPosition(clientID)
 	if err != nil {
 		return nil, err
 	}
 
-	manger, ok := commons.ManagerMap[position]
+	manger, ok := constant.ManagerMap[position]
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -32,7 +32,7 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID
 		return nil, err
 	}
 
-	resp := make([]*psqldb.ProductWiseSalesTargetPerStaff, 0)
+	resp := make([]*models.ProductWiseSalesTargetPerStaff, 0)
 
 	for _, v := range empList {
 
@@ -46,7 +46,7 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID
 			return nil, err
 		}
 
-		eachUser := &psqldb.ProductWiseSalesTargetPerStaff{
+		eachUser := &models.ProductWiseSalesTargetPerStaff{
 			Name:                    name,
 			HBBSales:                trx.Hbb_sales_count,
 			HBBTarget:               math.Round(trx.Hbb_target*100) / 100,
