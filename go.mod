@@ -9,6 +9,7 @@ require (
 	github.com/gin-contrib/gzip v0.0.5
 	github.com/gin-gonic/gin v1.8.1
 	github.com/google/uuid v1.1.2
+	github.com/itsjamie/gin-cors v0.0.0-20220228161158-ef28d3d2a0a8
 	github.com/json-iterator/go v1.1.12
 	github.com/lib/pq v1.10.3
 	github.com/pelletier/go-toml v1.9.4

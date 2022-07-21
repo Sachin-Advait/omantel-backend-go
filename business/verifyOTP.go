@@ -29,7 +29,7 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID, otp int) (*mode
 
 	resp.Authenticated = true
 	resp.StaffName = otpModel.StaffName
-	otpModel.StaffPosition = constant.EmployeePositionMap[otpModel.StaffPosition]
+	resp.StaffPosition = constant.EmployeePositionMap[otpModel.StaffPosition]
 
 	return resp, nil
 }

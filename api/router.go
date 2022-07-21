@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/itsjamie/gin-cors"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	v1 "gitlab.com/rendezvousPoint/incentive_calculator/api/v1"
@@ -18,6 +19,9 @@ func init() {
 func GetRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 
 	router := gin.New()
+	router.Use(cors.Middleware(cors.Config{
+		Origins: "*",
+	}))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middlewares...)
 	router.Use(gin.Recovery())
