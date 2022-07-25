@@ -48,6 +48,22 @@ const (
 	CorrelationLogParam = "correlationId"
 )
 
+// Log keys
+const (
+	StatusCodeKey = "statusCode"
+	LatencyKey    = "latency"
+	ClientIPKey   = "clientIP"
+	MethodKey     = "method"
+	PathKey       = "path"
+	ErrorKey      = "error"
+	ReqHeader  = "reqHeader"
+	ResHeader  = "resHeader"
+
+	HTTPConfigKey     = "httpConfig"
+	DatabaseConfigKey = "databaseConfig"
+)
+
+
 //db configuration keywords
 const (
 	PsqlDatabase    = "psqlDB"

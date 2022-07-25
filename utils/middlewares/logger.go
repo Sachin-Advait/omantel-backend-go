@@ -100,3 +100,31 @@ func Logger(options LoggerMiddlewareOptions) gin.HandlerFunc {
 		}
 	}
 }
+
+func HeaderLogging() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+
+		start := time.Now()
+
+		headers := make(map[string][]string, 0)
+
+		for key, val := range ctx.Request.Header {
+
+			if key == constant.Authorization && len(val[0]) > 50 {
+				out := []rune(val[0][7:])
+				out = append(out[:len(out)-10], []rune("XXXXXXXXXX")...)
+
+				headers[key] = []string{string(out)}
+				continue
+			}
+
+			headers[key] = val
+		}
+
+		//Process request
+		ctx.Next()
+
+		logger.FileLogger.CtxInfo(ctx).Dur(constant.LatencyKey, time.Now().Sub(start)).Interface(constant.ReqHeader, headers).
+			Interface(constant.ResHeader, ctx.Writer.Header()).Msg("Header Logging Middleware")
+	}
+}
