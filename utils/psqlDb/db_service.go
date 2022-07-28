@@ -4,19 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
-	"gitlab.com/rendezvousPoint/incentive_calculator/models"
-	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
 // InsertUserMasterRecord reads data from user master input file and inserts into table
 func (dbConn *DBImplementation) InsertUserMasterRecord(emp *models.Employee) *errors.Error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	logger.FileLogger.Info().Interface("record", emp).Time("start", time.Now()).Msg("InsertUserMasterRecord start")
+	defer logger.FileLogger.Info().Interface("record", emp).Time("end", time.Now()).Msg("InsertUserMasterRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := "insert into User_Master_Table(created, modified, emp_id, name, usr_position, region, outlet, mobile_number ,remark) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
 
 	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), emp.Id, emp.Name, emp.Position, emp.Region, emp.Outlet, emp.MobileNos, emp.Remark)
@@ -35,7 +42,12 @@ func (dbConn *DBImplementation) InsertUserMasterRecord(emp *models.Employee) *er
 // InsertSaleTransaction reads data from input file and inserts into table
 func (dbConn *DBImplementation) InsertSaleTransaction(trx *models.Transaction) *errors.Error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	logger.FileLogger.Info().Interface("record", trx).Time("start", time.Now()).Msg("InsertSaleTransaction start")
+	defer logger.FileLogger.Info().Interface("record", trx).Time("end", time.Now()).Msg("InsertSaleTransaction done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := "insert into Sale_Transaction_Table(created, modified, region, outlet, emp_id, category_type, prev_product, curr_product, quantity, category, product_group, sales_date, quarter) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
 
 	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), trx.Reqion, trx.Outlet, trx.Id, trx.CategoryType, trx.PreviousProduct,
@@ -55,7 +67,12 @@ func (dbConn *DBImplementation) InsertSaleTransaction(trx *models.Transaction) *
 // DeleteProductPlans removes product plan data from table
 func (dbConn *DBImplementation) DeleteProductPlans() *errors.Error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	logger.FileLogger.Info().Interface("record", "*").Time("start", time.Now()).Msg("DeleteProductPlans start")
+	defer logger.FileLogger.Info().Interface("record", "*").Time("end", time.Now()).Msg("DeleteProductPlans done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM Product_Plans_Table")
 	if err != nil {
 		return &errors.Error{
@@ -72,7 +89,12 @@ func (dbConn *DBImplementation) DeleteProductPlans() *errors.Error {
 // InsertProductPlans reads data from plan input file and inserts into table
 func (dbConn *DBImplementation) InsertProductPlans(plan *models.ProductPlans) *errors.Error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	logger.FileLogger.Info().Interface("record", plan).Time("start", time.Now()).Msg("InsertProductPlans start")
+	defer logger.FileLogger.Info().Interface("record", plan).Time("end", time.Now()).Msg("InsertProductPlans done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := "insert into Product_Plans_Table(created, modified, plan_name, plan_price, sip_plan_rate) values($1,$2,$3,$4,$5)"
 
 	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), plan.PlanName, plan.PlanPrice, plan.SIPRatePlan)
@@ -91,7 +113,12 @@ func (dbConn *DBImplementation) InsertProductPlans(plan *models.ProductPlans) *e
 // DeleteStoreTargets removes store target data from table
 func (dbConn *DBImplementation) DeleteStoreTargets() *errors.Error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	logger.FileLogger.Info().Interface("record", "*").Time("start", time.Now()).Msg("DeleteStoreTargets start")
+	defer logger.FileLogger.Info().Interface("record", "*").Time("end", time.Now()).Msg("DeleteStoreTargets done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM Sales_Target_Table")
 	if err != nil {
 		return &errors.Error{
@@ -108,7 +135,12 @@ func (dbConn *DBImplementation) DeleteStoreTargets() *errors.Error {
 // DeleteHierarchy removes all hierarchy data from table
 func (dbConn *DBImplementation) DeleteHierarchy() *errors.Error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	logger.FileLogger.Info().Interface("record", "*").Time("start", time.Now()).Msg("DeleteHierarchy start")
+	defer logger.FileLogger.Info().Interface("record", "*").Msg("DeleteHierarchy done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM user_hierarchy_table")
 	if err != nil {
 		return &errors.Error{
@@ -125,7 +157,11 @@ func (dbConn *DBImplementation) DeleteHierarchy() *errors.Error {
 // InsertStoreTargets reads data from target input file and inserts into table
 func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month int, trgt *models.ProductGrpTarget) *errors.Error {
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Int("month", month).Interface("record", trgt).Time("start", time.Now()).Msg("InsertStoreTargets start")
+	defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Int("month", month).Interface("record", trgt).Time("end", time.Now()).Msg("InsertStoreTargets done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
 	query := "insert into Sales_Target_Table(created, modified, region, outlet, months, Baqati, HBB, Hayyak, Upgrade) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
 
@@ -145,7 +181,12 @@ func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month 
 // InsertValueOfPoints reads data from ScakeOrder input file and inserts into table
 func (dbConn *DBImplementation) InsertValueOfPoints(category string, percent int, vop float64) (int64, *errors.Error) {
 
-	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	logger.FileLogger.Info().Str("category", category).Int("percent", percent).Float64("vop", vop).Time("start", time.Now()).Msg("InsertValueOfPoints start")
+	defer logger.FileLogger.Info().Str("category", category).Int("percent", percent).Float64("vop", vop).Time("end", time.Now()).Msg("InsertValueOfPoints done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := "insert into Scale_Order_Table(category, percentage, vop) values($1,$2,$3)"
 
 	rslt, err := dbConn.Operation.ExecContext(ctx, query, category, percent, vop)
@@ -174,7 +215,13 @@ func (dbConn *DBImplementation) InsertValueOfPoints(category string, percent int
 // FetchPlans loads the global variable PlanRates with the rate plan for each plan type
 func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 
-	rows, err := dbConn.Operation.Query("select id, plan_name, plan_price, sip_plan_rate from Product_Plans_Table")
+	logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchPlans start")
+	defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchPlans done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select id, plan_name, plan_price, sip_plan_rate from Product_Plans_Table")
 	if err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -222,9 +269,15 @@ func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 // FetchSaleTarget loads the global variable SalesTrgt with the target for each outlet
 func (dbConn *DBImplementation) FetchSaleTarget() *errors.Error {
 
+	logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchSaleTarget start")
+	defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchSaleTarget done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	models.SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*models.ProductGrpTarget)
 
-	rows, err := dbConn.Operation.Query("select region, outlet, months, Baqati, HBB, Hayyak, Upgrade from Sales_Target_Table")
+	rows, err := dbConn.Operation.QueryContext(ctx, "select region, outlet, months, Baqati, HBB, Hayyak, Upgrade from Sales_Target_Table")
 	if err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -541,8 +594,14 @@ func (dbConn *DBImplementation) FetchMaxPayout() *errors.Error {
 // FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
 func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, *errors.Error) {
 
+	logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
+	defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	// rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and position!= $3", region, outlet, commons.OutletManager)
-	rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'", region, outlet)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select count(*) from User_Master_Table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'", region, outlet)
 	if err != nil {
 		return -1, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -571,15 +630,21 @@ func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet 
 // FetchUserSales returns all sale transaction of a given user
 func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter int, isQuarterReport bool) (*models.SaleTransaction, *errors.Error) {
 
+	logger.FileLogger.Info().Int("clientID", clientID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSales start")
+	defer logger.FileLogger.Info().Int("clientID", clientID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("end", time.Now()).Msg("FetchUserSales done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	var (
 		rows *sql.Rows
 		err  error
 	)
 
 	if isQuarterReport {
-		rows, err = dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and b.quarter= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, quarter, year)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and b.quarter= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, quarter, year)
 	} else {
-		rows, err = dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('month' from b.sales_date)= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, month, year)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('month' from b.sales_date)= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, month, year)
 	}
 
 	if err != nil {
@@ -642,7 +707,13 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 
 func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (map[int]*models.SaleTransaction, map[int]*models.SaleTransaction, *errors.Error) {
 
-	rows, err := dbConn.Operation.Query("select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category, b.sales_date from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('year' from b.sales_date)= $2", clientID, 2021)
+	logger.FileLogger.Info().Int("clientID", clientID).Time("start", time.Now()).Msg("FetchPromotersPresentYearSales start")
+	defer logger.FileLogger.Info().Int("clientID", clientID).Time("end", time.Now()).Msg("FetchPromotersPresentYearSales done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category, b.sales_date from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('year' from b.sales_date)= $2", clientID, 2021)
 	if err != nil {
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -738,7 +809,13 @@ func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (ma
 // FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
 func (dbConn *DBImplementation) FetchEmployeeContactNumber(clientID int) (int, *errors.Error) {
 
-	rows, err := dbConn.Operation.Query("select mobile_number from User_Master_Table where emp_id= $1", clientID)
+	logger.FileLogger.Info().Int("clientID", clientID).Time("start", time.Now()).Msg("FetchEmployeeContactNumber start")
+	defer logger.FileLogger.Info().Int("clientID", clientID).Time("end", time.Now()).Msg("FetchEmployeeContactNumber done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select mobile_number from User_Master_Table where emp_id= $1", clientID)
 	if err != nil {
 		return -1, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -799,7 +876,14 @@ func (dbConn *DBImplementation) FetchEmployeeContactNumber(clientID int) (int, *
 }
 
 func (dbConn *DBImplementation) InsertStaffOTP(otpModel *models.OtpModel) *errors.Error {
-	_, err := dbConn.Operation.Query("DELETE FROM user_authentication_table WHERE emp_id= $1", otpModel.StaffID)
+
+	logger.FileLogger.Info().Interface("record", otpModel).Time("start", time.Now()).Msg("InsertStaffOTP start")
+	defer logger.FileLogger.Info().Interface("record", otpModel).Time("end", time.Now()).Msg("InsertStaffOTP done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := dbConn.Operation.QueryContext(ctx, "DELETE FROM user_authentication_table WHERE emp_id= $1", otpModel.StaffID)
 	if err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -809,7 +893,10 @@ func (dbConn *DBImplementation) InsertStaffOTP(otpModel *models.OtpModel) *error
 		}
 	}
 
-	_, err = dbConn.Operation.Query("INSERT INTO user_authentication_table(created, emp_id, expirytime, modified, otp, retry) VALUES ($1,$2,$3,$4,$5,$6);",
+	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err = dbConn.Operation.QueryContext(ctx, "INSERT INTO user_authentication_table(created, emp_id, expirytime, modified, otp, retry) VALUES ($1,$2,$3,$4,$5,$6);",
 		otpModel.CreatedTime,
 		otpModel.StaffID,
 		otpModel.ExpiryTime,
@@ -832,7 +919,13 @@ func (dbConn *DBImplementation) InsertStaffOTP(otpModel *models.OtpModel) *error
 
 func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*models.OtpModel, *errors.Error) {
 
-	rows, err := dbConn.Operation.Query("select a.name, a.usr_position, b.otp, b.retry, b.expiryTime from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
+	logger.FileLogger.Info().Int("clientID", clientID).Time("start", time.Now()).Msg("FetchOTPValidity start")
+	defer logger.FileLogger.Info().Int("clientID", clientID).Time("end", time.Now()).Msg("FetchOTPValidity done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select a.name, a.usr_position, b.otp, b.retry, b.expiryTime from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -875,6 +968,12 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*models.OtpModel
 // FetchAllGivenPositionEmpIdAndTheirManager returns an array of all employees of the given position along with their managers, returns empty array if no records found
 func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(position string) ([]*models.UserLead, *errors.Error) {
 
+	logger.FileLogger.Info().Str("position", position).Time("start", time.Now()).Msg("FetchAllGivenPositionEmpIdAndTheirManager start")
+	defer logger.FileLogger.Info().Str("position", position).Time("end", time.Now()).Msg("FetchAllGivenPositionEmpIdAndTheirManager done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	if !(position == constant.VicePresident || position == constant.GeneralManager || position == constant.SeniorManager || position == constant.Manager || position == constant.OutletManager || position == constant.Promoter) {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -901,7 +1000,7 @@ func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(positi
 		query = "select distinct emp_id, outlet_manager from user_hierarchy_table"
 	}
 
-	rows, err := dbConn.Operation.Query(query)
+	rows, err := dbConn.Operation.QueryContext(ctx, query)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -935,6 +1034,12 @@ func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(positi
 // FetchAllEmployeesReportingToGivenManager returns all employees reporting to given manager, returns empty array if no records found
 func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(managerPosition string, managerID int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
+	logger.FileLogger.Info().Int("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllEmployeesReportingToGivenManagerRole start")
+	defer logger.FileLogger.Info().Int("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllEmployeesReportingToGivenManagerRole done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	if !(managerPosition == "vice_president" || managerPosition == "general_manager" || managerPosition == "senior_manager" || managerPosition == "manager" || managerPosition == "outlet_manager") {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -959,7 +1064,7 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 		query = "select distinct a.emp_id, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.outlet_manager= $1"
 	}
 
-	rows, err := dbConn.Operation.Query(query, managerID)
+	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -994,6 +1099,12 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 
 func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRole(managerPosition string, managerID int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
+	logger.FileLogger.Info().Int("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole start")
+	defer logger.FileLogger.Info().Int("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	if !(managerPosition == "vice_president" || managerPosition == "general_manager" || managerPosition == "senior_manager" || managerPosition == "manager" || managerPosition == "outlet_manager") {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -1018,9 +1129,7 @@ func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRol
 		query = "select emp_id, outlet, region from user_master_table where emp_id= $1"
 	}
 
-	fmt.Println("check", managerPosition)
-
-	rows, err := dbConn.Operation.Query(query, managerID)
+	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -1056,10 +1165,13 @@ func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRol
 // InsertEmployeeRecord inserts each users statistical daily in db, and is updated everyday once
 func (dbConn *DBImplementation) InsertEmployeeRecord(usr *models.UserRecord) *errors.Error {
 
-	// fmt.Printf("userRecord: %+v\n", *usr)
+	logger.FileLogger.Info().Interface("record", usr).Time("start", time.Now()).Msg("InsertEmployeeRecord start")
+	defer logger.FileLogger.Info().Interface("record", usr).Time("end", time.Now()).Msg("InsertEmployeeRecord done")
 
-	//add where clause
-	_, err := dbConn.Operation.Query("INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31);",
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := dbConn.Operation.QueryContext(ctx, "INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31);",
 		usr.EmpId,
 		usr.Created,
 		usr.ReportingManager,
@@ -1107,6 +1219,9 @@ func (dbConn *DBImplementation) InsertEmployeeRecord(usr *models.UserRecord) *er
 
 // InsertEmployeeMultipleRecords inserts each users multiple statistical data daily in db, and is updated everyday once
 func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*models.UserRecord) *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", usr).Time("start", time.Now()).Msg("InsertEmployeeMultipleRecords start")
+	defer logger.FileLogger.Info().Interface("record", usr).Time("end", time.Now()).Msg("InsertEmployeeMultipleRecords done")
 
 	if len(usr) == 0 {
 		return nil
@@ -1205,6 +1320,9 @@ func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*models.User
 
 func (dbConn *DBImplementation) InsertHierarchy(usr ...*models.UserHierarchy) *errors.Error {
 
+	logger.FileLogger.Info().Interface("record", usr).Time("start", time.Now()).Msg("InsertHierarchy start")
+	defer logger.FileLogger.Info().Interface("record", usr).Time("end", time.Now()).Msg("InsertHierarchy done")
+
 	valueStrings := []string{}
 	valueArgs := []interface{}{}
 
@@ -1260,18 +1378,33 @@ func (dbConn *DBImplementation) InsertHierarchy(usr ...*models.UserHierarchy) *e
 
 func (dbConn *DBImplementation) UpsertRegionRecord(dbReq *models.NewRegionRequest) *errors.Error {
 
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertRegionRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertRegionRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := `INSERT INTO regions_table(region_code, region_name) VALUES ($1, $2)`
 
 	if dbReq.IsUpdate {
 		query = `UPDATE regions_table SET region_name=$2 WHERE region_code=$1`
 	}
 
-	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.RegionCode, dbReq.RegionName)
+	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.RegionCode, dbReq.RegionName)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "UpsertRegionRecord : failed duplicate entry",
+				Details:    "UpsertRegionRecord failed: " + err.Error(),
+			}
+		}
+
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
-			Message:    "UpsertRegionRecord : failed",
+			Message:    "UpsertRegionRecord : failed ",
 			Details:    "UpsertRegionRecord failed: " + err.Error(),
 		}
 	}
@@ -1300,14 +1433,29 @@ func (dbConn *DBImplementation) UpsertRegionRecord(dbReq *models.NewRegionReques
 
 func (dbConn *DBImplementation) UpsertOutletRecord(dbReq *models.NewOutletRequest) *errors.Error {
 
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertOutletRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertOutletRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := `INSERT INTO outlets_table(outlet_code, outlet_name, region_code, region_name, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6)`
 
 	if dbReq.IsUpdate {
 		query = `UPDATE outlets_table SET outlet_name=$2, region_code=$3, region_name=$4, latitude=$5, longitude=6$  WHERE outlet_code=$1`
 	}
 
-	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.OutletCode, dbReq.OutletName, dbReq.RegionCode, dbReq.RegionName, dbReq.Lat, dbReq.Lang)
+	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.OutletCode, dbReq.OutletName, dbReq.RegionCode, dbReq.RegionName, dbReq.Lat, dbReq.Lang)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "UpsertOutletRecord : failed duplicate entry",
+				Details:    "UpsertOutletRecord failed: " + err.Error(),
+			}
+		}
+
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
@@ -1340,14 +1488,29 @@ func (dbConn *DBImplementation) UpsertOutletRecord(dbReq *models.NewOutletReques
 
 func (dbConn *DBImplementation) UpsertProductRecord(dbReq *models.NewProductRequest) *errors.Error {
 
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertProductRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertProductRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := `INSERT INTO products_table(product_code, product_name, weightage) VALUES ($1, $2, $3)`
 
 	if dbReq.IsUpdate {
 		query = `UPDATE products_table SET product_name=$2, weightage=$3 WHERE product_code=$1`
 	}
 
-	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.ProductCode, dbReq.ProductName, dbReq.Weightage)
+	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.ProductCode, dbReq.ProductName, dbReq.Weightage)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "UpsertProductRecord : failed duplicate entry",
+				Details:    "UpsertProductRecord failed: " + err.Error(),
+			}
+		}
+
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
@@ -1380,14 +1543,29 @@ func (dbConn *DBImplementation) UpsertProductRecord(dbReq *models.NewProductRequ
 
 func (dbConn *DBImplementation) UpsertPlanRecord(dbReq *models.NewPlanRequest) *errors.Error {
 
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertPlanRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertPlanRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := `INSERT INTO plans_table(plan_code, plan_name, product_code, product_name, plan_price, sip_plan_rate) VALUES ($1, $2, $3, $4, $5, $6)`
 
 	if dbReq.IsUpdate {
 		query = `UPDATE plans_table SET plan_name=$2, product_code=$3 product_name=$4 plan_price=$5 sip_plan_rate=$6 WHERE plan_code=$1`
 	}
 
-	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.PlanCode, dbReq.PlanName, dbReq.ProductCode, dbReq.ProductName, dbReq.PlanPrice, dbReq.SIPPlanRate)
+	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.PlanCode, dbReq.PlanName, dbReq.ProductCode, dbReq.ProductName, dbReq.PlanPrice, dbReq.SIPPlanRate)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "UpsertPlansRecord : failed duplicate entry",
+				Details:    "UpsertPlansRecord failed: " + err.Error(),
+			}
+		}
+
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
@@ -1420,14 +1598,29 @@ func (dbConn *DBImplementation) UpsertPlanRecord(dbReq *models.NewPlanRequest) *
 
 func (dbConn *DBImplementation) UpsertTargetRecord(dbReq *models.NewTargetRequest) *errors.Error {
 
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertTargetRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertTargetRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := `INSERT INTO sales_target_table(region, outlet, months, baqati, hbb, hayyak, upgrade, created, modified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
 	if dbReq.IsUpdate {
 		query = `UPDATE sales_target_table SET baqati=$4, hbb=$5, hayyak=$6, upgrade=$7, created=$8, modified=$9 WHERE region=$1 AND outlet=$2 AND months=$3`
 	}
 
-	result, err := dbConn.Operation.ExecContext(context.Background(), query, dbReq.RegionName, dbReq.OutletName, dbReq.Month, dbReq.Baqati, dbReq.HBB, dbReq.Hayyak, dbReq.Upgrade, time.Now(), time.Now())
+	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.RegionName, dbReq.OutletName, dbReq.Month, dbReq.Baqati, dbReq.HBB, dbReq.Hayyak, dbReq.Upgrade, time.Now(), time.Now())
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "UpsertTargetRecord : failed duplicate entry",
+				Details:    "UpsertTargetRecord failed: " + err.Error(),
+			}
+		}
+
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
@@ -1460,7 +1653,13 @@ func (dbConn *DBImplementation) UpsertTargetRecord(dbReq *models.NewTargetReques
 
 func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*models.UserRecord, *errors.Error) {
 
-	rows, err := dbConn.Operation.Query("select reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1", id)
+	logger.FileLogger.Info().Int("clientID", id).Time("start", time.Now()).Msg("FetchIndividualUserRecord start")
+	defer logger.FileLogger.Info().Int("clientID", id).Time("end", time.Now()).Msg("FetchIndividualUserRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1", id)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -1525,15 +1724,21 @@ func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*models.Use
 
 func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
+	logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserPayoutReport start")
+	defer logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserPayoutReport done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	var (
 		err  error
 		rows *sql.Rows
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.Query("select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.Query("select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {
@@ -1576,15 +1781,21 @@ func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quart
 
 func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
+	logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserTargetReport start")
+	defer logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserTargetReport done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	var (
 		err  error
 		rows *sql.Rows
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {
@@ -1630,15 +1841,21 @@ func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quart
 
 func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
+	logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserSaleCountPerPlanReport start")
+	defer logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserSaleCountPerPlanReport done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	var (
 		err  error
 		rows *sql.Rows
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.Query("select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.Query("select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {
@@ -1674,15 +1891,21 @@ func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, mo
 
 func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
+	logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserOverAllReport start")
+	defer logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserOverAllReport done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	var (
 		err  error
 		rows *sql.Rows
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.Query("select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.Query("select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {
@@ -1738,15 +1961,21 @@ func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quar
 
 func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id, month, year, quarter int, isQuarterly bool) (*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
 
+	logger.FileLogger.Info().Int("clientID", id).Int("year", year).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchProductSalesPerOutletManager start")
+	defer logger.FileLogger.Info().Int("clientID", id).Int("year", year).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchProductSalesPerOutletManager done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	var (
 		err  error
 		rows *sql.Rows
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.Query("select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {
@@ -1791,7 +2020,13 @@ func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id, month, yea
 
 func (dbConn *DBImplementation) FetchUserPosition(id int) (string, *errors.Error) {
 
-	rows, err := dbConn.Operation.Query("select usr_position from user_master_table where emp_id=$1", id)
+	logger.FileLogger.Info().Int("clientID", id).Time("start", time.Now()).Msg("FetchUserPosition start")
+	defer logger.FileLogger.Info().Int("clientID", id).Time("end", time.Now()).Msg("FetchUserPosition done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select usr_position from user_master_table where emp_id=$1", id)
 	if err != nil {
 		return "", &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -1833,7 +2068,13 @@ func (dbConn *DBImplementation) FetchUserPosition(id int) (string, *errors.Error
 
 func (dbConn *DBImplementation) FetchUserName(id int) (string, *errors.Error) {
 
-	rows, err := dbConn.Operation.Query("select name from user_master_table where emp_id=$1", id)
+	logger.FileLogger.Info().Int("clientID", id).Time("start", time.Now()).Msg("FetchUserName start")
+	defer logger.FileLogger.Info().Int("clientID", id).Time("end", time.Now()).Msg("FetchUserName done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select name from user_master_table where emp_id=$1", id)
 	if err != nil {
 		return "", &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -1875,7 +2116,13 @@ func (dbConn *DBImplementation) FetchUserName(id int) (string, *errors.Error) {
 
 func (dbConn *DBImplementation) FetchOutletDetails(outlet, region string) (float64, float64, *errors.Error) {
 
-	rows, err := dbConn.Operation.Query("select latitude, longitude from outlets_table where outlet_name=$1 and region_name=$2", outlet, region)
+	logger.FileLogger.Info().Str("outlet", outlet).Str("region", region).Time("start", time.Now()).Msg("FetchOutletDetails start")
+	defer logger.FileLogger.Info().Str("outlet", outlet).Str("region", region).Time("end", time.Now()).Msg("FetchOutletDetails done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select latitude, longitude from outlets_table where outlet_name=$1 and region_name=$2", outlet, region)
 	if err != nil {
 		return 0, 0, &errors.Error{
 			StatusCode: http.StatusInternalServerError,

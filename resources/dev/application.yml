@@ -8,4 +8,4 @@ psqlDB:
   maxOpenConnections: 20
   maxIdleConnections: 10
   connMaxLifetimeInHour: 24
-  connMaxIdleTimeInMinute: 0
+  connMaxIdleTimeInMinute: 48

@@ -19,9 +19,6 @@ func init() {
 func GetRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 
 	router := gin.New()
-	//router.Use(cors.Middleware(cors.Config{
-	//	Origins: "*",
-	//}))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middlewares...)
 	router.Use(gin.Recovery())

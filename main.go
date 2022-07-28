@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/adapters"
 	"gitlab.com/rendezvousPoint/incentive_calculator/api"
 	"gitlab.com/rendezvousPoint/incentive_calculator/business"
@@ -12,7 +14,6 @@ import (
 	jwthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/jwtHelper"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 	middlewares "gitlab.com/rendezvousPoint/incentive_calculator/utils/middlewares"
-	"time"
 )
 
 func init() {
@@ -139,7 +140,7 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		MaxOpenConnections: applicationConfig.GetInt(constant.PsqlMaxOpenConn),
 		MaxIdleConnections: applicationConfig.GetInt(constant.PsqlMaxIdleConn),
 		MaxLifetime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxLifetime)) * time.Hour,
-		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxIdleTime)) * time.Minute,
+		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxIdleTime)) * time.Hour,
 	}
 
 	incentiveConfig := &configs.IncentiveConfig{}
@@ -149,7 +150,7 @@ func buildIncentiveProvider() models.IncentiveProvider {
 
 func startRouter() {
 
-	router := api.GetRouter(middlewares.Logger(middlewares.LoggerMiddlewareOptions{}), middlewares.ContextCreator())
+	router := api.GetRouter(middlewares.Logger(middlewares.LoggerMiddlewareOptions{}), middlewares.ContextCreator(), middlewares.CORSMiddleware())
 
 	err := router.Run(fmt.Sprintf(":%d", flags.Port()))
 	if err != nil {

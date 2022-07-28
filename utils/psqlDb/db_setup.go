@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -22,6 +23,7 @@ type PsqlOperation interface {
 	Begin() (*sql.Tx, error)
 	PingContext(ctx context.Context) error
 	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
 }
 
@@ -37,8 +39,11 @@ func NewDatabaseSetup(conf *models.DbClientConfig) *DBImplementation {
 	psqlConf := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.UserName, conf.Password, conf.DbName)
 
-	var err error
-	var dbConn PsqlOperation
+	var (
+		err    error
+		dbConn PsqlOperation
+	)
+
 	dbConn, err = sql.Open("postgres", psqlConf+" connect_timeout=1")
 	if err != nil {
 		logger.FileLogger.Fatal().Err(err).Msg("PsqlDatabaseService - open conn failed")
@@ -49,7 +54,7 @@ func NewDatabaseSetup(conf *models.DbClientConfig) *DBImplementation {
 	dbConn.SetConnMaxIdleTime(conf.MaxIdletime) //30
 	dbConn.SetConnMaxLifetime(conf.MaxLifetime) //24 * time.Hour
 
-	ctx := context.Background()
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
 
 	err = dbConn.PingContext(ctx)
 	if err != nil {

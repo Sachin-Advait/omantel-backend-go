@@ -35,7 +35,7 @@ func IncentiveRoutes(group *gin.RouterGroup) {
 	group.POST(constant.SalePerPlanPath, getSaleCountPerPlan)
 	group.POST(constant.GenerateOTPPath, generateOTP)
 	group.POST(constant.VerifyOTPPath, verifyOTP)
-	group.OPTIONS(constant.VerifyOTPPath, verifyOTP)
+	//group.OPTIONS(constant.VerifyOTPPath, verifyOTP)
 	group.POST(constant.UserReportPath, getUserReport)
 	group.POST(constant.ReportToOutletManagerPath, getUsersReportingToOutletManager)
 	group.POST(constant.ReportToManagerPath, getUsersReportingToManager)

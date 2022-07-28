@@ -2,6 +2,8 @@ package v1
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/adapters"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
@@ -9,7 +11,6 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
-	"net/http"
 )
 
 func generateOTP(ctx *gin.Context) {
@@ -17,7 +18,7 @@ func generateOTP(ctx *gin.Context) {
 	userReq := &models.GenerateOTP{}
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("getSaleCountPerPlan : error binding request body")
+		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("generateOTP : error binding request body")
 		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
 			Error: errors.ErrorCodeMap[errors.RequestDecodeErrorCode],
 		})
@@ -25,7 +26,7 @@ func generateOTP(ctx *gin.Context) {
 	}
 
 	req, _ := objecthelper.MarshalJSON(userReq)
-	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getSaleCountPerPlan : req body")
+	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("generateOTP : req body")
 
 	ctx.JSON(adapters.GenerateOTP(ctx, userReq))
 }

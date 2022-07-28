@@ -2,16 +2,18 @@ package logger
 
 import (
 	"testing"
+
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 )
 
 func TestInitLogger(t *testing.T) {
-	InitLogger(TraceLevel)
-	InitLogger(DebugLevel)
-	InitLogger(InfoLevel)
-	InitLogger(WarnLevel)
-	InitLogger(ErrorLevel)
-	InitLogger(PanicLevel)
-	InitLogger(FatalLevel)
+	InitLogger(constant.TraceLevel)
+	InitLogger(constant.DebugLevel)
+	InitLogger(constant.InfoLevel)
+	InitLogger(constant.WarnLevel)
+	InitLogger(constant.ErrorLevel)
+	InitLogger(constant.PanicLevel)
+	InitLogger(constant.FatalLevel)
 	Trace(nil)
 	Debug(nil)
 	Info(nil)

@@ -81,7 +81,6 @@ func Logger(options LoggerMiddlewareOptions) gin.HandlerFunc {
 				Time(constant.EndTimeLogParam, end).
 				Dur(constant.LatencyLogParam, latency).
 				Str(constant.ClientIPLogParam, ctx.ClientIP()).
-				Str(constant.ErrorLogParam, ctx.Errors.ByType(gin.ErrorTypePrivate).String()).
 				Send()
 		} else {
 			// log the final response details in console
@@ -95,7 +94,6 @@ func Logger(options LoggerMiddlewareOptions) gin.HandlerFunc {
 				Time(constant.EndTimeLogParam, end).
 				Dur(constant.LatencyLogParam, latency).
 				Str(constant.ClientIPLogParam, ctx.ClientIP()).
-				Str(constant.ErrorLogParam, ctx.Errors.ByType(gin.ErrorTypePrivate).String()).
 				Send()
 		}
 	}

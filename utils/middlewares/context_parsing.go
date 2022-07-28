@@ -43,7 +43,7 @@ func ContextCreator() gin.HandlerFunc {
 		ctxHeader.XSystemInfo = strings.ToUpper(ctxHeader.XSystemInfo)
 
 		ctx.Set(constant.HeaderInContext, ctxHeader)
-		ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		//ctx.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		ctx.Next()
 	}
 }
