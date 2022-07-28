@@ -1552,7 +1552,7 @@ func (dbConn *DBImplementation) UpsertPlanRecord(dbReq *models.NewPlanRequest) *
 	query := `INSERT INTO plans_table(plan_code, plan_name, product_code, product_name, plan_price, sip_plan_rate) VALUES ($1, $2, $3, $4, $5, $6)`
 
 	if dbReq.IsUpdate {
-		query = `UPDATE plans_table SET plan_name=$2, product_code=$3 product_name=$4 plan_price=$5 sip_plan_rate=$6 WHERE plan_code=$1`
+		query = `UPDATE plans_table SET plan_name=$2, product_code=$3, product_name=$4, plan_price=$5, sip_plan_rate=$6 WHERE plan_code=$1`
 	}
 
 	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.PlanCode, dbReq.PlanName, dbReq.ProductCode, dbReq.ProductName, dbReq.PlanPrice, dbReq.SIPPlanRate)
