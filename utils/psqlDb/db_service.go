@@ -1442,7 +1442,7 @@ func (dbConn *DBImplementation) UpsertOutletRecord(dbReq *models.NewOutletReques
 	query := `INSERT INTO outlets_table(outlet_code, outlet_name, region_code, region_name, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6)`
 
 	if dbReq.IsUpdate {
-		query = `UPDATE outlets_table SET outlet_name=$2, region_code=$3, region_name=$4, latitude=$5, longitude=6$  WHERE outlet_code=$1`
+		query = `UPDATE outlets_table SET outlet_name=$2, region_code=$3, region_name=$4, latitude=$5, longitude=$6 WHERE outlet_code=$1`
 	}
 
 	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.OutletCode, dbReq.OutletName, dbReq.RegionCode, dbReq.RegionName, dbReq.Lat, dbReq.Lang)
