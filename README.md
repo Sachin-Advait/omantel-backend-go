@@ -55,6 +55,9 @@ user: root
 pass: 57utJeQc5rbeQpCp!     http://omantel.moheoman.live
 
 
+vim /var/lib/pgsql/13/data/log/postgresql-
+
+
 
 
 /**** db details ****/
@@ -235,6 +238,9 @@ CREATE TABLE IF NOT EXISTS public.regions_table
 (
 region_code character varying(32) PRIMARY KEY,
 region_name character varying(64) NOT NULL,
+created timestamp with time zone NOT NULL,
+modified timestamp with time zone NOT NULL,
+comment character varying(128) NOT NULL
 )
 
 CREATE TABLE IF NOT EXISTS public.outlets_table
@@ -242,9 +248,11 @@ CREATE TABLE IF NOT EXISTS public.outlets_table
 outlet_code character varying(32) PRIMARY KEY,
 outlet_name character varying(64) NOT NULL,
 region_code character varying(32) NOT NULL,
-region_name character varying(64) NOT NULL,
 latitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
 longitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
+created timestamp with time zone NOT NULL,
+modified timestamp with time zone NOT NULL,
+comment character varying(128) NOT NULL,
 CONSTRAINT fk_region FOREIGN KEY(region_code)
 REFERENCES regions_table(region_code)
 ON DELETE CASCADE
@@ -255,7 +263,10 @@ CREATE TABLE IF NOT EXISTS public.products_table
 (
 product_code character varying(32) PRIMARY KEY,
 product_name character varying(64) NOT NULL,
-weightage NUMERIC (10, 3) NOT NULL DEFAULT 0
+weightage NUMERIC (10, 3) NOT NULL DEFAULT 0,
+created timestamp with time zone NOT NULL,
+modified timestamp with time zone NOT NULL,
+comment character varying(128) NOT NULL
 )
 
 CREATE TABLE IF NOT EXISTS public.plans_table
@@ -263,9 +274,11 @@ CREATE TABLE IF NOT EXISTS public.plans_table
 plan_code character varying(32) PRIMARY KEY,
 plan_name character varying(64) NOT NULL,
 product_code character varying(32) NOT NULL,
-product_name character varying(64) NOT NULL,
 plan_price NUMERIC (10, 3) NOT NULL DEFAULT 0,
 sip_plan_rate NUMERIC (10, 3) NOT NULL DEFAULT 0,
+created timestamp with time zone NOT NULL,
+modified timestamp with time zone NOT NULL,
+comment character varying(128) NOT NULL,
 CONSTRAINT fk_region FOREIGN KEY(product_code)
 REFERENCES products_table(product_code)
 ON DELETE CASCADE
@@ -274,10 +287,21 @@ ON UPDATE CASCADE
 
 CREATE TABLE IF NOT EXISTS public.targets_table
 (
-product_name character varying(64) PRIMARY KEY,
-plan_name character varying(64) NOT NULL,
-rate NUMERIC (10, 3) NOT NULL DEFAULT 0,
-sip_plan_rate NUMERIC (10, 3) NOT NULL DEFAULT 0
+target_code character varying(64) PRIMARY KEY,
+region_code character varying(32) NOT NULL,
+outlet_code character varying(32) NOT NULL,
+month integer NOT NULL,  
+baqati integer NOT NULL,
+hbb integer NOT NULL,
+hayyak integer NOT NULL,
+upgrade integer NOT NULL,
+created timestamp with time zone NOT NULL,
+modified timestamp with time zone NOT NULL,
+comment character varying(128) NOT NULL,
+CONSTRAINT fk_targets FOREIGN KEY(outlet_code)
+REFERENCES outlets_table(outlet_code)
+ON DELETE CASCADE
+ON UPDATE CASCADE
 )
 
 select a.emp_id, b.outlet_manager, b.manager, b.senior_manager, b.general_manager, b.vice_president from 

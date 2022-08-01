@@ -1,11 +1,12 @@
 package v1
 
 import (
+	"net/http"
+	"time"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -53,10 +54,15 @@ func IncentiveRoutes(group *gin.RouterGroup) {
 	group.POST(constant.TopTenSalesTargetPath, getTopTenEmpSalesAndTarget)
 
 	group.POST(constant.UpsertRegionPath, createNewRegion)
+	group.POST(constant.DeleteRegionPath, deleteRegions)
 	group.POST(constant.UpsertOutletPath, createNewOutlet)
+	group.POST(constant.DeleteOutletPath, deleteOutlets)
 	group.POST(constant.UpsertProductPath, createNewProduct)
+	group.POST(constant.DeleteProductPath, deleteProducts)
 	group.POST(constant.UpsertPlanPath, createNewPlan)
+	group.POST(constant.DeletePlanPath, deletePlans)
 	group.POST(constant.UpsertTargetPath, createNewTarget)
+	group.POST(constant.DeleteTargetPath, deleteTargets)
 
 	group.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

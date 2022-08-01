@@ -2,17 +2,18 @@ package adapters
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	"net/http"
 )
 
 func CreateNewPlan(ctx *gin.Context, req *models.NewPlanRequest) (int, interface{}) {
 
-	if req.PlanCode == "" || req.PlanName == "" || req.ProductCode == "" || req.ProductName == "" || req.PlanPrice == 0 || req.SIPPlanRate == 0 {
+	if req.PlanCode == "" || req.PlanName == "" || req.ProductCode == "" || req.PlanPrice == 0 || req.SIPPlanRate == 0 {
 		logger.FileLogger.CtxError(ctx).Err(errors.New("invalid plan param")).Stack().Msg("CreateNewPlan : invalid req params")
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,

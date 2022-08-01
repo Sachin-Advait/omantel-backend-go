@@ -1384,13 +1384,20 @@ func (dbConn *DBImplementation) UpsertRegionRecord(dbReq *models.NewRegionReques
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	query := `INSERT INTO regions_table(region_code, region_name) VALUES ($1, $2)`
+	var (
+		err    error
+		result sql.Result
+	)
 
-	if dbReq.IsUpdate {
-		query = `UPDATE regions_table SET region_name=$2 WHERE region_code=$1`
+	switch dbReq.IsUpdate {
+	case false:
+		query := `INSERT INTO regions_table(region_code, region_name, created, modified, comment) VALUES ($1, $2, $3, $4, $5)`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.RegionCode, dbReq.RegionName, time.Now(), time.Now(), "")
+	default:
+		query := `UPDATE regions_table SET region_name=$2, modified=$3, comment=$4 WHERE region_code=$1`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.RegionCode, dbReq.RegionName, time.Now(), "")
 	}
 
-	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.RegionCode, dbReq.RegionName)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
 			return &errors.Error{
@@ -1431,6 +1438,64 @@ func (dbConn *DBImplementation) UpsertRegionRecord(dbReq *models.NewRegionReques
 	return nil
 }
 
+func (dbConn *DBImplementation) DeleteRegionRecord(regionCodes []string) *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", regionCodes).Time("start", time.Now()).Msg("DeleteRegionRecord start")
+	defer logger.FileLogger.Info().Interface("record", regionCodes).Time("end", time.Now()).Msg("DeleteRegionRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "DELETE FROM regions_table WHERE region_code IN ("
+
+	for _, v := range regionCodes {
+		query += "'" + v + "', "
+	}
+
+	query = strings.TrimSuffix(query, ", ")
+	query += ")"
+
+	result, err := dbConn.Operation.ExecContext(ctx, query)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "DeleteRegionRecord : failed duplicate entry",
+				Details:    "DeleteRegionRecord failed: " + err.Error(),
+			}
+		}
+
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteRegionRecord : failed ",
+			Details:    "DeleteRegionRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteRegionRecord : rowsAffected failed",
+			Details:    "DeleteRegionRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteRegionRecord : rowsAffected not 1",
+			Details:    "DeleteRegionRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
 func (dbConn *DBImplementation) UpsertOutletRecord(dbReq *models.NewOutletRequest) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertOutletRecord start")
@@ -1439,13 +1504,20 @@ func (dbConn *DBImplementation) UpsertOutletRecord(dbReq *models.NewOutletReques
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	query := `INSERT INTO outlets_table(outlet_code, outlet_name, region_code, region_name, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6)`
+	var (
+		err    error
+		result sql.Result
+	)
 
-	if dbReq.IsUpdate {
-		query = `UPDATE outlets_table SET outlet_name=$2, region_code=$3, region_name=$4, latitude=$5, longitude=$6 WHERE outlet_code=$1`
+	switch dbReq.IsUpdate {
+	case false:
+		query := `INSERT INTO outlets_table(outlet_code, outlet_name, region_code, latitude, longitude, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.OutletCode, dbReq.OutletName, dbReq.RegionCode, dbReq.Lat, dbReq.Lang, time.Now(), time.Now(), "")
+	default:
+		query := `UPDATE outlets_table SET outlet_name=$2, region_code=$3, latitude=$4, longitude=$5, modified=$6, comment=$7  WHERE outlet_code=$1`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.OutletCode, dbReq.OutletName, dbReq.RegionCode, dbReq.Lat, dbReq.Lang, time.Now(), "")
 	}
 
-	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.OutletCode, dbReq.OutletName, dbReq.RegionCode, dbReq.RegionName, dbReq.Lat, dbReq.Lang)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
 			return &errors.Error{
@@ -1486,6 +1558,64 @@ func (dbConn *DBImplementation) UpsertOutletRecord(dbReq *models.NewOutletReques
 	return nil
 }
 
+func (dbConn *DBImplementation) DeleteOutletRecord(outletCode []string) *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", outletCode).Time("start", time.Now()).Msg("DeleteOutletRecord start")
+	defer logger.FileLogger.Info().Interface("record", outletCode).Time("end", time.Now()).Msg("DeleteOutletRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "DELETE FROM outlets_table WHERE outlet_code IN ("
+
+	for _, v := range outletCode {
+		query += "'" + v + "', "
+	}
+
+	query = strings.TrimSuffix(query, ", ")
+	query += ")"
+
+	result, err := dbConn.Operation.ExecContext(ctx, query)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "DeleteOutletRecord : failed duplicate entry",
+				Details:    "DeleteOutletRecord failed: " + err.Error(),
+			}
+		}
+
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteOutletRecord : failed ",
+			Details:    "DeleteOutletRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteOutletRecord : rowsAffected failed",
+			Details:    "DeleteOutletRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteOutletRecord : rowsAffected not 1",
+			Details:    "DeleteOutletRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
 func (dbConn *DBImplementation) UpsertProductRecord(dbReq *models.NewProductRequest) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertProductRecord start")
@@ -1494,13 +1624,20 @@ func (dbConn *DBImplementation) UpsertProductRecord(dbReq *models.NewProductRequ
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	query := `INSERT INTO products_table(product_code, product_name, weightage) VALUES ($1, $2, $3)`
+	var (
+		err    error
+		result sql.Result
+	)
 
-	if dbReq.IsUpdate {
-		query = `UPDATE products_table SET product_name=$2, weightage=$3 WHERE product_code=$1`
+	switch dbReq.IsUpdate {
+	case false:
+		query := `INSERT INTO products_table(product_code, product_name, weightage, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6)`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.ProductCode, dbReq.ProductName, dbReq.Weightage, time.Now(), time.Now(), "")
+	default:
+		query := `UPDATE products_table SET product_name=$2, weightage=$3, modified=$4, comment=$5  WHERE product_code=$1`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.ProductCode, dbReq.ProductName, dbReq.Weightage, time.Now(), "")
 	}
 
-	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.ProductCode, dbReq.ProductName, dbReq.Weightage)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
 			return &errors.Error{
@@ -1541,6 +1678,64 @@ func (dbConn *DBImplementation) UpsertProductRecord(dbReq *models.NewProductRequ
 	return nil
 }
 
+func (dbConn *DBImplementation) DeleteProductRecord(productCode []string) *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", productCode).Time("start", time.Now()).Msg("DeleteProductRecord start")
+	defer logger.FileLogger.Info().Interface("record", productCode).Time("end", time.Now()).Msg("DeleteProductRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "DELETE FROM products_table WHERE product_code IN ("
+
+	for _, v := range productCode {
+		query += "'" + v + "', "
+	}
+
+	query = strings.TrimSuffix(query, ", ")
+	query += ")"
+
+	result, err := dbConn.Operation.ExecContext(ctx, query)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "DeleteProductRecord : failed duplicate entry",
+				Details:    "DeleteProductRecord failed: " + err.Error(),
+			}
+		}
+
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteProductRecord : failed ",
+			Details:    "DeleteProductRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteProductRecord : rowsAffected failed",
+			Details:    "DeleteProductRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteProductRecord : rowsAffected not 1",
+			Details:    "DeleteProductRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
 func (dbConn *DBImplementation) UpsertPlanRecord(dbReq *models.NewPlanRequest) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertPlanRecord start")
@@ -1549,13 +1744,20 @@ func (dbConn *DBImplementation) UpsertPlanRecord(dbReq *models.NewPlanRequest) *
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	query := `INSERT INTO plans_table(plan_code, plan_name, product_code, product_name, plan_price, sip_plan_rate) VALUES ($1, $2, $3, $4, $5, $6)`
+	var (
+		err    error
+		result sql.Result
+	)
 
-	if dbReq.IsUpdate {
-		query = `UPDATE plans_table SET plan_name=$2, product_code=$3, product_name=$4, plan_price=$5, sip_plan_rate=$6 WHERE plan_code=$1`
+	switch dbReq.IsUpdate {
+	case false:
+		query := `INSERT INTO plans_table(plan_code, plan_name, product_code, plan_price, sip_plan_rate, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.PlanCode, dbReq.PlanName, dbReq.ProductCode, dbReq.PlanPrice, dbReq.SIPPlanRate, time.Now(), time.Now(), "")
+	default:
+		query := `UPDATE plans_table SET plan_name=$2, product_code=$3, plan_price=$4, sip_plan_rate=$5, modified=$6, comment=$7 WHERE plan_code=$1`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.PlanCode, dbReq.PlanName, dbReq.ProductCode, dbReq.PlanPrice, dbReq.SIPPlanRate, time.Now(), "")
 	}
 
-	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.PlanCode, dbReq.PlanName, dbReq.ProductCode, dbReq.ProductName, dbReq.PlanPrice, dbReq.SIPPlanRate)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
 			return &errors.Error{
@@ -1596,6 +1798,64 @@ func (dbConn *DBImplementation) UpsertPlanRecord(dbReq *models.NewPlanRequest) *
 	return nil
 }
 
+func (dbConn *DBImplementation) DeletePlanRecord(planCode []string) *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", planCode).Time("start", time.Now()).Msg("DeletePlanRecord start")
+	defer logger.FileLogger.Info().Interface("record", planCode).Time("end", time.Now()).Msg("DeletePlanRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "DELETE FROM plans_table WHERE plan_code IN ("
+
+	for _, v := range planCode {
+		query += "'" + v + "', "
+	}
+
+	query = strings.TrimSuffix(query, ", ")
+	query += ")"
+
+	result, err := dbConn.Operation.ExecContext(ctx, query)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "DeletePlanRecord : failed duplicate entry",
+				Details:    "DeletePlanRecord failed: " + err.Error(),
+			}
+		}
+
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeletePlanRecord : failed ",
+			Details:    "DeletePlanRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeletePlanRecord : rowsAffected failed",
+			Details:    "DeletePlanRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeletePlanRecord : rowsAffected not 1",
+			Details:    "DeletePlanRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
 func (dbConn *DBImplementation) UpsertTargetRecord(dbReq *models.NewTargetRequest) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertTargetRecord start")
@@ -1604,13 +1864,20 @@ func (dbConn *DBImplementation) UpsertTargetRecord(dbReq *models.NewTargetReques
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	query := `INSERT INTO sales_target_table(region, outlet, months, baqati, hbb, hayyak, upgrade, created, modified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	var (
+		err    error
+		result sql.Result
+	)
 
-	if dbReq.IsUpdate {
-		query = `UPDATE sales_target_table SET baqati=$4, hbb=$5, hayyak=$6, upgrade=$7, created=$8, modified=$9 WHERE region=$1 AND outlet=$2 AND months=$3`
+	switch dbReq.IsUpdate {
+	case false:
+		query := `INSERT INTO targets_table(target_code, region_code, outlet_code, month, baqati, hbb, hayyak, upgrade, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.TargetCode, dbReq.RegionCode, dbReq.OutletCode, dbReq.Month, dbReq.Baqati, dbReq.HBB, dbReq.Hayyak, dbReq.Upgrade, time.Now(), time.Now(), "")
+	default:
+		query := `UPDATE targets_table SET baqati=$2, hbb=$3, hayyak=$4, upgrade=$5, modified=$6, comment=$7 WHERE target_code=$1`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.TargetCode, dbReq.Baqati, dbReq.HBB, dbReq.Hayyak, dbReq.Upgrade, time.Now(), "")
 	}
 
-	result, err := dbConn.Operation.ExecContext(ctx, query, dbReq.RegionName, dbReq.OutletName, dbReq.Month, dbReq.Baqati, dbReq.HBB, dbReq.Hayyak, dbReq.Upgrade, time.Now(), time.Now())
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
 			return &errors.Error{
@@ -1645,6 +1912,64 @@ func (dbConn *DBImplementation) UpsertTargetRecord(dbReq *models.NewTargetReques
 			Code:       errors.InternalServerError,
 			Message:    "UpsertTargetRecord : rowsAffected not 1",
 			Details:    "UpsertTargetRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
+		}
+	}
+
+	return nil
+}
+
+func (dbConn *DBImplementation) DeleteTargetRecord(targetCode []string) *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", targetCode).Time("start", time.Now()).Msg("DeleteTargetRecord start")
+	defer logger.FileLogger.Info().Interface("record", targetCode).Time("end", time.Now()).Msg("DeleteTargetRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "DELETE FROM targets_table WHERE target_code IN ("
+
+	for _, v := range targetCode {
+		query += "'" + v + "', "
+	}
+
+	query = strings.TrimSuffix(query, ", ")
+	query += ")"
+
+	result, err := dbConn.Operation.ExecContext(ctx, query)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    "DeleteTargetRecord : failed duplicate entry",
+				Details:    "DeleteTargetRecord failed: " + err.Error(),
+			}
+		}
+
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteTargetRecord : failed ",
+			Details:    "DeleteTargetRecord failed: " + err.Error(),
+		}
+	}
+
+	insertedRow, err := result.RowsAffected()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteTargetRecord : rowsAffected failed",
+			Details:    "DeleteTargetRecord rowsAffected failed: " + err.Error(),
+		}
+	}
+
+	if insertedRow != 1 {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteTargetRecord : rowsAffected not 1",
+			Details:    "DeleteTargetRecord rowsAffected failed: " + strconv.Itoa(int(insertedRow)),
 		}
 	}
 

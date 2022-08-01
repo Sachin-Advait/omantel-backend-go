@@ -56,13 +56,12 @@ const (
 	MethodKey     = "method"
 	PathKey       = "path"
 	ErrorKey      = "error"
-	ReqHeader  = "reqHeader"
-	ResHeader  = "resHeader"
+	ReqHeader     = "reqHeader"
+	ResHeader     = "resHeader"
 
 	HTTPConfigKey     = "httpConfig"
 	DatabaseConfigKey = "databaseConfig"
 )
-
 
 //db configuration keywords
 const (
@@ -159,10 +158,15 @@ const (
 	TopTenSalesTargetPath      = "/top_ten_sales_target"
 
 	UpsertRegionPath  = "/upsert_region"
+	DeleteRegionPath  = "/delete_region"
 	UpsertOutletPath  = "/upsert_outlet"
+	DeleteOutletPath  = "/delete_outlet"
 	UpsertProductPath = "/upsert_product"
+	DeleteProductPath = "/delete_product"
 	UpsertPlanPath    = "/upsert_plan"
+	DeletePlanPath    = "/delete_plan"
 	UpsertTargetPath  = "/upsert_target"
+	DeleteTargetPath  = "/delete_target"
 )
 
 var (

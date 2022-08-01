@@ -2,17 +2,18 @@ package adapters
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	"net/http"
 )
 
 func CreateNewOutlet(ctx *gin.Context, req *models.NewOutletRequest) (int, interface{}) {
 
-	if req.OutletCode == "" || req.OutletName == "" || req.RegionCode == "" || req.RegionName == "" || req.Lat == 0 || req.Lang == 0 {
+	if req.OutletCode == "" || req.OutletName == "" || req.RegionCode == "" || req.Lat == 0 || req.Lang == 0 {
 		logger.FileLogger.CtxError(ctx).Err(errors.New("invalid req param")).Stack().Msg("CreateNewOutlet : invalid req params")
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,

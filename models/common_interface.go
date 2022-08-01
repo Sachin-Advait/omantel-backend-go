@@ -1,9 +1,10 @@
 package models
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	"time"
 )
 
 type IncentiveProvider interface {
@@ -36,8 +37,13 @@ type IncentiveProvider interface {
 	GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*ProductWiseSalesTargetPerStaff, *errors.Error)
 
 	CreateNewRegion(ctx *gin.Context, req *NewRegionRequest) *errors.Error
+	DeleteRegions(ctx *gin.Context, req *DeleteRegionRequest) *errors.Error
 	CreateNewOutlet(ctx *gin.Context, req *NewOutletRequest) *errors.Error
+	DeleteOutlets(ctx *gin.Context, req *DeleteOutletRequest) *errors.Error
 	CreateNewProduct(ctx *gin.Context, req *NewProductRequest) *errors.Error
+	DeleteProducts(ctx *gin.Context, req *DeleteProductRequest) *errors.Error
 	CreateNewPlan(ctx *gin.Context, req *NewPlanRequest) *errors.Error
+	DeletePlans(ctx *gin.Context, req *DeletePlanRequest) *errors.Error
 	CreateNewTarget(ctx *gin.Context, req *NewTargetRequest) *errors.Error
+	DeleteTargets(ctx *gin.Context, req *DeleteTargetRequest) *errors.Error
 }

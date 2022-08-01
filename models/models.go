@@ -50,14 +50,21 @@ type NewRegionRequest struct {
 	IsUpdate   bool   `json:"isUpdate"`
 }
 
+type DeleteRegionRequest struct {
+	RegionCodes []string `json:"region_codes"`
+}
+
 type NewOutletRequest struct {
 	OutletCode string  `json:"outlet_code"`
 	OutletName string  `json:"outlet_name"`
 	RegionCode string  `json:"region_code"`
-	RegionName string  `json:"region_name"`
 	Lat        float64 `json:"lat"`
 	Lang       float64 `json:"lang"`
 	IsUpdate   bool    `json:"isUpdate"`
+}
+
+type DeleteOutletRequest struct {
+	OutletCodes []string `json:"outlet_codes"`
 }
 
 type NewProductRequest struct {
@@ -67,25 +74,37 @@ type NewProductRequest struct {
 	IsUpdate    bool    `json:"isUpdate"`
 }
 
+type DeleteProductRequest struct {
+	ProductCodes []string `json:"product_codes"`
+}
+
 type NewPlanRequest struct {
 	PlanCode    string  `json:"plan_code"`
 	PlanName    string  `json:"plan_name"`
 	ProductCode string  `json:"product_code"`
-	ProductName string  `json:"product_name"`
 	PlanPrice   float64 `json:"plan_price"`
 	SIPPlanRate float64 `json:"sip_plan_rate"`
 	IsUpdate    bool    `json:"isUpdate"`
 }
 
+type DeletePlanRequest struct {
+	PlanCodes []string `json:"plan_codes"`
+}
+
 type NewTargetRequest struct {
-	RegionName string  `json:"region_name"`
-	OutletName string  `json:"outlet_name"`
+	TargetCode string  `json:"target_code"`
+	RegionCode string  `json:"region_code"`
+	OutletCode string  `json:"outlet_code"`
 	Month      int     `json:"month"`
 	Baqati     float64 `json:"baqati"`
 	Hayyak     float64 `json:"hayyak"`
 	HBB        float64 `json:"hbb"`
 	Upgrade    float64 `json:"upgrade"`
 	IsUpdate   bool    `json:"isUpdate"`
+}
+
+type DeleteTargetRequest struct {
+	TargetCodes []string `json:"target_codes"`
 }
 
 /*
