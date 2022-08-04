@@ -2204,7 +2204,7 @@ func (dbConn *DBImplementation) DeleteTargetRecord(targetCode []string) *errors.
 	return nil
 }
 
-func (dbConn *DBImplementation) FetchTargetRecord(targetCodes []string, outletCodes []string, month, year int) (map[string][]*models.GetTargetResponse, *errors.Error) {
+func (dbConn *DBImplementation) FetchTargetRecord(targetCodes []string, outletCodes []string, year, month int) (map[string][]*models.GetTargetResponse, *errors.Error) {
 
 	logger.FileLogger.Info().Interface("record", targetCodes).Time("start", time.Now()).Msg("FetchTargetRecord start")
 	defer logger.FileLogger.Info().Interface("record", targetCodes).Time("end", time.Now()).Msg("FetchTargetRecord done")
@@ -2225,7 +2225,7 @@ func (dbConn *DBImplementation) FetchTargetRecord(targetCodes []string, outletCo
 		query = strings.TrimSuffix(query, ", ")
 		query += ")"
 	case len(outletCodes) != 0:
-		query = "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table WHERE outletCode IN ("
+		query = "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table WHERE outlet_code IN ("
 
 		for _, v := range outletCodes {
 			query += "'" + v + "', "
@@ -2236,7 +2236,7 @@ func (dbConn *DBImplementation) FetchTargetRecord(targetCodes []string, outletCo
 	case year != 0:
 		query = "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table WHERE year=" + fmt.Sprintf("%d", year)
 	case month != 0:
-		query = "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table WHERE year=" + fmt.Sprintf("%d", month)
+		query = "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table WHERE month=" + fmt.Sprintf("%d", month)
 	}
 
 	rows, err := dbConn.Operation.QueryContext(ctx, query)
