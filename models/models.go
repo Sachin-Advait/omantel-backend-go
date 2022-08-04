@@ -54,6 +54,11 @@ type DeleteRegionRequest struct {
 	RegionCodes []string `json:"region_codes"`
 }
 
+type GetRegionResponse struct {
+	RegionCode string `json:"region_code"`
+	RegionName string `json:"region_name"`
+}
+
 type NewOutletRequest struct {
 	OutletCode string  `json:"outlet_code"`
 	OutletName string  `json:"outlet_name"`
@@ -67,6 +72,14 @@ type DeleteOutletRequest struct {
 	OutletCodes []string `json:"outlet_codes"`
 }
 
+type GetOutletResponse struct {
+	OutletCode string  `json:"outlet_code"`
+	OutletName string  `json:"outlet_name"`
+	RegionCode string  `json:"region_code"`
+	Lat        float64 `json:"lat"`
+	Lang       float64 `json:"lang"`
+}
+
 type NewProductRequest struct {
 	ProductCode string  `json:"product_code"`
 	ProductName string  `json:"product_name"`
@@ -76,6 +89,12 @@ type NewProductRequest struct {
 
 type DeleteProductRequest struct {
 	ProductCodes []string `json:"product_codes"`
+}
+
+type GetProductResponse struct {
+	ProductCode string  `json:"product_code"`
+	ProductName string  `json:"product_name"`
+	Weightage   float64 `json:"weightage"`
 }
 
 type NewPlanRequest struct {
@@ -91,10 +110,19 @@ type DeletePlanRequest struct {
 	PlanCodes []string `json:"plan_codes"`
 }
 
+type GetPlanResponse struct {
+	PlanCode    string  `json:"plan_code"`
+	PlanName    string  `json:"plan_name"`
+	ProductCode string  `json:"product_code"`
+	PlanPrice   float64 `json:"plan_price"`
+	SIPPlanRate float64 `json:"sip_plan_rate"`
+}
+
 type NewTargetRequest struct {
 	TargetCode string  `json:"target_code"`
 	RegionCode string  `json:"region_code"`
 	OutletCode string  `json:"outlet_code"`
+	Year       int     `json:"year"`
 	Month      int     `json:"month"`
 	Baqati     float64 `json:"baqati"`
 	Hayyak     float64 `json:"hayyak"`
@@ -105,6 +133,24 @@ type NewTargetRequest struct {
 
 type DeleteTargetRequest struct {
 	TargetCodes []string `json:"target_codes"`
+}
+
+type GetTargetRequest struct {
+	TargetCode []string `json:"target_codes"`
+	OutletCode []string `json:"outlet_codes"`
+	Month      int      `json:"month"`
+	Year       int      `json:"year"`
+}
+
+type GetTargetResponse struct {
+	TargetCode string  `json:"target_code"`
+	RegionCode string  `json:"region_code"`
+	Month      int     `json:"month"`
+	Year       int     `json:"year"`
+	Baqati     float64 `json:"baqati"`
+	Hayyak     float64 `json:"hayyak"`
+	HBB        float64 `json:"hbb"`
+	Upgrade    float64 `json:"upgrade"`
 }
 
 /*

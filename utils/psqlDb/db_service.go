@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1496,6 +1497,61 @@ func (dbConn *DBImplementation) DeleteRegionRecord(regionCodes []string) *errors
 	return nil
 }
 
+func (dbConn *DBImplementation) FetchRegionRecord(regionCodes []string) ([]*models.GetRegionResponse, *errors.Error) {
+
+	logger.FileLogger.Info().Interface("record", regionCodes).Time("start", time.Now()).Msg("FetchRegionRecord start")
+	defer logger.FileLogger.Info().Interface("record", regionCodes).Time("end", time.Now()).Msg("FetchRegionRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "SELECT region_code, region_name FROM regions_table"
+
+	if len(regionCodes) != 0 {
+
+		query = "SELECT region_code, region_name FROM regions_table WHERE region_code IN ("
+
+		for _, v := range regionCodes {
+			query += "'" + v + "', "
+		}
+
+		query = strings.TrimSuffix(query, ", ")
+		query += ")"
+	}
+
+	rows, err := dbConn.Operation.QueryContext(ctx, query)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchRegionRecord: query failed",
+			Details:    "FetchRegionRecord query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		regionCode string
+		regionName string
+		response   []*models.GetRegionResponse
+	)
+
+	for rows.Next() {
+
+		if err := rows.Scan(&regionCode, &regionName); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchRegionRecord: scan failed",
+				Details:    "FetchRegionRecord scan failed: " + err.Error(),
+			}
+		}
+
+		response = append(response, &models.GetRegionResponse{RegionCode: regionCode, RegionName: regionName})
+	}
+
+	return response, nil
+}
+
 func (dbConn *DBImplementation) UpsertOutletRecord(dbReq *models.NewOutletRequest) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertOutletRecord start")
@@ -1614,6 +1670,64 @@ func (dbConn *DBImplementation) DeleteOutletRecord(outletCode []string) *errors.
 	}
 
 	return nil
+}
+
+func (dbConn *DBImplementation) FetchOutletRecord(outletCodes []string) ([]*models.GetOutletResponse, *errors.Error) {
+
+	logger.FileLogger.Info().Interface("record", outletCodes).Time("start", time.Now()).Msg("FetchOutletRecord start")
+	defer logger.FileLogger.Info().Interface("record", outletCodes).Time("end", time.Now()).Msg("FetchOutletRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "SELECT outlet_code, outlet_name, region_code, latitude, longitude FROM outlets_table"
+
+	if len(outletCodes) != 0 {
+
+		query = "SELECT outlet_code, outlet_name, region_code, latitude, longitude FROM outlets_table WHERE outlet_code IN ("
+
+		for _, v := range outletCodes {
+			query += "'" + v + "', "
+		}
+
+		query = strings.TrimSuffix(query, ", ")
+		query += ")"
+	}
+
+	rows, err := dbConn.Operation.QueryContext(ctx, query)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchOutletRecord: query failed",
+			Details:    "FetchOutletRecord query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		outletCode string
+		outletName string
+		regionCode string
+		latitude   float64
+		longitude  float64
+		response   []*models.GetOutletResponse
+	)
+
+	for rows.Next() {
+
+		if err := rows.Scan(&outletCode, &outletName, &regionCode, &latitude, &longitude); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchOutletRecord: scan failed",
+				Details:    "FetchOutletRecord scan failed: " + err.Error(),
+			}
+		}
+
+		response = append(response, &models.GetOutletResponse{OutletCode: outletCode, OutletName: outletName, RegionCode: regionCode, Lat: latitude, Lang: longitude})
+	}
+
+	return response, nil
 }
 
 func (dbConn *DBImplementation) UpsertProductRecord(dbReq *models.NewProductRequest) *errors.Error {
@@ -1736,6 +1850,62 @@ func (dbConn *DBImplementation) DeleteProductRecord(productCode []string) *error
 	return nil
 }
 
+func (dbConn *DBImplementation) FetchProductRecord(productCodes []string) ([]*models.GetProductResponse, *errors.Error) {
+
+	logger.FileLogger.Info().Interface("record", productCodes).Time("start", time.Now()).Msg("FetchProductRecord start")
+	defer logger.FileLogger.Info().Interface("record", productCodes).Time("end", time.Now()).Msg("FetchProductRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "SELECT product_code, product_name, weightage FROM products_table"
+
+	if len(productCodes) != 0 {
+
+		query = "SELECT product_code, product_name, weightage FROM products_table WHERE product_code IN ("
+
+		for _, v := range productCodes {
+			query += "'" + v + "', "
+		}
+
+		query = strings.TrimSuffix(query, ", ")
+		query += ")"
+	}
+
+	rows, err := dbConn.Operation.QueryContext(ctx, query)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchProductRecord: query failed",
+			Details:    "FetchProductRecord query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		productCode string
+		productName string
+		weightage   float64
+		response    []*models.GetProductResponse
+	)
+
+	for rows.Next() {
+
+		if err := rows.Scan(&productCode, &productName, &weightage); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchProductRecord: scan failed",
+				Details:    "FetchProductRecord scan failed: " + err.Error(),
+			}
+		}
+
+		response = append(response, &models.GetProductResponse{ProductCode: productCode, ProductName: productName, Weightage: weightage})
+	}
+
+	return response, nil
+}
+
 func (dbConn *DBImplementation) UpsertPlanRecord(dbReq *models.NewPlanRequest) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertPlanRecord start")
@@ -1856,6 +2026,64 @@ func (dbConn *DBImplementation) DeletePlanRecord(planCode []string) *errors.Erro
 	return nil
 }
 
+func (dbConn *DBImplementation) FetchPlanRecord(planCodes []string) ([]*models.GetPlanResponse, *errors.Error) {
+
+	logger.FileLogger.Info().Interface("record", planCodes).Time("start", time.Now()).Msg("FetchPlanRecord start")
+	defer logger.FileLogger.Info().Interface("record", planCodes).Time("end", time.Now()).Msg("FetchPlanRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "SELECT plan_code, plan_name, product_code, plan_price, sip_plan_rate FROM plans_table"
+
+	if len(planCodes) != 0 {
+
+		query = "SELECT plan_code, plan_name, product_code, plan_price, sip_plan_rate FROM plans_table WHERE plan_code IN ("
+
+		for _, v := range planCodes {
+			query += "'" + v + "', "
+		}
+
+		query = strings.TrimSuffix(query, ", ")
+		query += ")"
+	}
+
+	rows, err := dbConn.Operation.QueryContext(ctx, query)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchPlanRecord: query failed",
+			Details:    "FetchPlanRecord query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		planCode    string
+		planName    string
+		productCode string
+		planPrice   float64
+		sipPlanRate float64
+		response    []*models.GetPlanResponse
+	)
+
+	for rows.Next() {
+
+		if err := rows.Scan(&planCode, &planName, &productCode, &planPrice, &sipPlanRate); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchPlanRecord: scan failed",
+				Details:    "FetchPlanRecord scan failed: " + err.Error(),
+			}
+		}
+
+		response = append(response, &models.GetPlanResponse{PlanCode: planCode, PlanName: planName, ProductCode: productCode, PlanPrice: planPrice, SIPPlanRate: sipPlanRate})
+	}
+
+	return response, nil
+}
+
 func (dbConn *DBImplementation) UpsertTargetRecord(dbReq *models.NewTargetRequest) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertTargetRecord start")
@@ -1871,8 +2099,8 @@ func (dbConn *DBImplementation) UpsertTargetRecord(dbReq *models.NewTargetReques
 
 	switch dbReq.IsUpdate {
 	case false:
-		query := `INSERT INTO targets_table(target_code, region_code, outlet_code, month, baqati, hbb, hayyak, upgrade, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
-		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.TargetCode, dbReq.RegionCode, dbReq.OutletCode, dbReq.Month, dbReq.Baqati, dbReq.HBB, dbReq.Hayyak, dbReq.Upgrade, time.Now(), time.Now(), "")
+		query := `INSERT INTO targets_table(target_code, region_code, outlet_code, year, month, baqati, hbb, hayyak, upgrade, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.TargetCode, dbReq.RegionCode, dbReq.OutletCode, dbReq.Year, dbReq.Month, dbReq.Baqati, dbReq.HBB, dbReq.Hayyak, dbReq.Upgrade, time.Now(), time.Now(), "")
 	default:
 		query := `UPDATE targets_table SET baqati=$2, hbb=$3, hayyak=$4, upgrade=$5, modified=$6, comment=$7 WHERE target_code=$1`
 		result, err = dbConn.Operation.ExecContext(ctx, query, dbReq.TargetCode, dbReq.Baqati, dbReq.HBB, dbReq.Hayyak, dbReq.Upgrade, time.Now(), "")
@@ -1974,6 +2202,99 @@ func (dbConn *DBImplementation) DeleteTargetRecord(targetCode []string) *errors.
 	}
 
 	return nil
+}
+
+func (dbConn *DBImplementation) FetchTargetRecord(targetCodes []string, outletCodes []string, month, year int) (map[string][]*models.GetTargetResponse, *errors.Error) {
+
+	logger.FileLogger.Info().Interface("record", targetCodes).Time("start", time.Now()).Msg("FetchTargetRecord start")
+	defer logger.FileLogger.Info().Interface("record", targetCodes).Time("end", time.Now()).Msg("FetchTargetRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table"
+
+	switch {
+	case len(targetCodes) != 0:
+		query = "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table WHERE target_code IN ("
+
+		for _, v := range targetCodes {
+			query += "'" + v + "', "
+		}
+
+		query = strings.TrimSuffix(query, ", ")
+		query += ")"
+	case len(outletCodes) != 0:
+		query = "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table WHERE outletCode IN ("
+
+		for _, v := range outletCodes {
+			query += "'" + v + "', "
+		}
+
+		query = strings.TrimSuffix(query, ", ")
+		query += ")"
+	case year != 0:
+		query = "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table WHERE year=" + fmt.Sprintf("%d", year)
+	case month != 0:
+		query = "SELECT target_code, region_code, outlet_code, month, year, baqati, hbb, hayyak, upgrade FROM targets_table WHERE year=" + fmt.Sprintf("%d", month)
+	}
+
+	rows, err := dbConn.Operation.QueryContext(ctx, query)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchTargetRecord: query failed",
+			Details:    "FetchTargetRecord query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		targetCode string
+		regionCode string
+		outletCode string
+		months     int
+		years      int
+		baqati     float64
+		hbb        float64
+		hayyak     float64
+		upgrade    float64
+		response   = make(map[string][]*models.GetTargetResponse)
+	)
+
+	for rows.Next() {
+
+		if err := rows.Scan(&targetCode, &regionCode, &outletCode, &months, &years, &baqati, &hbb, &hayyak, &upgrade); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchTargetRecord: scan failed",
+				Details:    "FetchTargetRecord scan failed: " + err.Error(),
+			}
+		}
+
+		response[outletCode] = append(response[outletCode], &models.GetTargetResponse{
+			TargetCode: targetCode,
+			RegionCode: regionCode,
+			Month:      months,
+			Year:       years,
+			Baqati:     baqati,
+			HBB:        hbb,
+			Hayyak:     hayyak,
+			Upgrade:    upgrade,
+		})
+	}
+
+	for k, v := range response {
+
+		sort.Slice(v, func(i, j int) bool {
+			return (v[i].Year > v[j].Year) && (v[i].Month > v[j].Month)
+		})
+
+		response[k] = v
+	}
+
+	return response, nil
 }
 
 func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*models.UserRecord, *errors.Error) {

@@ -29,6 +29,16 @@ const (
 	XAPIVersion        = "X-Api-Version"
 )
 
+// Request Params
+const (
+	Region  = "region"
+	Outlet  = "outlet"
+	Product = "product"
+	Plan    = "plan"
+	Target  = "target"
+	All     = "all"
+)
+
 // Log Params
 const (
 	RequestIDLogParam   = "requestId"
@@ -157,14 +167,19 @@ const (
 	TopTenSalesCountPath       = "/top_ten_sales_count"
 	TopTenSalesTargetPath      = "/top_ten_sales_target"
 
+	FetchRegionPath   = "/fetch_region"
 	UpsertRegionPath  = "/upsert_region"
 	DeleteRegionPath  = "/delete_region"
+	FetchOutletPath   = "/fetch_outlet"
 	UpsertOutletPath  = "/upsert_outlet"
 	DeleteOutletPath  = "/delete_outlet"
+	FetchProductPath  = "/fetch_product"
 	UpsertProductPath = "/upsert_product"
 	DeleteProductPath = "/delete_product"
+	FetchPlanPath     = "/fetch_plan"
 	UpsertPlanPath    = "/upsert_plan"
 	DeletePlanPath    = "/delete_plan"
+	FetchTargetPath   = "/fetch_target"
 	UpsertTargetPath  = "/upsert_target"
 	DeleteTargetPath  = "/delete_target"
 )
