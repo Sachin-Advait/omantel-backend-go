@@ -98,22 +98,21 @@ CREATE TABLE IF NOT EXISTS public.user_master_table
 
 
 
-CREATE TABLE IF NOT EXISTS public.sale_transaction_table
+CREATE TABLE IF NOT EXISTS public.user_authentication_table
 (
+emp_id bigint PRIMARY KEY,
+user_active BOOLEAN NOT NULL DEFAULT false,
+otp integer NOT NULL,
+otp_resend_count integer NOT NULL DEFAULT 0,
+otp_verify_failed_count integer NOT NULL DEFAULT 0,
+otp_used BOOLEAN NOT NULL DEFAULT false,
+otp_create_time timestamp with time zone NOT NULL,
+otp_update_time timestamp with time zone NOT NULL,
+login_attempt_count integer NOT NULL DEFAULT 0,
+last_login_time timestamp with time zone,
 created timestamp with time zone NOT NULL,
 modified timestamp with time zone NOT NULL,
-id SERIAL PRIMARY KEY,
-region character varying(32) COLLATE pg_catalog."default" NOT NULL,
-outlet character varying(64) COLLATE pg_catalog."default" NOT NULL,
-emp_id bigint NOT NULL,
-category_type character varying(32) COLLATE pg_catalog."default" NOT NULL,
-prev_product character varying(64) COLLATE pg_catalog."default",
-curr_product character varying(64) COLLATE pg_catalog."default" NOT NULL,
-quantity smallint NOT NULL,
-category character varying(32) COLLATE pg_catalog."default" NOT NULL,
-product_group character varying(32) COLLATE pg_catalog."default" NOT NULL,
-sales_date date NOT NULL DEFAULT CURRENT_DATE,
-quarter integer NOT NULL DEFAULT 1
+modified_reason character varying(32) NOT NULL
 )
 
 
@@ -163,14 +162,20 @@ CONSTRAINT user_master_table_pkey PRIMARY KEY (emp_id)
 
 CREATE TABLE IF NOT EXISTS public.user_authentication_table
 (
-emp_id SERIAL,
+emp_id PRIMARY KEY,
+user_active BOOLEAN NOT NULL DEFAULT false,
+otp integer NOT NULL,
+otp_resend_count NOT NULL DEFAULT 0,
+otp_verify_failed_count NOT NULL DEFAULT 0,
+otp_used BOOLEAN NOT NULL DEFAULT false,
+otp_create_time timestamp with time zone NOT NULL,
+otp_update_time timestamp with time zone NOT NULL,
+login_attempt_count NOT NULL DEFAULT 0,
+last_login_time timestamp with time zone,
 created timestamp with time zone NOT NULL,
 modified timestamp with time zone NOT NULL,
-expirytime timestamp with time zone NOT NULL,
-otp integer NOT NULL,
-retry integer NOT NULL
+modified_reason character varying(32) NOT NULL DEFAULT "",
 )
-ALter table public.user_authentication_table ADD UNIQUE (emp_id)
 
 
 

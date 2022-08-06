@@ -143,7 +143,10 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxIdleTime)) * time.Hour,
 	}
 
-	incentiveConfig := &configs.IncentiveConfig{}
+	incentiveConfig := &configs.IncentiveConfig{
+		SessionExpiryTime:      time.Duration(applicationConfig.GetInt(constant.SessionExpiryTimeMinutes)) * time.Minute,
+		RefreshTokenExpiryTime: time.Duration(applicationConfig.GetInt(constant.RefreshTokenExpiryHours)) * time.Hour,
+	}
 
 	return business.NewIncentiveService(incentiveConfig, dbConfig)
 }

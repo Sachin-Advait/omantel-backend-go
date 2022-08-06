@@ -1,13 +1,14 @@
 package middlewares
 
 import (
+	"net/http"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	jwthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/jwtHelper"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +39,7 @@ func MandatoryAuthHandler() gin.HandlerFunc {
 			return
 		}
 
-		authUser, userType, source, status, err := jwthelper.ValidateAccessToken(ctxHeader.Authorization[7:], jwthelper.JwtSecretKey)
+		authUser, status, err := jwthelper.ValidateAccessToken(ctxHeader.Authorization[7:], jwthelper.JwtSecretKey)
 
 		if err != nil {
 			if status == constant.TokenExpired {
@@ -71,31 +72,7 @@ func MandatoryAuthHandler() gin.HandlerFunc {
 			return
 		}
 
-		if ctxHeader.XUserType != "" && userType != ctxHeader.XUserType {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("USERTYPE AND AUTHTOKEN ARE CONTRADICTORY")).Stack().Msg("AuthMiddleware : userType contradicting with access token")
-			ctx.JSON(http.StatusBadRequest, APIResponse{
-				ErrorCode: errors.ContradictoryReqParamCode,
-				Message:   errors.ContradictoryReqParam,
-				Data:      "USERTYPE AND AUTHTOKEN ARE CONTRADICTORY",
-			})
-			ctx.Abort()
-			return
-		}
-
-		if ctxHeader.XSourceID != "" && source != ctxHeader.XSourceID {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("SOURCE AND AUTHTOKEN ARE CONTRADICTORY")).Stack().Msg("AuthMiddleware : source contradicting with access token")
-			ctx.JSON(http.StatusBadRequest, APIResponse{
-				ErrorCode: errors.ContradictoryReqParamCode,
-				Message:   errors.ContradictoryReqParam,
-				Data:      "SOURCE AND AUTHTOKEN ARE CONTRADICTORY",
-			})
-			ctx.Abort()
-			return
-		}
-
 		ctxHeader.XUserId = authUser
-		ctxHeader.XUserType = userType
-		ctxHeader.XSourceID = source
 		ctxHeader.Authorization = ctxHeader.Authorization[7:]
 
 		ctx.Set(constant.HeaderInContext, ctxHeader)

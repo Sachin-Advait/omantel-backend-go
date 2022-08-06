@@ -28,10 +28,13 @@ type VerifyOTP struct {
 }
 
 type VerifyOTPResponse struct {
-	Authenticated bool   `json:"authenticated"`
-	StaffName     string `json:"staff_name"`
-	StaffPosition string `json:"staff_position"`
-	Error         string `json:"error"`
+	Error         string    `json:"error"`
+	StaffName     string    `json:"staff_name"`
+	StaffPosition string    `json:"staff_position"`
+	Authenticated bool      `json:"authenticated"`
+	AccessToken   string    `json:"access_token"`
+	RefreshToken  string    `json:"refresh_token"`
+	LastLoginTime time.Time `json:"lastLoginTime"`
 }
 
 type UserReportRequest struct {
@@ -403,13 +406,21 @@ type MaxPayout struct {
 }
 
 type OtpModel struct {
-	StaffID       int
-	StaffName     string
-	StaffPosition string
-	OTP           int
-	Retry         int
-	CreatedTime   time.Time
-	ExpiryTime    time.Time
+	StaffID              int
+	StaffName            string
+	StaffPosition        string
+	OTP                  int
+	IsActiveUser         bool
+	LoginAttemptCount    int
+	OtpLastUpdateTime    time.Time
+	OTPResendCount       int
+	OTPVerifyFailedCount int
+	OTPUsed              bool
+	OtpCreateTime        time.Time
+	LastLoginTime        time.Time
+	CreatedTime          time.Time
+	UpdatedTime          time.Time
+	UpdateReason         string
 }
 
 type ManagerHierarchy struct {

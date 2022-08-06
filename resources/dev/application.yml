@@ -1,4 +1,6 @@
 secretKey: gis-jwt-token
+sessionExpiryTimeMinutes: 30
+refreshTokenExpiryHours: 3
 psqlDB:
   host: 93.114.128.202
   port: 5432

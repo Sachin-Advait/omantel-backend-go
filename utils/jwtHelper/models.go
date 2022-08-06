@@ -6,7 +6,5 @@ var JwtSecretKey string
 
 type Claims struct {
 	jwt.StandardClaims
-	Token    string
-	SourceID string
-	UserType string
+	Token string
 }

@@ -129,7 +129,9 @@ const (
 
 //feed configuration keywords
 const (
-	JwtKey = "secretKey"
+	JwtKey                   = "secretKey"
+	SessionExpiryTimeMinutes = "sessionExpiryTimeMinutes"
+	RefreshTokenExpiryHours  = "refreshTokenExpiryHours"
 )
 
 //config file names
@@ -226,6 +228,13 @@ var (
 		GeneralManager: "GM",
 		VicePresident:  "VP",
 	}
+)
+
+const (
+	MaxAllowedLoginAttempt    = 5
+	OtpGenerateBlockTimeInMin = 15
+	OtpRegenerateAllowedCount = 5
+	OtpTimeoutInMin           = 10
 )
 
 var GetTemplate = `

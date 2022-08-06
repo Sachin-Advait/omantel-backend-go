@@ -1,12 +1,13 @@
 package jwthelper
 
 import (
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
-	"time"
 )
 
-func CreateAccessToken(id, userType, sourceId string, expiry time.Duration, key string) (string, time.Time, error) {
+func CreateAccessToken(id string, expiry time.Duration, key string) (string, time.Time, error) {
 
 	issuedAt := time.Now()
 	exp := issuedAt.Add(expiry)
@@ -14,9 +15,7 @@ func CreateAccessToken(id, userType, sourceId string, expiry time.Duration, key 
 	atClaims := jwt.MapClaims{}
 	atClaims["iat"] = issuedAt.Unix()
 	atClaims["sub"] = id
-	atClaims["usertype"] = userType
 	atClaims["token"] = constant.AccessTokenKey
-	atClaims["sourceid"] = sourceId
 	atClaims["exp"] = exp.Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, atClaims)
@@ -29,7 +28,7 @@ func CreateAccessToken(id, userType, sourceId string, expiry time.Duration, key 
 	return accessToken, exp, nil
 }
 
-func CreateRefreshToken(id, userType, sourceId string, expiry time.Duration, key string) (string, time.Time, error) {
+func CreateRefreshToken(id string, expiry time.Duration, key string) (string, time.Time, error) {
 
 	issuedAt := time.Now()
 	exp := issuedAt.Add(expiry)
@@ -37,9 +36,7 @@ func CreateRefreshToken(id, userType, sourceId string, expiry time.Duration, key
 	atClaims := jwt.MapClaims{}
 	atClaims["iat"] = issuedAt.Unix()
 	atClaims["sub"] = id
-	atClaims["usertype"] = userType
 	atClaims["token"] = constant.RefreshTokenKey
-	atClaims["sourceid"] = sourceId
 	atClaims["exp"] = exp.Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, atClaims)
@@ -74,9 +71,7 @@ func RefreshAccessToken(refreshToken string, expiry time.Duration, key string) (
 	atClaims := jwt.MapClaims{}
 	atClaims["iat"] = issuedAt.Unix()
 	atClaims["sub"] = claims.Subject
-	atClaims["usertype"] = claims.UserType
 	atClaims["token"] = constant.AccessTokenKey
-	atClaims["sourceid"] = claims.SourceID
 	atClaims["exp"] = exp.Unix()
 
 	at := jwt.NewWithClaims(jwt.SigningMethodHS512, atClaims)

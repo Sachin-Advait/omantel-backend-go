@@ -876,7 +876,7 @@ func (dbConn *DBImplementation) FetchEmployeeContactNumber(clientID int) (int, *
 	return mobNum, nil
 }
 
-func (dbConn *DBImplementation) InsertStaffOTP(otpModel *models.OtpModel) *errors.Error {
+func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.OtpModel) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", otpModel).Time("start", time.Now()).Msg("InsertStaffOTP start")
 	defer logger.FileLogger.Info().Interface("record", otpModel).Time("end", time.Now()).Msg("InsertStaffOTP done")
@@ -884,34 +884,56 @@ func (dbConn *DBImplementation) InsertStaffOTP(otpModel *models.OtpModel) *error
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := dbConn.Operation.QueryContext(ctx, "DELETE FROM user_authentication_table WHERE emp_id= $1", otpModel.StaffID)
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "InsertStaffOTP: delete failed",
-			Details:    "InsertStaffOTP delete failed: " + err.Error(),
+	var err error
+
+	if update {
+		_, err = dbConn.Operation.QueryContext(ctx, "UPDATE user_authentication_table SET user_active=$1, otp=$2, otp_resend_count=$3, otp_verify_failed_count=$4, otp_used=$5, otp_create_time=$6, otp_update_time=$7, login_attempt_count=$8, last_login_time=$9, modified=$10, modified_reason=$11",
+			otpModel.IsActiveUser,
+			otpModel.OTP,
+			otpModel.OTPResendCount,
+			otpModel.OTPVerifyFailedCount,
+			otpModel.OTPUsed,
+			otpModel.OtpCreateTime,
+			otpModel.OtpLastUpdateTime,
+			otpModel.LoginAttemptCount,
+			otpModel.LastLoginTime,
+			otpModel.UpdatedTime,
+			otpModel.UpdateReason,
+		)
+
+		if err != nil {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "UpdateStaffOTP: update failed",
+				Details:    "UpdateStaffOTP update failed: " + err.Error(),
+			}
 		}
-	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	} else {
+		_, err = dbConn.Operation.QueryContext(ctx, "INSERT INTO user_authentication_table(emp_id, user_active, otp, otp_resend_count, otp_verify_failed_count, otp_used, otp_create_time, otp_update_time, login_attempt_count, last_login_time, created, modified, modified_reason) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13);",
+			otpModel.StaffID,
+			otpModel.IsActiveUser,
+			otpModel.OTP,
+			otpModel.OTPResendCount,
+			otpModel.OTPVerifyFailedCount,
+			otpModel.OTPUsed,
+			otpModel.OtpCreateTime,
+			otpModel.OtpLastUpdateTime,
+			otpModel.LoginAttemptCount,
+			otpModel.LastLoginTime,
+			otpModel.CreatedTime,
+			otpModel.UpdatedTime,
+			otpModel.UpdateReason,
+		)
 
-	_, err = dbConn.Operation.QueryContext(ctx, "INSERT INTO user_authentication_table(created, emp_id, expirytime, modified, otp, retry) VALUES ($1,$2,$3,$4,$5,$6);",
-		otpModel.CreatedTime,
-		otpModel.StaffID,
-		otpModel.ExpiryTime,
-		time.Now().Local(),
-		otpModel.OTP,
-		otpModel.Retry,
-	)
-
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "InsertStaffOTP: insert failed",
-			Details:    "InsertStaffOTP insert failed: " + err.Error(),
+		if err != nil {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "InsertStaffOTP: insert failed",
+				Details:    "InsertStaffOTP insert failed: " + err.Error(),
+			}
 		}
 	}
 
@@ -926,7 +948,7 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*models.OtpModel
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select a.name, a.usr_position, b.otp, b.retry, b.expiryTime from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select a.name, a.usr_position, b.emp_id, b.user_active, b.otp, b.otp_resend_count, b.otp_verify_failed_count, b.otp_used, b.otp_create_time, b.otp_update_time, b.login_attempt_count, b.last_login_time from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -951,7 +973,7 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*models.OtpModel
 			}
 		}
 
-		if err := rows.Scan(&otModel.StaffName, &otModel.StaffPosition, &otModel.OTP, &otModel.Retry, &otModel.ExpiryTime); err != nil {
+		if err := rows.Scan(&otModel.StaffName, &otModel.StaffPosition, &otModel.StaffID, &otModel.IsActiveUser, &otModel.OTP, &otModel.OTPResendCount, &otModel.OTPVerifyFailedCount, &otModel.OTPUsed, &otModel.OtpCreateTime, &otModel.OtpLastUpdateTime, &otModel.LoginAttemptCount, &otModel.LastLoginTime); err != nil {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerError,

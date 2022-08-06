@@ -30,7 +30,7 @@ func GetRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 	router.GET(constant.ActuatorRoute, actuator)
 
 	//version 1
-	incentiveV1Router := router.Group(constant.SalesIncentiveRoute, middleware.HeaderLogging())
+	incentiveV1Router := router.Group(constant.SalesIncentiveRoute, middleware.HeaderLogging(), middleware.OptionalAuthHandler())
 	v1.IncentiveRoutes(incentiveV1Router)
 
 	incentiveSwagV1Router := router.Group(constant.SalesIncentiveDocRoute)
