@@ -3,6 +3,7 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/adapters"
@@ -21,6 +22,15 @@ func getUsersReportingToVicePresident(ctx *gin.Context) {
 
 	if ctxHeader.Authorization == "" {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("getUsersReportingToVicePresident : unauthorized request")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "unauthorized request",
+			Text:       "auth token not found",
+			CreateTime: time.Now().Local(),
+		}
+
 		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
 			Error:   errors.UnauthorizedUserCode,
 			Message: errors.UnauthorizedUser,
@@ -32,6 +42,15 @@ func getUsersReportingToVicePresident(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("getUsersReportingToVicePresident : error binding request body")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "error binding request body",
+			Text:       err.Error(),
+			CreateTime: time.Now().Local(),
+		}
+
 		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
 			Error: errors.ErrorCodeMap[errors.RequestDecodeErrorCode],
 		})
@@ -40,6 +59,14 @@ func getUsersReportingToVicePresident(ctx *gin.Context) {
 
 	req, _ := objecthelper.MarshalJSON(userReq)
 	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUsersReportingToVicePresident : req body")
+	logger.LogChan <- &logger.Logging{
+		UserID:     ctxHeader.XUserId,
+		URL:        ctx.Request.URL.String(),
+		Type:       "info",
+		Msg:        "request body",
+		Text:       fmt.Sprintf("%+v", string(req)),
+		CreateTime: time.Now().Local(),
+	}
 
 	ctx.JSON(adapters.GetUsersReportingToVicePresident(ctx, userReq))
 }

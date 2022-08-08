@@ -2,20 +2,35 @@ package adapters
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	"net/http"
-	"strconv"
 )
 
 func VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (int, interface{}) {
 
+	cRH, _ := ctx.Get(constant.HeaderInContext)
+	ctxHeader, _ := (cRH).(context.ContextHeader)
+
 	id, err := strconv.Atoi(req.ClientId)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("VerifyOTP : incorrect client id")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "invalid req params",
+			Text:       "incorrect client id: " + err.Error(),
+			CreateTime: time.Now().Local(),
+		}
+
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,
 			Message: "invalid userID",
@@ -24,6 +39,15 @@ func VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (int, interface{}) {
 
 	if req.Otp == 0 {
 		logger.FileLogger.CtxError(ctx).Err(errors.New("incorrect OTP")).Stack().Msg("VerifyOTP : blank otp")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "invalid req params",
+			Text:       "incorrect OTP",
+			CreateTime: time.Now().Local(),
+		}
+
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,
 			Message: "incorrect OTP",
@@ -33,12 +57,29 @@ func VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (int, interface{}) {
 	response, errs := theProvider.VerifyOTP(ctx, id, req.Otp)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("VerifyOTP : provider failed")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "provider failed",
+			Text:       errs.Details.(string),
+			CreateTime: time.Now().Local(),
+		}
+
 		return errs.StatusCode, &models.APIFailureResponse{
 			Error: errs.Message,
 		}
 	}
 
 	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("VerifyOTP : success")
+	logger.LogChan <- &logger.Logging{
+		UserID:     ctxHeader.XUserId,
+		URL:        ctx.Request.URL.String(),
+		Type:       "info",
+		Msg:        "success",
+		Text:       fmt.Sprintf("%+v", response),
+		CreateTime: time.Now().Local(),
+	}
 
 	return http.StatusOK, response
 }

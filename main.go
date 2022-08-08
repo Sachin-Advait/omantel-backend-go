@@ -148,6 +148,20 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		RefreshTokenExpiryTime: time.Duration(applicationConfig.GetInt(constant.RefreshTokenExpiryHours)) * time.Hour,
 	}
 
+	logConfig := &models.DbClientConfig{
+		Host:               applicationConfig.GetString(constant.LogPsqlHost),
+		Port:               applicationConfig.GetInt(constant.LogPsqlPort),
+		DbName:             applicationConfig.GetString(constant.LogPsqlDbName),
+		UserName:           applicationConfig.GetString(constant.LogPsqlUser),
+		Password:           applicationConfig.GetString(constant.LogPsqlPassword),
+		MaxOpenConnections: applicationConfig.GetInt(constant.LogPsqlMaxOpenConn),
+		MaxIdleConnections: applicationConfig.GetInt(constant.LogPsqlMaxIdleConn),
+		MaxLifetime:        time.Duration(applicationConfig.GetInt(constant.LogConnMaxLifetime)) * time.Hour,
+		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.LogConnMaxIdleTime)) * time.Hour,
+	}
+
+	logger.InitDBLogger(logConfig)
+
 	return business.NewIncentiveService(incentiveConfig, dbConfig)
 }
 

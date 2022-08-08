@@ -3,6 +3,7 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/adapters"
@@ -21,9 +22,17 @@ func getUserPayout(ctx *gin.Context) {
 
 	if ctxHeader.Authorization == "" {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("getUserPayout : unauthorized request")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "unauthorized request",
+			Text:       "auth token not found",
+			CreateTime: time.Now().Local(),
+		}
+
 		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
-			Error:   errors.UnauthorizedUserCode,
-			Message: errors.UnauthorizedUser,
+			Error: errors.ErrorCodeMap[errors.UnauthorizedUserCode],
 		})
 		return
 	}
@@ -32,6 +41,15 @@ func getUserPayout(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("getUserPayout : error binding request body")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "error binding request body",
+			Text:       err.Error(),
+			CreateTime: time.Now().Local(),
+		}
+
 		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
 			Error: errors.ErrorCodeMap[errors.RequestDecodeErrorCode],
 		})
@@ -40,6 +58,14 @@ func getUserPayout(ctx *gin.Context) {
 
 	req, _ := objecthelper.MarshalJSON(userReq)
 	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUserPayout : req body")
+	logger.LogChan <- &logger.Logging{
+		UserID:     ctxHeader.XUserId,
+		URL:        ctx.Request.URL.String(),
+		Type:       "info",
+		Msg:        "request body",
+		Text:       fmt.Sprintf("%+v", string(req)),
+		CreateTime: time.Now().Local(),
+	}
 
 	ctx.JSON(adapters.GetUserPayout(ctx, userReq))
 }

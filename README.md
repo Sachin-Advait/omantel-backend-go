@@ -162,19 +162,19 @@ CONSTRAINT user_master_table_pkey PRIMARY KEY (emp_id)
 
 CREATE TABLE IF NOT EXISTS public.user_authentication_table
 (
-emp_id PRIMARY KEY,
+emp_id bigint PRIMARY KEY,
 user_active BOOLEAN NOT NULL DEFAULT false,
 otp integer NOT NULL,
-otp_resend_count NOT NULL DEFAULT 0,
-otp_verify_failed_count NOT NULL DEFAULT 0,
+otp_resend_count integer NOT NULL DEFAULT 0,
+otp_verify_failed_count integer NOT NULL DEFAULT 0,
 otp_used BOOLEAN NOT NULL DEFAULT false,
 otp_create_time timestamp with time zone NOT NULL,
 otp_update_time timestamp with time zone NOT NULL,
-login_attempt_count NOT NULL DEFAULT 0,
+login_attempt_count integer NOT NULL DEFAULT 0,
 last_login_time timestamp with time zone,
 created timestamp with time zone NOT NULL,
 modified timestamp with time zone NOT NULL,
-modified_reason character varying(32) NOT NULL DEFAULT "",
+modified_reason character varying(32) NOT NULL
 )
 
 
@@ -308,6 +308,17 @@ CONSTRAINT fk_targets FOREIGN KEY(outlet_code)
 REFERENCES outlets_table(outlet_code)
 ON DELETE CASCADE
 ON UPDATE CASCADE
+)
+
+CREATE TABLE IF NOT EXISTS public.logs_table
+(
+    emp_id INTEGER NOT NULL,
+    url character varying(64), 
+    type character varying(32), 
+    msg character varying(64), 
+    text text, 
+    created timestamp with time zone NOT NULL,
+    PRIMARY KEY(emp_id, created)
 )
 
 select a.emp_id, b.outlet_manager, b.manager, b.senior_manager, b.general_manager, b.vice_president from 

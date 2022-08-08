@@ -85,6 +85,17 @@ const (
 	PsqlMaxIdleConn = PsqlDatabase + "." + "maxIdleConnections"
 	ConnMaxLifetime = PsqlDatabase + "." + "connMaxLifetimeInHour"
 	ConnMaxIdleTime = PsqlDatabase + "." + "connMaxIdleTimeInMinute"
+
+	LogPsqlDatabase    = "logPsqlDB"
+	LogPsqlHost        = LogPsqlDatabase + "." + "host"
+	LogPsqlPort        = LogPsqlDatabase + "." + "port"
+	LogPsqlDbName      = LogPsqlDatabase + "." + "dbName"
+	LogPsqlUser        = LogPsqlDatabase + "." + "user"
+	LogPsqlPassword    = LogPsqlDatabase + "." + "password"
+	LogPsqlMaxOpenConn = LogPsqlDatabase + "." + "maxOpenConnections"
+	LogPsqlMaxIdleConn = LogPsqlDatabase + "." + "maxIdleConnections"
+	LogConnMaxLifetime = LogPsqlDatabase + "." + "connMaxLifetimeInHour"
+	LogConnMaxIdleTime = LogPsqlDatabase + "." + "connMaxIdleTimeInMinute"
 )
 
 //log configuration keywords

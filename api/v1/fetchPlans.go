@@ -3,6 +3,7 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/adapters"
@@ -20,7 +21,17 @@ func fetchPlans(ctx *gin.Context) {
 
 	if ctxHeader.Authorization == "" {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("fetchPlans : unauthorized request")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "unauthorized request",
+			Text:       "auth token not found",
+			CreateTime: time.Now().Local(),
+		}
+
 		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
+
 			Error:   errors.UnauthorizedUserCode,
 			Message: errors.UnauthorizedUser,
 		})
@@ -28,6 +39,14 @@ func fetchPlans(ctx *gin.Context) {
 	}
 
 	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", ctx.Request.URL.Query())).Msg("fetchPlans : req body")
+	logger.LogChan <- &logger.Logging{
+		UserID:     ctxHeader.XUserId,
+		URL:        ctx.Request.URL.String(),
+		Type:       "info",
+		Msg:        "request body",
+		Text:       fmt.Sprintf("%+v", ctx.Request.URL.Query()),
+		CreateTime: time.Now().Local(),
+	}
 
 	ctx.JSON(adapters.FetchPlans(ctx))
 }

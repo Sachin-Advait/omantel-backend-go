@@ -11,3 +11,13 @@ psqlDB:
   maxIdleConnections: 10
   connMaxLifetimeInHour: 24
   connMaxIdleTimeInMinute: 48
+logPsqlDB:
+  host: 93.114.128.202
+  port: 5432
+  dbName: postgres
+  user: postgres
+  password: pass@123
+  maxOpenConnections: 20
+  maxIdleConnections: 10
+  connMaxLifetimeInHour: 24
+  connMaxIdleTimeInMinute: 48
