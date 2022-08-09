@@ -18,6 +18,23 @@ func RenewAccessToken(ctx *gin.Context) (int, interface{}) {
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
+	if ctxHeader.SuperAuthorization == "" {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("RenewAccessToken : unauthorized request")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "invalid req params",
+			Text:       "auth token not found",
+			CreateTime: time.Now().Local(),
+		}
+
+		return http.StatusBadRequest, models.APIFailureResponse{
+			Error:   errors.UnauthorizedUserCode,
+			Message: errors.UnauthorizedUser,
+		}
+	}
+
 	if ctxHeader.XUserId == "" {
 		logger.FileLogger.CtxError(ctx).Err(errors.New("invalid userID")).Stack().Msg("RenewAccessToken : incorrect client id")
 		logger.LogChan <- &logger.Logging{

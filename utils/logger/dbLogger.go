@@ -69,7 +69,7 @@ func insertLogs(dbConn *sql.DB) {
 			)
 
 			if err != nil {
-				FileLogger.Fatal().Interface("msg", val).Err(err).Msg("LogDatabaseService - insert failed")
+				FileLogger.Error().Interface("msg", val).Err(err).Msg("LogDatabaseService - insert failed")
 			}
 		}(val)
 	}

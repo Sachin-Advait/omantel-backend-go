@@ -15,7 +15,7 @@ func (impl *IncentiveImpl) RenewAccessToken(ctx *gin.Context) (string, *errors.E
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	authUserID, status, err := jwthelper.ValidateRefreshToken(ctxHeader.Authorization, jwthelper.JwtSecretKey)
+	authUserID, status, err := jwthelper.ValidateRefreshToken(ctxHeader.SuperAuthorization, jwthelper.JwtSecretKey)
 	if err != nil {
 		if status == constant.TokenExpired {
 			return "", &errors.Error{
@@ -43,7 +43,7 @@ func (impl *IncentiveImpl) RenewAccessToken(ctx *gin.Context) (string, *errors.E
 		}
 	}
 
-	accessToken, _, err := jwthelper.RefreshAccessToken(ctxHeader.Authorization, impl.Config.SessionExpiryTime, jwthelper.JwtSecretKey)
+	accessToken, _, err := jwthelper.RefreshAccessToken(ctxHeader.SuperAuthorization, impl.Config.SessionExpiryTime, jwthelper.JwtSecretKey)
 	if err != nil {
 		return "", &errors.Error{
 			StatusCode: http.StatusInternalServerError,
