@@ -179,6 +179,7 @@ const (
 	RegionSalesTargetPath      = "/region_sales_target"
 	TopTenSalesCountPath       = "/top_ten_sales_count"
 	TopTenSalesTargetPath      = "/top_ten_sales_target"
+	RenewTokenPath             = "/renew_token"
 
 	FetchRegionPath   = "/fetch_region"
 	UpsertRegionPath  = "/upsert_region"

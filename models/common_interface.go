@@ -35,6 +35,7 @@ type IncentiveProvider interface {
 	GetRegionSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*ProductWiseSalesTargetPerOutlet, *errors.Error)
 	GetTopTenEmpProductSalesCount(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*ProductWiseSalesCountPerStaff, *errors.Error)
 	GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*ProductWiseSalesTargetPerStaff, *errors.Error)
+	RenewAccessToken(ctx *gin.Context) (string, *errors.Error)
 
 	FetchRegions(ctx *gin.Context, req *DeleteRegionRequest) ([]*GetRegionResponse, *errors.Error)
 	CreateNewRegion(ctx *gin.Context, req *NewRegionRequest) *errors.Error
