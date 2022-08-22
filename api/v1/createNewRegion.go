@@ -68,5 +68,5 @@ func createNewRegion(ctx *gin.Context) {
 		CreateTime: time.Now().Local(),
 	}
 
-	ctx.JSON(adapters.CreateNewRegion(ctx, userReq))
+	ctx.JSON(adapters.CreateNewRegion(ctx, []*models.NewRegionRequest{userReq}))
 }

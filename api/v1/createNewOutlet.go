@@ -68,5 +68,5 @@ func createNewOutlet(ctx *gin.Context) {
 		CreateTime: time.Now().Local(),
 	}
 
-	ctx.JSON(adapters.CreateNewOutlet(ctx, userReq))
+	ctx.JSON(adapters.CreateNewOutlet(ctx, []*models.NewOutletRequest{userReq}))
 }

@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,42 +14,64 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func CreateNewOutlet(ctx *gin.Context, req *models.NewOutletRequest) (int, interface{}) {
+func CreateNewOutlet(ctx *gin.Context, req []*models.NewOutletRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if req.OutletCode == "" || req.OutletName == "" || req.RegionCode == "" || req.Lat == 0 || req.Lang == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("invalid req param")).Stack().Msg("CreateNewOutlet : invalid req params")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid req param",
-			CreateTime: time.Now().Local(),
-		}
+	for _, eachRecord := range req {
 
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "Blank value found",
+		if eachRecord.OutletCode == "" || eachRecord.OutletName == "" || eachRecord.RegionCode == "" || eachRecord.Lat == 0 || eachRecord.Lang == 0 {
+			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid req param")).Stack().Msg("CreateNewOutlet : invalid req params")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "invalid req params",
+				Text:       "invalid req param",
+				CreateTime: time.Now().Local(),
+			}
+
+			return http.StatusBadRequest, &models.APIFailureResponse{
+				Error:   errors.InvalidReqParameters,
+				Message: "Blank value found",
+			}
 		}
 	}
 
-	errs := theProvider.CreateNewOutlet(ctx, req)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewOutlet : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+	failedResp, errs := theProvider.CreateNewOutlet(ctx, req)
 
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+	switch ctxHeader.XAPIVersion {
+	case "2":
+		if failedResp != nil {
+			resp, _ := json.Marshal(failedResp)
+			logger.FileLogger.CtxError(ctx).Str(constant.ResponseParam, string(resp)).Stack().Msg("CreateNewOutlet V2: provider failed")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "provider failed",
+				Text:       string(resp),
+				CreateTime: time.Now().Local(),
+			}
+
+			return http.StatusOK, failedResp
+		}
+	default:
+		if errs != nil {
+			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewOutlet : provider failed")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "provider failed",
+				Text:       errs.Details.(string),
+				CreateTime: time.Now().Local(),
+			}
+
+			return errs.StatusCode, &models.APIFailureResponse{
+				Error: errs.Message,
+			}
 		}
 	}
 

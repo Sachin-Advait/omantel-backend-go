@@ -159,6 +159,9 @@ const (
 	SalesIncentiveRoute    = "/sales/incentive"
 	SalesIncentiveDocRoute = "/sales/incentive/v1"
 
+	SalesIncentiveV2Route    = "/sales/incentive/v2"
+	SalesIncentiveV2DocRoute = "/sales/incentive/v2"
+
 	ClientPath                 = "/client"
 	TargetChartPath            = "/target-chart"
 	SalePerPlanPath            = "/sale-per-plan"

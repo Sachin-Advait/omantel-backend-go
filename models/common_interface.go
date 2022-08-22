@@ -38,22 +38,22 @@ type IncentiveProvider interface {
 	RenewAccessToken(ctx *gin.Context) (string, *errors.Error)
 
 	FetchRegions(ctx *gin.Context, req *DeleteRegionRequest) ([]*GetRegionResponse, *errors.Error)
-	CreateNewRegion(ctx *gin.Context, req *NewRegionRequest) *errors.Error
+	CreateNewRegion(ctx *gin.Context, req []*NewRegionRequest) ([]*NewRegionFailedResponse, *errors.Error)
 	DeleteRegions(ctx *gin.Context, req *DeleteRegionRequest) *errors.Error
 
 	FetchOutlets(ctx *gin.Context, req *DeleteOutletRequest) ([]*GetOutletResponse, *errors.Error)
-	CreateNewOutlet(ctx *gin.Context, req *NewOutletRequest) *errors.Error
+	CreateNewOutlet(ctx *gin.Context, req []*NewOutletRequest) ([]*NewOutletFailedResponse, *errors.Error)
 	DeleteOutlets(ctx *gin.Context, req *DeleteOutletRequest) *errors.Error
 
 	FetchProducts(ctx *gin.Context, req *DeleteProductRequest) ([]*GetProductResponse, *errors.Error)
-	CreateNewProduct(ctx *gin.Context, req *NewProductRequest) *errors.Error
+	CreateNewProduct(ctx *gin.Context, req []*NewProductRequest) ([]*NewProductFailedResponse, *errors.Error)
 	DeleteProducts(ctx *gin.Context, req *DeleteProductRequest) *errors.Error
 
 	FetchPlans(ctx *gin.Context, req *DeletePlanRequest) ([]*GetPlanResponse, *errors.Error)
-	CreateNewPlan(ctx *gin.Context, req *NewPlanRequest) *errors.Error
+	CreateNewPlan(ctx *gin.Context, req []*NewPlanRequest) ([]*NewPlanFailedResponse, *errors.Error)
 	DeletePlans(ctx *gin.Context, req *DeletePlanRequest) *errors.Error
 
 	FetchTargets(ctx *gin.Context, req *GetTargetRequest) (map[string][]*GetTargetResponse, *errors.Error)
-	CreateNewTarget(ctx *gin.Context, req *NewTargetRequest) *errors.Error
+	CreateNewTarget(ctx *gin.Context, req []*NewTargetRequest) ([]*NewTargetFailedResponse, *errors.Error)
 	DeleteTargets(ctx *gin.Context, req *DeleteTargetRequest) *errors.Error
 }

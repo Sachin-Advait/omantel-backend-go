@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,42 +14,64 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func CreateNewProduct(ctx *gin.Context, req *models.NewProductRequest) (int, interface{}) {
+func CreateNewProduct(ctx *gin.Context, req []*models.NewProductRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if req.ProductCode == "" || req.ProductName == "" || req.Weightage == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("invalid product param")).Stack().Msg("CreateNewProduct : invalid req params")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid req param",
-			CreateTime: time.Now().Local(),
-		}
+	for _, eachRecord := range req {
 
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "Invalid product params",
+		if eachRecord.ProductCode == "" || eachRecord.ProductName == "" || eachRecord.Weightage == 0 {
+			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid product param")).Stack().Msg("CreateNewProduct : invalid req params")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "invalid req params",
+				Text:       "invalid req param",
+				CreateTime: time.Now().Local(),
+			}
+
+			return http.StatusBadRequest, &models.APIFailureResponse{
+				Error:   errors.InvalidReqParameters,
+				Message: "Invalid product params",
+			}
 		}
 	}
 
-	errs := theProvider.CreateNewProduct(ctx, req)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewProduct : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+	failedResp, errs := theProvider.CreateNewProduct(ctx, req)
 
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+	switch ctxHeader.XAPIVersion {
+	case "2":
+		if failedResp != nil {
+			resp, _ := json.Marshal(failedResp)
+			logger.FileLogger.CtxError(ctx).Str(constant.ResponseParam, string(resp)).Stack().Msg("CreateNewProduct V2: provider failed")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "provider failed",
+				Text:       string(resp),
+				CreateTime: time.Now().Local(),
+			}
+
+			return http.StatusOK, failedResp
+		}
+	default:
+		if errs != nil {
+			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewProduct : provider failed")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "provider failed",
+				Text:       errs.Details.(string),
+				CreateTime: time.Now().Local(),
+			}
+
+			return errs.StatusCode, &models.APIFailureResponse{
+				Error: errs.Message,
+			}
 		}
 	}
 

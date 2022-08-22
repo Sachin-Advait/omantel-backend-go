@@ -68,5 +68,5 @@ func createNewPlan(ctx *gin.Context) {
 		CreateTime: time.Now().Local(),
 	}
 
-	ctx.JSON(adapters.CreateNewPlan(ctx, userReq))
+	ctx.JSON(adapters.CreateNewPlan(ctx, []*models.NewPlanRequest{userReq}))
 }

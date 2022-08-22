@@ -53,6 +53,11 @@ type NewRegionRequest struct {
 	IsUpdate   bool   `json:"isUpdate"`
 }
 
+type NewRegionFailedResponse struct {
+	RegionCode string `json:"region_code"`
+	Message    string `json:"message"`
+}
+
 type DeleteRegionRequest struct {
 	RegionCodes []string `json:"region_codes"`
 }
@@ -69,6 +74,11 @@ type NewOutletRequest struct {
 	Lat        float64 `json:"lat"`
 	Lang       float64 `json:"lang"`
 	IsUpdate   bool    `json:"isUpdate"`
+}
+
+type NewOutletFailedResponse struct {
+	OutletCode string `json:"outlet_code"`
+	Message    string `json:"message"`
 }
 
 type DeleteOutletRequest struct {
@@ -90,6 +100,11 @@ type NewProductRequest struct {
 	IsUpdate    bool    `json:"isUpdate"`
 }
 
+type NewProductFailedResponse struct {
+	ProductCode string `json:"product_code"`
+	Message     string `json:"message"`
+}
+
 type DeleteProductRequest struct {
 	ProductCodes []string `json:"product_codes"`
 }
@@ -107,6 +122,11 @@ type NewPlanRequest struct {
 	PlanPrice   float64 `json:"plan_price"`
 	SIPPlanRate float64 `json:"sip_plan_rate"`
 	IsUpdate    bool    `json:"isUpdate"`
+}
+
+type NewPlanFailedResponse struct {
+	PlanCode string `json:"plan_code"`
+	Message  string `json:"message"`
 }
 
 type DeletePlanRequest struct {
@@ -132,6 +152,11 @@ type NewTargetRequest struct {
 	HBB        float64 `json:"hbb"`
 	Upgrade    float64 `json:"upgrade"`
 	IsUpdate   bool    `json:"isUpdate"`
+}
+
+type NewTargetFailedResponse struct {
+	TargetCode string `json:"target_code"`
+	Message    string `json:"message"`
 }
 
 type DeleteTargetRequest struct {

@@ -1461,6 +1461,59 @@ func (dbConn *DBImplementation) UpsertRegionRecord(dbReq *models.NewRegionReques
 	return nil
 }
 
+func (dbConn *DBImplementation) UpsertRegionRecordViaFile(dbReq []*models.NewRegionRequest) []*models.NewRegionFailedResponse {
+
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertRegionRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertRegionRecord done")
+
+	var failureResponse []*models.NewRegionFailedResponse
+
+	for _, eachRecord := range dbReq {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		var (
+			err    error
+			result sql.Result
+		)
+
+		switch eachRecord.IsUpdate {
+		case false:
+			query := `INSERT INTO regions_table(region_code, region_name, created, modified, comment) VALUES ($1, $2, $3, $4, $5)`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.RegionCode, eachRecord.RegionName, time.Now(), time.Now(), "")
+		default:
+			query := `UPDATE regions_table SET region_name=$2, modified=$3, comment=$4 WHERE region_code=$1`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.RegionCode, eachRecord.RegionName, time.Now(), "")
+		}
+
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate") {
+				failureResponse = append(failureResponse, &models.NewRegionFailedResponse{RegionCode: eachRecord.RegionCode, Message: "UpsertRegionRecord: duplicate entry"})
+				continue
+			}
+
+			failureResponse = append(failureResponse, &models.NewRegionFailedResponse{RegionCode: eachRecord.RegionCode, Message: "UpsertRegionRecord: operation failure: " + err.Error()})
+			continue
+		}
+
+		insertedRow, err := result.RowsAffected()
+		if err != nil {
+			failureResponse = append(failureResponse, &models.NewRegionFailedResponse{RegionCode: eachRecord.RegionCode, Message: "UpsertRegionRecord: rowsAffected failed: " + err.Error()})
+			continue
+		}
+
+		if insertedRow != 1 {
+			failureResponse = append(failureResponse, &models.NewRegionFailedResponse{RegionCode: eachRecord.RegionCode, Message: "UpsertRegionRecord: rowsAffected count: " + strconv.Itoa(int(insertedRow))})
+			continue
+		}
+
+		failureResponse = append(failureResponse, &models.NewRegionFailedResponse{RegionCode: eachRecord.RegionCode, Message: "success"})
+	}
+
+	return failureResponse
+}
+
 func (dbConn *DBImplementation) DeleteRegionRecord(regionCodes []string) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", regionCodes).Time("start", time.Now()).Msg("DeleteRegionRecord start")
@@ -1634,6 +1687,59 @@ func (dbConn *DBImplementation) UpsertOutletRecord(dbReq *models.NewOutletReques
 	}
 
 	return nil
+}
+
+func (dbConn *DBImplementation) UpsertOutletRecordViaFile(dbReq []*models.NewOutletRequest) []*models.NewOutletFailedResponse {
+
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertOutletRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertOutletRecord done")
+
+	var failureResponse []*models.NewOutletFailedResponse
+
+	for _, eachRecord := range dbReq {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		var (
+			err    error
+			result sql.Result
+		)
+
+		switch eachRecord.IsUpdate {
+		case false:
+			query := `INSERT INTO outlets_table(outlet_code, outlet_name, region_code, latitude, longitude, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.OutletCode, eachRecord.OutletName, eachRecord.RegionCode, eachRecord.Lat, eachRecord.Lang, time.Now(), time.Now(), "")
+		default:
+			query := `UPDATE outlets_table SET outlet_name=$2, region_code=$3, latitude=$4, longitude=$5, modified=$6, comment=$7  WHERE outlet_code=$1`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.OutletCode, eachRecord.OutletName, eachRecord.RegionCode, eachRecord.Lat, eachRecord.Lang, time.Now(), "")
+		}
+
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate") {
+				failureResponse = append(failureResponse, &models.NewOutletFailedResponse{OutletCode: eachRecord.OutletCode, Message: "UpsertOutletRecord: duplicate entry"})
+				continue
+			}
+
+			failureResponse = append(failureResponse, &models.NewOutletFailedResponse{OutletCode: eachRecord.OutletCode, Message: "UpsertOutletRecord: operation failure: " + err.Error()})
+			continue
+		}
+
+		insertedRow, err := result.RowsAffected()
+		if err != nil {
+			failureResponse = append(failureResponse, &models.NewOutletFailedResponse{OutletCode: eachRecord.OutletCode, Message: "UpsertOutletRecord: rowsAffected failed: " + err.Error()})
+			continue
+		}
+
+		if insertedRow != 1 {
+			failureResponse = append(failureResponse, &models.NewOutletFailedResponse{OutletCode: eachRecord.OutletCode, Message: "UpsertOutletRecord: rowsAffected count: " + strconv.Itoa(int(insertedRow))})
+			continue
+		}
+
+		failureResponse = append(failureResponse, &models.NewOutletFailedResponse{OutletCode: eachRecord.OutletCode, Message: "success"})
+	}
+
+	return failureResponse
 }
 
 func (dbConn *DBImplementation) DeleteOutletRecord(outletCode []string) *errors.Error {
@@ -1814,6 +1920,59 @@ func (dbConn *DBImplementation) UpsertProductRecord(dbReq *models.NewProductRequ
 	return nil
 }
 
+func (dbConn *DBImplementation) UpsertProductRecordViaFile(dbReq []*models.NewProductRequest) []*models.NewProductFailedResponse {
+
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertProductRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertProductRecord done")
+
+	var failureResponse []*models.NewProductFailedResponse
+
+	for _, eachRecord := range dbReq {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		var (
+			err    error
+			result sql.Result
+		)
+
+		switch eachRecord.IsUpdate {
+		case false:
+			query := `INSERT INTO products_table(product_code, product_name, weightage, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6)`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.ProductCode, eachRecord.ProductName, eachRecord.Weightage, time.Now(), time.Now(), "")
+		default:
+			query := `UPDATE products_table SET product_name=$2, weightage=$3, modified=$4, comment=$5  WHERE product_code=$1`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.ProductCode, eachRecord.ProductName, eachRecord.Weightage, time.Now(), "")
+		}
+
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate") {
+				failureResponse = append(failureResponse, &models.NewProductFailedResponse{ProductCode: eachRecord.ProductCode, Message: "UpsertProductRecord: duplicate entry"})
+				continue
+			}
+
+			failureResponse = append(failureResponse, &models.NewProductFailedResponse{ProductCode: eachRecord.ProductCode, Message: "UpsertProductRecord: operation failure: " + err.Error()})
+			continue
+		}
+
+		insertedRow, err := result.RowsAffected()
+		if err != nil {
+			failureResponse = append(failureResponse, &models.NewProductFailedResponse{ProductCode: eachRecord.ProductCode, Message: "UpsertProductRecord: rowsAffected failed: " + err.Error()})
+			continue
+		}
+
+		if insertedRow != 1 {
+			failureResponse = append(failureResponse, &models.NewProductFailedResponse{ProductCode: eachRecord.ProductCode, Message: "UpsertProductRecord: rowsAffected count: " + strconv.Itoa(int(insertedRow))})
+			continue
+		}
+
+		failureResponse = append(failureResponse, &models.NewProductFailedResponse{ProductCode: eachRecord.ProductCode, Message: "success"})
+	}
+
+	return failureResponse
+}
+
 func (dbConn *DBImplementation) DeleteProductRecord(productCode []string) *errors.Error {
 
 	logger.FileLogger.Info().Interface("record", productCode).Time("start", time.Now()).Msg("DeleteProductRecord start")
@@ -1988,6 +2147,59 @@ func (dbConn *DBImplementation) UpsertPlanRecord(dbReq *models.NewPlanRequest) *
 	}
 
 	return nil
+}
+
+func (dbConn *DBImplementation) UpsertPlanRecordViaFile(dbReq []*models.NewPlanRequest) []*models.NewPlanFailedResponse {
+
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertPlanRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertPlanRecord done")
+
+	var failureResponse []*models.NewPlanFailedResponse
+
+	for _, eachRecord := range dbReq {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		var (
+			err    error
+			result sql.Result
+		)
+
+		switch eachRecord.IsUpdate {
+		case false:
+			query := `INSERT INTO plans_table(plan_code, plan_name, product_code, plan_price, sip_plan_rate, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.PlanCode, eachRecord.PlanName, eachRecord.ProductCode, eachRecord.PlanPrice, eachRecord.SIPPlanRate, time.Now(), time.Now(), "")
+		default:
+			query := `UPDATE plans_table SET plan_name=$2, product_code=$3, plan_price=$4, sip_plan_rate=$5, modified=$6, comment=$7 WHERE plan_code=$1`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.PlanCode, eachRecord.PlanName, eachRecord.ProductCode, eachRecord.PlanPrice, eachRecord.SIPPlanRate, time.Now(), "")
+		}
+
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate") {
+				failureResponse = append(failureResponse, &models.NewPlanFailedResponse{PlanCode: eachRecord.PlanCode, Message: "UpsertPlanRecord: duplicate entry"})
+				continue
+			}
+
+			failureResponse = append(failureResponse, &models.NewPlanFailedResponse{PlanCode: eachRecord.PlanCode, Message: "UpsertPlanRecord: operation failure: " + err.Error()})
+			continue
+		}
+
+		insertedRow, err := result.RowsAffected()
+		if err != nil {
+			failureResponse = append(failureResponse, &models.NewPlanFailedResponse{PlanCode: eachRecord.PlanCode, Message: "UpsertPlanRecord: rowsAffected failed: " + err.Error()})
+			continue
+		}
+
+		if insertedRow != 1 {
+			failureResponse = append(failureResponse, &models.NewPlanFailedResponse{PlanCode: eachRecord.PlanCode, Message: "UpsertPlanRecord: rowsAffected count: " + strconv.Itoa(int(insertedRow))})
+			continue
+		}
+
+		failureResponse = append(failureResponse, &models.NewPlanFailedResponse{PlanCode: eachRecord.PlanCode, Message: "success"})
+	}
+
+	return failureResponse
 }
 
 func (dbConn *DBImplementation) DeletePlanRecord(planCode []string) *errors.Error {
@@ -2166,6 +2378,59 @@ func (dbConn *DBImplementation) UpsertTargetRecord(dbReq *models.NewTargetReques
 	}
 
 	return nil
+}
+
+func (dbConn *DBImplementation) UpsertTargetRecordViaFile(dbReq []*models.NewTargetRequest) []*models.NewTargetFailedResponse {
+
+	logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertTargetRecord start")
+	defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertTargetRecord done")
+
+	var failureResponse []*models.NewTargetFailedResponse
+
+	for _, eachRecord := range dbReq {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		var (
+			err    error
+			result sql.Result
+		)
+
+		switch eachRecord.IsUpdate {
+		case false:
+			query := `INSERT INTO targets_table(target_code, region_code, outlet_code, year, month, baqati, hbb, hayyak, upgrade, created, modified, comment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.TargetCode, eachRecord.RegionCode, eachRecord.OutletCode, eachRecord.Year, eachRecord.Month, eachRecord.Baqati, eachRecord.HBB, eachRecord.Hayyak, eachRecord.Upgrade, time.Now(), time.Now(), "")
+		default:
+			query := `UPDATE targets_table SET baqati=$2, hbb=$3, hayyak=$4, upgrade=$5, modified=$6, comment=$7 WHERE target_code=$1`
+			result, err = dbConn.Operation.ExecContext(ctx, query, eachRecord.TargetCode, eachRecord.Baqati, eachRecord.HBB, eachRecord.Hayyak, eachRecord.Upgrade, time.Now(), "")
+		}
+
+		if err != nil {
+			if strings.Contains(err.Error(), "duplicate") {
+				failureResponse = append(failureResponse, &models.NewTargetFailedResponse{TargetCode: eachRecord.TargetCode, Message: "UpsertTargetRecord: duplicate entry"})
+				continue
+			}
+
+			failureResponse = append(failureResponse, &models.NewTargetFailedResponse{TargetCode: eachRecord.TargetCode, Message: "UpsertTargetRecord: operation failure: " + err.Error()})
+			continue
+		}
+
+		insertedRow, err := result.RowsAffected()
+		if err != nil {
+			failureResponse = append(failureResponse, &models.NewTargetFailedResponse{TargetCode: eachRecord.TargetCode, Message: "UpsertTargetRecord: rowsAffected failed: " + err.Error()})
+			continue
+		}
+
+		if insertedRow != 1 {
+			failureResponse = append(failureResponse, &models.NewTargetFailedResponse{TargetCode: eachRecord.TargetCode, Message: "UpsertTargetRecord: rowsAffected count: " + strconv.Itoa(int(insertedRow))})
+			continue
+		}
+
+		failureResponse = append(failureResponse, &models.NewTargetFailedResponse{TargetCode: eachRecord.TargetCode, Message: "success"})
+	}
+
+	return failureResponse
 }
 
 func (dbConn *DBImplementation) DeleteTargetRecord(targetCode []string) *errors.Error {

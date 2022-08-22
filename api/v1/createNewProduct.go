@@ -68,5 +68,5 @@ func createNewProduct(ctx *gin.Context) {
 		CreateTime: time.Now().Local(),
 	}
 
-	ctx.JSON(adapters.CreateNewProduct(ctx, userReq))
+	ctx.JSON(adapters.CreateNewProduct(ctx, []*models.NewProductRequest{userReq}))
 }

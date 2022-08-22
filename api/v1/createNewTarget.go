@@ -68,5 +68,5 @@ func createNewTarget(ctx *gin.Context) {
 		CreateTime: time.Now().Local(),
 	}
 
-	ctx.JSON(adapters.CreateNewTarget(ctx, userReq))
+	ctx.JSON(adapters.CreateNewTarget(ctx, []*models.NewTargetRequest{userReq}))
 }

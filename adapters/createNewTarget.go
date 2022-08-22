@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,42 +14,63 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func CreateNewTarget(ctx *gin.Context, req *models.NewTargetRequest) (int, interface{}) {
+func CreateNewTarget(ctx *gin.Context, req []*models.NewTargetRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if req.RegionCode == "" || req.OutletCode == "" || req.Month < 1 || req.Month > 12 || req.Baqati == 0 || req.HBB == 0 || req.Hayyak == 0 || req.Upgrade == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("invalid target param")).Stack().Msg("CreateNewTarget : invalid req params")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid req param",
-			CreateTime: time.Now().Local(),
-		}
+	for _, eachRecord := range req {
+		if eachRecord.RegionCode == "" || eachRecord.OutletCode == "" || eachRecord.Month < 1 || eachRecord.Month > 12 || eachRecord.Baqati == 0 || eachRecord.HBB == 0 || eachRecord.Hayyak == 0 || eachRecord.Upgrade == 0 {
+			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid target param")).Stack().Msg("CreateNewTarget : invalid req params")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "invalid req params",
+				Text:       "invalid req param",
+				CreateTime: time.Now().Local(),
+			}
 
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "Invalid target param",
+			return http.StatusBadRequest, &models.APIFailureResponse{
+				Error:   errors.InvalidReqParameters,
+				Message: "Invalid target param",
+			}
 		}
 	}
 
-	errs := theProvider.CreateNewTarget(ctx, req)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewTarget : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+	failedResp, errs := theProvider.CreateNewTarget(ctx, req)
 
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+	switch ctxHeader.XAPIVersion {
+	case "2":
+		if failedResp != nil {
+			resp, _ := json.Marshal(failedResp)
+			logger.FileLogger.CtxError(ctx).Str(constant.ResponseParam, string(resp)).Stack().Msg("CreateNewTarget V2: provider failed")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "provider failed",
+				Text:       string(resp),
+				CreateTime: time.Now().Local(),
+			}
+
+			return http.StatusOK, failedResp
+		}
+	default:
+		if errs != nil {
+			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewTarget : provider failed")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "provider failed",
+				Text:       errs.Details.(string),
+				CreateTime: time.Now().Local(),
+			}
+
+			return errs.StatusCode, &models.APIFailureResponse{
+				Error: errs.Message,
+			}
 		}
 	}
 

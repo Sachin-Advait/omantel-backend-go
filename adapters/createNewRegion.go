@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,42 +14,64 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func CreateNewRegion(ctx *gin.Context, req *models.NewRegionRequest) (int, interface{}) {
+func CreateNewRegion(ctx *gin.Context, req []*models.NewRegionRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if req.RegionCode == "" || req.RegionName == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("invalid req param")).Stack().Msg("CreateNewRegion : invalid req params")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid req param",
-			CreateTime: time.Now().Local(),
-		}
+	for _, eachRecord := range req {
 
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "RegionName or RegionCode is blank",
+		if eachRecord.RegionCode == "" || eachRecord.RegionName == "" {
+			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid req param")).Stack().Msg("CreateNewRegion : invalid req params")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "invalid req params",
+				Text:       "invalid req param",
+				CreateTime: time.Now().Local(),
+			}
+
+			return http.StatusBadRequest, &models.APIFailureResponse{
+				Error:   errors.InvalidReqParameters,
+				Message: "RegionName or RegionCode is blank",
+			}
 		}
 	}
 
-	errs := theProvider.CreateNewRegion(ctx, req)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewRegion : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+	failedResp, errs := theProvider.CreateNewRegion(ctx, req)
 
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+	switch ctxHeader.XAPIVersion {
+	case "2":
+		if failedResp != nil {
+			resp, _ := json.Marshal(failedResp)
+			logger.FileLogger.CtxError(ctx).Str(constant.ResponseParam, string(resp)).Stack().Msg("CreateNewRegion V2: provider failed")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "provider failed",
+				Text:       string(resp),
+				CreateTime: time.Now().Local(),
+			}
+
+			return http.StatusOK, failedResp
+		}
+	default:
+		if errs != nil {
+			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewRegion : provider failed")
+			logger.LogChan <- &logger.Logging{
+				UserID:     ctxHeader.XUserId,
+				URL:        ctx.Request.URL.String(),
+				Type:       "error",
+				Msg:        "provider failed",
+				Text:       errs.Details.(string),
+				CreateTime: time.Now().Local(),
+			}
+
+			return errs.StatusCode, &models.APIFailureResponse{
+				Error: errs.Message,
+			}
 		}
 	}
 
@@ -69,3 +92,7 @@ func CreateNewRegion(ctx *gin.Context, req *models.NewRegionRequest) (int, inter
 
 	return http.StatusOK, resp
 }
+
+/*
+
+ */
