@@ -54,6 +54,8 @@ func IncentiveRoutes(group *gin.RouterGroup) {
 	group.POST(constant.TopTenSalesTargetPath, getTopTenEmpSalesAndTarget)
 	group.GET(constant.RenewTokenPath, renewAccessToken)
 
+	group.POST(constant.CaptchaVerificationPath, captchaVerification)
+
 	group.GET(constant.FetchRegionPath, fetchRegions)
 	group.POST(constant.UpsertRegionPath, createNewRegion)
 	group.POST(constant.DeleteRegionPath, deleteRegions)

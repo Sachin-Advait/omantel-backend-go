@@ -143,6 +143,9 @@ const (
 	JwtKey                   = "secretKey"
 	SessionExpiryTimeMinutes = "sessionExpiryTimeMinutes"
 	RefreshTokenExpiryHours  = "refreshTokenExpiryHours"
+	CaptchaSitesEnableKey    = "captchaSitesEnableKey"
+	CaptchaSecretKey         = "captchaSecretKey"
+	VerifyCaptchaGoogleApi   = "verifyCaptchaGoogleApi"
 )
 
 //config file names
@@ -183,6 +186,8 @@ const (
 	TopTenSalesCountPath       = "/top_ten_sales_count"
 	TopTenSalesTargetPath      = "/top_ten_sales_target"
 	RenewTokenPath             = "/renew_token"
+
+	CaptchaVerificationPath = "/captcha_verify"
 
 	FetchRegionPath   = "/fetch_region"
 	UpsertRegionPath  = "/upsert_region"

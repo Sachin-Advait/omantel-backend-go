@@ -1,6 +1,9 @@
 secretKey: gis-jwt-token
 sessionExpiryTimeMinutes: 30
 refreshTokenExpiryHours: 3
+captchaSitesEnableKey: 6LeOsMAhAAAAAFvMjuG5TX3nE_ZGYGvvbHKsyDjd
+captchaSecretKey: 6LeOsMAhAAAAAA66_QKasMPd2ghVhA6Phr1se6FK
+verifyCaptchaGoogleApi: https://www.google.com/recaptcha/api/siteverify
 psqlDB:
   host: 93.114.128.202
   port: 5432

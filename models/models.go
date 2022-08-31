@@ -465,6 +465,12 @@ type ReportingStaffIDAndName struct {
 	Region string
 }
 
+// CaptchRequest is struct for requests of /verifyCaptcha API
+type CaptchRequest struct {
+	Message string `json:"message"`
+	Token   string `json:"token"`
+}
+
 var SalesTrgt SaleTarget
 var PlanRates PlanRate
 var ValOfPoint ValueOfPoint

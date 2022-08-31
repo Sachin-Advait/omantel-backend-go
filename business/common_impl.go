@@ -4,12 +4,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
+	"time"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/configs"
 	psqldb "gitlab.com/rendezvousPoint/incentive_calculator/utils/psqlDb"
-	"io"
-	"time"
 )
 
 type IncentiveImpl struct {

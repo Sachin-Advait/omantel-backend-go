@@ -37,6 +37,8 @@ type IncentiveProvider interface {
 	GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*ProductWiseSalesTargetPerStaff, *errors.Error)
 	RenewAccessToken(ctx *gin.Context) (string, *errors.Error)
 
+	CaptchaVerification(ctx *gin.Context, req *CaptchRequest) (interface{}, *errors.Error)
+
 	FetchRegions(ctx *gin.Context, req *DeleteRegionRequest) ([]*GetRegionResponse, *errors.Error)
 	CreateNewRegion(ctx *gin.Context, req []*NewRegionRequest) ([]*NewRegionFailedResponse, *errors.Error)
 	DeleteRegions(ctx *gin.Context, req *DeleteRegionRequest) *errors.Error

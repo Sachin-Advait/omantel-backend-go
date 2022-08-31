@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -75,7 +76,7 @@ func main() {
 
 func initEnvConfigs() {
 	configs.Init(flags.BaseConfigPath() + "/" + flags.Env())
-	logger.Info(nil).Str("env", flags.BaseConfigPath()+"/"+flags.Env()).Msg("initialized configs for env")
+	logger.Info(context.TODO()).Str("env", flags.BaseConfigPath()+"/"+flags.Env()).Msg("initialized configs for env")
 }
 
 func initLogger() {
@@ -84,7 +85,7 @@ func initLogger() {
 
 	loggerConfig, err := configs.Get(constant.LoggerConfigFile)
 	if err != nil {
-		logger.Fatal(nil).Stack().Err(err).Msg("error loading logger config file, env - " + flags.Env())
+		logger.Fatal(context.TODO()).Stack().Err(err).Msg("error loading logger config file, env - " + flags.Env())
 	}
 
 	logger.InitLogger(logger.Level(loggerConfig.GetString(constant.LogLevelKey)))
@@ -96,7 +97,7 @@ func initFileLogger() {
 
 	applicationConfig, err := configs.Get(constant.LoggerConfigFile)
 	if err != nil {
-		logger.Fatal(nil).Stack().Err(err).Msg("error loading application config file, env - " + flags.Env())
+		logger.Fatal(context.TODO()).Stack().Err(err).Msg("error loading application config file, env - " + flags.Env())
 	}
 
 	err = logger.InitFileLogger(logger.FileConfig{
@@ -112,7 +113,7 @@ func initFileLogger() {
 	})
 
 	if err != nil {
-		logger.Fatal(nil).Err(err).Msg("unable to initialize file logger")
+		logger.Fatal(context.TODO()).Err(err).Msg("unable to initialize file logger")
 	}
 }
 
@@ -128,6 +129,13 @@ func buildIncentiveProvider() models.IncentiveProvider {
 	jwthelper.JwtSecretKey = applicationConfig.GetString(constant.JwtKey)
 	if jwthelper.JwtSecretKey == "" {
 		logger.FileLogger.Fatal().Stack().Err(err).Msg("jwt secret key not found, env - " + flags.Env())
+	}
+
+	models.CaptchaSitesEnableKey = applicationConfig.GetString(constant.CaptchaSitesEnableKey)
+	models.CaptchaSecretKey = applicationConfig.GetString(constant.CaptchaSecretKey)
+	models.VerifyCaptchaGoogleApi = applicationConfig.GetString(constant.VerifyCaptchaGoogleApi)
+	if models.CaptchaSitesEnableKey == "" || models.CaptchaSecretKey == "" || models.VerifyCaptchaGoogleApi == "" {
+		logger.FileLogger.Fatal().Stack().Err(err).Msg("captcha keys not found, env - " + flags.Env())
 	}
 
 	//db config load

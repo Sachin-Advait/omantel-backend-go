@@ -2,6 +2,12 @@ package models
 
 import "time"
 
+var (
+	CaptchaSitesEnableKey  string
+	CaptchaSecretKey       string
+	VerifyCaptchaGoogleApi string
+)
+
 type Pong struct {
 	DT time.Time `json:"time"`
 }
