@@ -3047,15 +3047,15 @@ func (dbConn *DBImplementation) FetchUserName(id int) (string, *errors.Error) {
 	return name, nil
 }
 
-func (dbConn *DBImplementation) FetchOutletDetails(outlet, region string) (float64, float64, *errors.Error) {
+func (dbConn *DBImplementation) FetchOutletDetails(outletCode, regionCode string) (float64, float64, *errors.Error) {
 
-	logger.FileLogger.Info().Str("outlet", outlet).Str("region", region).Time("start", time.Now()).Msg("FetchOutletDetails start")
-	defer logger.FileLogger.Info().Str("outlet", outlet).Str("region", region).Time("end", time.Now()).Msg("FetchOutletDetails done")
+	logger.FileLogger.Info().Str("outlet", outletCode).Str("region", regionCode).Time("start", time.Now()).Msg("FetchOutletDetails start")
+	defer logger.FileLogger.Info().Str("outlet", outletCode).Str("region", regionCode).Time("end", time.Now()).Msg("FetchOutletDetails done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select latitude, longitude from outlets_table where outlet_name=$1 and region_name=$2", outlet, region)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select latitude, longitude from outlets_table where outlet_code=$1 and region_code=$2", outletCode, regionCode)
 	if err != nil {
 		return 0, 0, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
