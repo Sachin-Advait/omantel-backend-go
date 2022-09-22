@@ -54,7 +54,7 @@ const (
 	UserExistsError        = "USER ALREADY EXISTS"
 	DuplicateUserError     = "DUPLICATE USER FOUND"
 	LoginLimitReached      = "MAX SUCCESS LOGIN LIMIT REACHED"
-	RetryLoginLimitReached = "MAX INCORRECT LOGIN LIMIT REACHED"
+	RetryLoginLimitReached = "MAX INCORRECT LOGIN LIMIT REACHED, BLOCKED FOR 15 MINS"
 	InvalidDetails         = "DETAILS ARE INCORRECT"
 	InvalidToken           = "INVALID TOKEN"
 	TokenExpired           = "TOKEN EXPIRED"
@@ -62,6 +62,7 @@ const (
 	OTPUsedError           = "OTP IS ALREADY USED"
 	OTPInvalidError        = "OTP IS INVALID"
 	OTPExpiredError        = "OTP IS EXPIRED"
+	OTPLimitError          = "TOO MANY TIMES OTP SENT, BLOCKED FOR 15 MINS"
 
 	UserIDInvalid                = "USER ID IS INVALID"
 	UserTypeInvalid              = "USER TYPE IS INVALID"

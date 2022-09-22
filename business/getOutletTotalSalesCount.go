@@ -1,12 +1,13 @@
 package business
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	"net/http"
-	"time"
 )
 
 func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
@@ -34,18 +35,18 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, clientID, 
 
 	for _, v := range allDistinctOM {
 
-		lat, lng, err := impl.PsqlDb.FetchOutletDetails(v.Outlet, v.Region)
-		if err != nil {
-			return nil, err
-		}
+		// lat, lng, err := impl.PsqlDb.FetchOutletDetails(v.Outlet, v.Region)
+		// if err != nil {
+		// 	return nil, err
+		// }
 
 		trx, err := impl.PsqlDb.FetchProductSalesPerOutletManager(v.ID, int(t.Month()), t.Year(), quarter, isQuarterReport)
 		if err != nil {
 			return nil, err
 		}
 
-		trx.Latitude = lat
-		trx.Longitude = lng
+		trx.Latitude = 24.2815  //lat
+		trx.Longitude = 55.8246 //lng
 		trx.Region = v.Region
 		trx.OutletName = v.Outlet
 

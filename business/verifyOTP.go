@@ -42,6 +42,8 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID, otp int) (*mode
 		}
 	}
 
+	otpModel.LoginAttemptCount++
+
 	// if !otpModel.IsActiveUser {
 	// 	return nil, &errors.Error{
 	// 		StatusCode: http.StatusForbidden,
@@ -61,13 +63,45 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID, otp int) (*mode
 	// 	}
 	// }
 
+	//too many login attempts within 15 mins
+	if time.Since(otpModel.OtpLastUpdateTime).Minutes() <= constant.OtpGenerateBlockTimeInMin {
+
+		if otpModel.LoginAttemptCount > constant.MaxAllowedLoginAttempt {
+			return nil, &errors.Error{
+				StatusCode: http.StatusForbidden,
+				Code:       errors.UserBlockedCode,
+				Message:    errors.RetryLoginLimitReached,
+				Details:    "user is blocked, max failed count",
+			}
+		}
+	}
+
+	//otp generated more than 10 mins ago
+	if time.Since(otpModel.OtpLastUpdateTime).Minutes() >= constant.OtpTimeoutInMin {
+		return nil, &errors.Error{
+			StatusCode: http.StatusUnauthorized,
+			Code:       errors.OTPExpiredCode,
+			Message:    errors.OTPExpiredError,
+			Details:    "otp is expired",
+		}
+	}
+
+	//otp has been used
+	if otpModel.OTPUsed {
+		return nil, &errors.Error{
+			StatusCode: http.StatusUnauthorized,
+			Code:       errors.OTPUsedCode,
+			Message:    errors.OTPUsedError,
+			Details:    "otp is used",
+		}
+	}
+
+	//otp unmatched
 	if otp != otpModel.OTP {
-		otpModel.LoginAttemptCount++
 		otpModel.OTPVerifyFailedCount++
 		otpModel.IsActiveUser = false
 		otpModel.UpdateReason = "incorrect otp"
 		otpModel.UpdatedTime = time.Now()
-		otpModel.OtpLastUpdateTime = time.Now()
 
 		//store OTP in db
 		if err := impl.PsqlDb.InsertStaffOTP(true, otpModel); err != nil {
@@ -82,42 +116,11 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID, otp int) (*mode
 		}
 	}
 
-	if time.Now().Sub(otpModel.OtpLastUpdateTime).Minutes() < constant.OtpGenerateBlockTimeInMin {
-
-		if otpModel.OTPVerifyFailedCount >= constant.MaxAllowedLoginAttempt {
-			return nil, &errors.Error{
-				StatusCode: http.StatusForbidden,
-				Code:       errors.UserBlockedCode,
-				Message:    errors.UserBlockedError,
-				Details:    "user is blocked, max failed count",
-			}
-		}
-	}
-
-	if otpModel.OTPUsed {
-		return nil, &errors.Error{
-			StatusCode: http.StatusUnauthorized,
-			Code:       errors.OTPUsedCode,
-			Message:    errors.OTPUsedError,
-			Details:    "otp is used",
-		}
-	}
-
-	if time.Now().Sub(otpModel.OtpCreateTime).Minutes() >= constant.OtpTimeoutInMin {
-		return nil, &errors.Error{
-			StatusCode: http.StatusUnauthorized,
-			Code:       errors.OTPExpiredCode,
-			Message:    errors.OTPExpiredError,
-			Details:    "otp is expired",
-		}
-	}
-
+	//otp matched
 	otpModel.OTPUsed = true
-	otpModel.OTPResendCount = 0
 	otpModel.LoginAttemptCount = 0
 	otpModel.OTPVerifyFailedCount = 0
 	otpModel.IsActiveUser = true
-	otpModel.OtpLastUpdateTime = time.Now()
 	otpModel.LastLoginTime = time.Now()
 	otpModel.UpdateReason = "otp login success"
 	otpModel.UpdatedTime = time.Now()

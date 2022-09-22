@@ -1,6 +1,8 @@
 package business
 
 import (
+	"crypto/rand"
+	"io"
 	"net/http"
 	"time"
 
@@ -36,6 +38,15 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID int) (map[stri
 		isUpdate = false
 	}
 
+	otpModel.OTPUsed = false
+	otpModel.StaffID = clientID
+	otpModel.IsActiveUser = false
+
+	//referencing first time user generated otp
+	if otpModel.OTP == 0 {
+		otpModel.OtpCreateTime = time.Now()
+	}
+
 	// contactNumber, err := impl.PsqlDb.FetchEmployeeContactNumber(clientID)
 	// if err != nil {
 	// 	return nil, err
@@ -60,41 +71,44 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID int) (map[stri
 	// 	}
 	// }
 
-	if time.Now().Sub(otpModel.OtpLastUpdateTime).Minutes() < constant.OtpGenerateBlockTimeInMin {
+	//otpLastUpdateTime updated only while generating OTP
+	if time.Since(otpModel.OtpLastUpdateTime).Minutes() <= constant.OtpGenerateBlockTimeInMin {
 
+		//too many times sent within 15 mins
 		if otpModel.OTPResendCount >= constant.OtpRegenerateAllowedCount {
 			return nil, &errors.Error{
 				StatusCode: http.StatusForbidden,
 				Code:       errors.UserBlockedCode,
-				Message:    errors.UserBlockedError,
+				Message:    errors.OTPLimitError,
 				Details:    "max otp resend reached",
 			}
 		}
 
+		//too many failure attempts within 15 mins
 		if otpModel.OTPVerifyFailedCount >= constant.MaxAllowedLoginAttempt {
 			return nil, &errors.Error{
 				StatusCode: http.StatusForbidden,
 				Code:       errors.UserBlockedCode,
-				Message:    errors.UserBlockedError,
+				Message:    errors.RetryLoginLimitReached,
 				Details:    "incorrect otp attempt reached",
 			}
 		}
+
+		otpModel.OTPResendCount++
+	} else {
+		//more than 15 mins hence restart counter
+		otpModel.OTPResendCount = 0
 	}
 
-	if otpModel.OTP == 0 || otpModel.OTPUsed {
-		otpModel.OTP = 123456
-		otpModel.OTPUsed = false
-	}
+	//TODO: generate random num as OTP
+	otpModel.OTP = 123456
 
-	otpModel.OTPResendCount++
-	otpModel.StaffID = clientID
-	otpModel.IsActiveUser = false
 	otpModel.OtpLastUpdateTime = time.Now()
-	otpModel.OtpCreateTime = time.Now()
+
 	otpModel.UpdateReason = "otp generated"
 	otpModel.UpdatedTime = time.Now()
 
-	if otpModel.OTPResendCount > 1 {
+	if otpModel.OTPResendCount > 0 {
 		otpModel.UpdateReason = "otp re-generated"
 	}
 
@@ -118,4 +132,17 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID int) (map[stri
 	//}
 
 	return map[string]string{"error": "nil"}, nil
+}
+
+func generateOTP(max int) string {
+	var table = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
+	b := make([]byte, max)
+	n, err := io.ReadAtLeast(rand.Reader, b, max)
+	if n != max {
+		panic(err)
+	}
+	for i := 0; i < len(b); i++ {
+		b[i] = table[int(b[i])%len(table)]
+	}
+	return string(b)
 }

@@ -254,7 +254,7 @@ const (
 	MaxAllowedLoginAttempt    = 5
 	OtpGenerateBlockTimeInMin = 15
 	OtpRegenerateAllowedCount = 5
-	OtpTimeoutInMin           = 10
+	OtpTimeoutInMin           = 30
 )
 
 var GetTemplate = `
