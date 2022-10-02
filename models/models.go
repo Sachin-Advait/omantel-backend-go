@@ -436,7 +436,6 @@ type OtpModel struct {
 	StaffPosition        string
 	OTP                  int
 	IsActiveUser         bool
-	LoginAttemptCount    int
 	OtpLastUpdateTime    time.Time
 	OTPResendCount       int
 	OTPVerifyFailedCount int

@@ -37,15 +37,7 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID int) (map[stri
 
 		isUpdate = false
 	}
-
-	otpModel.OTPUsed = false
 	otpModel.StaffID = clientID
-	otpModel.IsActiveUser = false
-
-	//referencing first time user generated otp
-	if otpModel.OTP == 0 {
-		otpModel.OtpCreateTime = time.Now()
-	}
 
 	// contactNumber, err := impl.PsqlDb.FetchEmployeeContactNumber(clientID)
 	// if err != nil {
@@ -71,11 +63,11 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID int) (map[stri
 	// 	}
 	// }
 
-	//otpLastUpdateTime updated only while generating OTP
+	//otpLastUpdateTime updated only while generating OTP more than block time
 	if time.Since(otpModel.OtpLastUpdateTime).Minutes() <= constant.OtpGenerateBlockTimeInMin {
 
 		//too many times sent within 15 mins
-		if otpModel.OTPResendCount >= constant.OtpRegenerateAllowedCount {
+		if otpModel.OTPResendCount > constant.OtpRegenerateAllowedCount {
 			return nil, &errors.Error{
 				StatusCode: http.StatusForbidden,
 				Code:       errors.UserBlockedCode,
@@ -98,12 +90,14 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID int) (map[stri
 	} else {
 		//more than 15 mins hence restart counter
 		otpModel.OTPResendCount = 0
+		otpModel.OTPVerifyFailedCount = 0
+		otpModel.OtpLastUpdateTime = time.Now()
 	}
 
 	//TODO: generate random num as OTP
 	otpModel.OTP = 123456
-
-	otpModel.OtpLastUpdateTime = time.Now()
+	otpModel.OTPUsed = false
+	otpModel.OtpCreateTime = time.Now()
 
 	otpModel.UpdateReason = "otp generated"
 	otpModel.UpdatedTime = time.Now()

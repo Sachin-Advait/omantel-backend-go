@@ -887,7 +887,7 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 	var err error
 
 	if update {
-		_, err = dbConn.Operation.QueryContext(ctx, "UPDATE user_authentication_table SET user_active=$1, otp=$2, otp_resend_count=$3, otp_verify_failed_count=$4, otp_used=$5, otp_create_time=$6, otp_update_time=$7, login_attempt_count=$8, last_login_time=$9, modified=$10, modified_reason=$11",
+		_, err = dbConn.Operation.QueryContext(ctx, "UPDATE user_authentication_table SET user_active=$1, otp=$2, otp_resend_count=$3, otp_verify_failed_count=$4, otp_used=$5, otp_create_time=$6, otp_update_time=$7, last_login_time=$8, modified=$9, modified_reason=$10",
 			otpModel.IsActiveUser,
 			otpModel.OTP,
 			otpModel.OTPResendCount,
@@ -895,7 +895,6 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 			otpModel.OTPUsed,
 			otpModel.OtpCreateTime,
 			otpModel.OtpLastUpdateTime,
-			otpModel.LoginAttemptCount,
 			otpModel.LastLoginTime,
 			otpModel.UpdatedTime,
 			otpModel.UpdateReason,
@@ -911,7 +910,7 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 		}
 
 	} else {
-		_, err = dbConn.Operation.QueryContext(ctx, "INSERT INTO user_authentication_table(emp_id, user_active, otp, otp_resend_count, otp_verify_failed_count, otp_used, otp_create_time, otp_update_time, login_attempt_count, last_login_time, created, modified, modified_reason) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13);",
+		_, err = dbConn.Operation.QueryContext(ctx, "INSERT INTO user_authentication_table(emp_id, user_active, otp, otp_resend_count, otp_verify_failed_count, otp_used, otp_create_time, otp_update_time, last_login_time, created, modified, modified_reason) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);",
 			otpModel.StaffID,
 			otpModel.IsActiveUser,
 			otpModel.OTP,
@@ -920,7 +919,6 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 			otpModel.OTPUsed,
 			otpModel.OtpCreateTime,
 			otpModel.OtpLastUpdateTime,
-			otpModel.LoginAttemptCount,
 			otpModel.LastLoginTime,
 			otpModel.CreatedTime,
 			otpModel.UpdatedTime,
@@ -948,7 +946,7 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*models.OtpModel
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select a.name, a.usr_position, b.emp_id, b.user_active, b.otp, b.otp_resend_count, b.otp_verify_failed_count, b.otp_used, b.otp_create_time, b.otp_update_time, b.login_attempt_count, b.last_login_time from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select a.name, a.usr_position, b.emp_id, b.user_active, b.otp, b.otp_resend_count, b.otp_verify_failed_count, b.otp_used, b.otp_create_time, b.otp_update_time, b.last_login_time from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -973,7 +971,7 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*models.OtpModel
 			}
 		}
 
-		if err := rows.Scan(&otModel.StaffName, &otModel.StaffPosition, &otModel.StaffID, &otModel.IsActiveUser, &otModel.OTP, &otModel.OTPResendCount, &otModel.OTPVerifyFailedCount, &otModel.OTPUsed, &otModel.OtpCreateTime, &otModel.OtpLastUpdateTime, &otModel.LoginAttemptCount, &otModel.LastLoginTime); err != nil {
+		if err := rows.Scan(&otModel.StaffName, &otModel.StaffPosition, &otModel.StaffID, &otModel.IsActiveUser, &otModel.OTP, &otModel.OTPResendCount, &otModel.OTPVerifyFailedCount, &otModel.OTPUsed, &otModel.OtpCreateTime, &otModel.OtpLastUpdateTime, &otModel.LastLoginTime); err != nil {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerError,
