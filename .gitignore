@@ -668,3 +668,6 @@ Logs/*
   663  clear
   664  history
 [root@vps incentive_calculator]#
+
+.DS_Store
+resources/.DS_Store

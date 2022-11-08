@@ -52,7 +52,7 @@ pass: MJh6VL4g5sK4tMve!
 /**** new server details ****/
 ip: 93.114.128.202
 user: root
-pass: 57utJeQc5rbeQpCp!     http://omantel.moheoman.live
+pass: 8tNk89VrAM4ct6XE!     http://omantel.moheoman.live
 
 
 vim /var/lib/pgsql/13/data/log/postgresql-
