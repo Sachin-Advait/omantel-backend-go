@@ -2,16 +2,17 @@ package business
 
 import (
 	"fmt"
+	"math"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	"math"
-	"time"
 )
 
-func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) (*models.TotalIncentive, *errors.Error) {
+func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID string, quarter int, isQuarterReport bool, t time.Time) (*models.TotalIncentive, *errors.Error) {
 
 	trx, err := impl.PsqlDb.FetchUserSales(clientID, int(t.Month()), t.Year(), quarter, isQuarterReport)
 	if err != nil {
@@ -58,7 +59,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 	for grp, rcds := range trx.SaleRecords {
 
 		//only 3 groups for now Hayyak, Hbb, Baqati
-		logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 			Str("category", grp).Int("saleCount", len(rcds)).Msg("GetSingleUserIncentive : groupSalesCount info")
 
 		for _, v := range rcds {
@@ -108,13 +109,13 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
 				ind.Error = fmt.Errorf("per employee target found is %f for HBB", target).Error()
-				logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 					Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("GetSingleUserIncentive : HBB sales error")
 			} else {
 				achieved := float64(totalActive[grp]) * 100 / float64(target)
 				vop := impl.getValueOfPoint(grp, achieved)
 
-				logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 					Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Float64("indTarget", target).
 					Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).
 					Float64("extraPay", impl.getExtraPay(grp, achieved)).Msg("GetSingleUserIncentive : HBB sales info")
@@ -125,7 +126,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("planName", plan).Float64("planRate", rate).
+					logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("planName", plan).Float64("planRate", rate).
 						Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Msg("GetSingleUserIncentive : HBB plans info")
 					ind.Payout += float64(qty) * vop * rate
 				}
@@ -147,13 +148,13 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
 				ind.Error = fmt.Errorf("per employee target found is %f for HAYYAK", target).Error()
-				logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 					Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("GetSingleUserIncentive : HAYYAK sales error")
 			} else {
 				achieved := float64(totalActive[grp]) * 100 / float64(target)
 				vop := impl.getValueOfPoint(grp, achieved)
 
-				logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 					Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Float64("indTarget", target).
 					Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).
 					Float64("extraPay", impl.getExtraPay(grp, achieved)).Msg("GetSingleUserIncentive : HAYYAK sales info")
@@ -164,7 +165,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("planName", plan).Float64("planRate", rate).
+					logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("planName", plan).Float64("planRate", rate).
 						Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Msg("GetSingleUserIncentive : HAYYAK plans info")
 					ind.Payout += float64(qty) * vop * rate
 				}
@@ -186,13 +187,13 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 			target := float64(targetPerOutlet) / float64(totalEmp)
 			if target <= 0 {
 				ind.Error = fmt.Errorf("per employee target found is %f for BAQATI", target).Error()
-				logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 					Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("GetSingleUserIncentive : BAQATI sales error")
 			} else {
 				achieved := float64(totalActive[grp]) * 100 / float64(target)
 				vop := impl.getValueOfPoint(grp, achieved)
 
-				logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 					Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Float64("indTarget", target).
 					Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).
 					Float64("extraPay", impl.getExtraPay(grp, achieved)).Msg("GetSingleUserIncentive : BAQATI sales info")
@@ -203,7 +204,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 
 				for plan, qty := range plans {
 					rate := impl.getSIPRatePlan(plan)
-					logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("planName", plan).Float64("planRate", rate).
+					logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("planName", plan).Float64("planRate", rate).
 						Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Msg("GetSingleUserIncentive : HAYYAK plans info")
 					ind.Payout += float64(qty) * vop * rate
 				}
@@ -231,13 +232,13 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 	target := float64(targetPerOutlet) / float64(totalEmp)
 	if target <= 0 {
 		ind.Error = fmt.Errorf("per employee target found is %f for Upgrade", target).Error()
-		logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 			Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("GetSingleUserIncentive : UPGRADE sales error")
 	} else {
 		achieved := float64(totalActiveUpgrade) * 100 / float64(target)
 		vop := impl.getValueOfPoint(constant.UpgradeCategory, achieved)
 
-		logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 			Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Float64("indTarget", target).
 			Int("achievedCount", totalActiveUpgrade).Float64("achievedPercent", achieved).Float64("vop", vop).
 			Float64("extraPay", impl.getExtraPay(constant.UpgradeCategory, achieved)).Msg("GetSingleUserIncentive : UPGRADE sales info")
@@ -249,7 +250,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID, qu
 		for currPlan, prevPlansMap := range upgradedPlans {
 			for prevPln, qty := range prevPlansMap {
 				rate := impl.getSIPRatePlan(currPlan) - impl.getSIPRatePlan(prevPln)
-				logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("currPlanName", currPlan).Str("prevPlanName", prevPln).
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("currPlanName", currPlan).Str("prevPlanName", prevPln).
 					Float64("currPlanRate", impl.getSIPRatePlan(currPlan)).Float64("prevPlanRate", impl.getSIPRatePlan(prevPln)).
 					Float64("rate", rate).Int("qty", qty).Float64("pay", float64(qty)*vop*rate).
 					Msg("GetSingleUserIncentive : UPGRADE plans info")

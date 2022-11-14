@@ -6,7 +6,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) GetUsersReportingToGeneralManager(ctx *gin.Context, generalManagerID int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
+func (impl *IncentiveImpl) GetUsersReportingToGeneralManager(ctx *gin.Context, generalManagerID string) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
 	return impl.PsqlDb.FetchAllEmployeesReportingToGivenManagerRole("general_manager", generalManagerID)
 }

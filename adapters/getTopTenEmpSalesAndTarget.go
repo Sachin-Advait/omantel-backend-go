@@ -20,28 +20,11 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiv
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	id, err := strconv.Atoi(req.ClientId)
-	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetTopTenEmpSalesAndTarget : incorrect client id")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "incorrect client id: " + err.Error(),
-			CreateTime: time.Now().Local(),
-		}
-
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "invalid userID",
-		}
-	}
-
 	var (
 		isQuarterReport = true
 		date            time.Time
 		quarter         int
+		err             error
 	)
 
 	if req.Monthly == "" && req.Quarterly == "" {
@@ -158,7 +141,7 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiv
 		}
 	}
 
-	response, errs := theProvider.GetTopTenEmpSalesAndTarget(ctx, id, quarter, isQuarterReport, date)
+	response, errs := theProvider.GetTopTenEmpSalesAndTarget(ctx, req.ClientId, quarter, isQuarterReport, date)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetTopTenEmpSalesAndTarget : provider failed")
 		logger.LogChan <- &logger.Logging{

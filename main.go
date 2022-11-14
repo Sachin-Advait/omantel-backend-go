@@ -34,7 +34,7 @@ func main() {
 	incentiveProvider := buildIncentiveProvider()
 	adapters.InitIncentive(incentiveProvider)
 
-	adapters.InitIncentiveCron()
+	go adapters.InitIncentiveCron()
 
 	startRouter()
 

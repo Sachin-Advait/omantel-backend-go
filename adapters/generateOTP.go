@@ -3,7 +3,6 @@ package adapters
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,25 +14,7 @@ import (
 
 func GenerateOTP(ctx *gin.Context, req *models.GenerateOTP) (int, interface{}) {
 
-	id, err := strconv.Atoi(req.ClientId)
-	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GenerateOTP : incorrect client id")
-		logger.LogChan <- &logger.Logging{
-			UserID:     "",
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       err.Error(),
-			CreateTime: time.Now().Local(),
-		}
-
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "invalid userID",
-		}
-	}
-
-	response, errs := theProvider.GenerateOTP(ctx, id)
+	response, errs := theProvider.GenerateOTP(ctx, req.ClientId)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GenerateOTP : provider failed")
 		logger.LogChan <- &logger.Logging{

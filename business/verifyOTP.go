@@ -2,7 +2,6 @@ package business
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,14 +11,14 @@ import (
 	jwthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/jwtHelper"
 )
 
-func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID, otp int) (*models.VerifyOTPResponse, *errors.Error) {
+func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID string, otp int) (*models.VerifyOTPResponse, *errors.Error) {
 
 	otpModel, err := impl.PsqlDb.FetchOTPValidity(clientID)
 	if err != nil {
 		return nil, err
 	}
 
-	if otpModel.StaffID == 0 {
+	if otpModel.StaffID == "" {
 		name, err := impl.PsqlDb.FetchUserName(clientID)
 		if err != nil {
 			return nil, err
@@ -127,7 +126,7 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID, otp int) (*mode
 	accessTokenExpiry := impl.Config.SessionExpiryTime
 	refreshTokenExpiry := impl.Config.RefreshTokenExpiryTime
 
-	accessToken, _, jwtErr := jwthelper.CreateAccessToken(strconv.Itoa(clientID), accessTokenExpiry, jwthelper.JwtSecretKey)
+	accessToken, _, jwtErr := jwthelper.CreateAccessToken(clientID, accessTokenExpiry, jwthelper.JwtSecretKey)
 	if jwtErr != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -137,7 +136,7 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID, otp int) (*mode
 		}
 	}
 
-	refreshToken, _, jwtErr := jwthelper.CreateRefreshToken(strconv.Itoa(clientID), refreshTokenExpiry, jwthelper.JwtSecretKey)
+	refreshToken, _, jwtErr := jwthelper.CreateRefreshToken(clientID, refreshTokenExpiry, jwthelper.JwtSecretKey)
 	if jwtErr != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,

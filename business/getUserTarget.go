@@ -1,13 +1,14 @@
 package business
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	"time"
 )
 
-func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, id, quarter int, isQuarterly bool, t time.Time) (*models.ChartDataResponse, *errors.Error) {
+func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, id string, quarter int, isQuarterly bool, t time.Time) (*models.ChartDataResponse, *errors.Error) {
 
 	usrRcrd, err := impl.PsqlDb.FetchIndividualUserTargetReport(id, int(t.Month()), quarter, isQuarterly)
 	if err != nil {

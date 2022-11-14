@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/xml"
-	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
@@ -73,7 +73,7 @@ type Body struct {
 	EmployedSince string   `xml:"EmployedSince"`
 }
 
-func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID int) (map[string]string, *errors.Error) {
+func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[string]string, *errors.Error) {
 
 	var isUpdate = true
 
@@ -82,7 +82,7 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID int) (map[stri
 		return nil, err
 	}
 
-	if otpModel.StaffID == 0 {
+	if otpModel.StaffID == "" {
 		name, err := impl.PsqlDb.FetchUserName(clientID)
 		if err != nil {
 			return nil, err
@@ -187,7 +187,14 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID int) (map[stri
 	// 	return err
 	// }
 
-	callSOAPClientSteps()
+	if err := callSOAPClientSteps(clientID, "", otpModel.OTP); err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "SOAP CALL FAILED",
+			Details:    "sms call failed: " + err.Error(),
+		}
+	}
 
 	return map[string]string{"error": "nil"}, nil
 }
@@ -208,25 +215,29 @@ func generateOTP(max int) int {
 	return otp
 }
 
-func callSOAPClientSteps() error {
+func callSOAPClientSteps(userID, mobile string, otp int) error {
 
-	req := populateRequest()
+	req := populateRequest(userID, mobile, otp)
 
 	httpReq, err := generateSOAPRequest(req)
 	if err != nil {
 		return err
 	}
 
-	response, err := soapCall(httpReq)
+	_, err = soapCall(httpReq)
 	if err != nil {
 		return err
 	}
+
+	return nil
 }
 
-func populateRequest(userId string) *Request {
+func populateRequest(userId, mobile string, otp int) *Request {
 
 	req := Request{
-		UserId: userId,
+		UserId:   userId,
+		OTP:      strconv.Itoa(otp),
+		Receiver: mobile,
 	}
 
 	return &req
@@ -234,32 +245,28 @@ func populateRequest(userId string) *Request {
 
 func generateSOAPRequest(req *Request) (*http.Request, error) {
 	// Using the var getTemplate to construct request
-	template, err := template.New("InputRequest").Parse(getTemplate)
+	template, err := template.New("smsRequest").Parse(string(models.SMSRequestTemplate))
 	if err != nil {
-		fmt.Println("Error while marshling object. %s ", err.Error())
-		return nil, err
+		return nil, errors.New("parsing-" + err.Error())
 	}
 
 	doc := &bytes.Buffer{}
 	// Replacing the doc from template with actual req values
 	err = template.Execute(doc, req)
 	if err != nil {
-		fmt.Println("template.Execute error. %s ", err.Error())
-		return nil, err
+		return nil, errors.New("execute-" + err.Error())
 	}
 
 	buffer := &bytes.Buffer{}
 	encoder := xml.NewEncoder(buffer)
 	err = encoder.Encode(doc.String())
 	if err != nil {
-		fmt.Println("encoder.Encode error. %s ", err.Error())
-		return nil, err
+		return nil, errors.New("encode-" + err.Error())
 	}
 
-	r, err := http.NewRequest(http.MethodPost, "https://www.soapurl.com/retreiveIdentity", bytes.NewBuffer([]byte(doc.String())))
+	r, err := http.NewRequest(http.MethodPost, "http://www.omantel.om/esb/messages/sendnotification", bytes.NewBuffer([]byte(doc.String())))
 	if err != nil {
-		fmt.Println("Error making a request. %s ", err.Error())
-		return nil, err
+		return nil, errors.New("request-" + err.Error())
 	}
 
 	return r, nil
@@ -270,20 +277,19 @@ func soapCall(req *http.Request) (*Response, error) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.New("call-" + err.Error())
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("readall-" + err.Error())
 	}
 	defer resp.Body.Close()
 
 	r := &Response{}
 	err = xml.Unmarshal(body, &r)
-
 	if err != nil {
-		return nil, err
+		return nil, errors.New("unmarshall-" + err.Error())
 	}
 
 	if r.SoapBody.Resp.Status != "200" {

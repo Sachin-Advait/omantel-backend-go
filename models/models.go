@@ -203,7 +203,7 @@ type DbClientConfig struct {
 }
 
 type UserRecord struct {
-	EmpId                        int
+	EmpId                        string
 	Created                      time.Time
 	ReportingManager             int
 	Isquarterly                  bool
@@ -239,7 +239,7 @@ type UserRecord struct {
 type Transaction struct {
 	Reqion          string
 	Outlet          string
-	Id              int
+	Id              string
 	CategoryType    string
 	PreviousProduct string
 	CurrentProduct  string
@@ -251,7 +251,7 @@ type Transaction struct {
 }
 
 type Employee struct {
-	Id        int
+	Id        string
 	Name      string
 	Position  string
 	Outlet    string
@@ -269,7 +269,7 @@ type SaleRecord struct {
 }
 
 type SaleTransaction struct {
-	EmpID       int
+	EmpID       string
 	Position    string
 	Outlet      string
 	Region      string
@@ -320,12 +320,12 @@ type SaleCountPerPlan struct {
 }
 
 type UserHierarchy struct {
-	EmployeeID     int
-	OutletManager  int
-	Manager        int
-	SeniorManager  int
-	GeneralManager int
-	VicePresident  int
+	EmployeeID     string
+	OutletManager  string
+	Manager        string
+	SeniorManager  string
+	GeneralManager string
+	VicePresident  string
 }
 
 type ProductGrpTarget struct {
@@ -432,7 +432,7 @@ type MaxPayout struct {
 }
 
 type OtpModel struct {
-	StaffID              int
+	StaffID              string
 	StaffName            string
 	StaffPosition        string
 	OTP                  int
@@ -449,17 +449,17 @@ type OtpModel struct {
 }
 
 type ManagerHierarchy struct {
-	ManagerID             int
-	UnderManagerEmployees []int
+	ManagerID             string
+	UnderManagerEmployees []string
 }
 
 type UserLead struct {
-	EmpID    int
-	ReportTo int
+	EmpID    string
+	ReportTo string
 }
 
 type ReportingStaffIDAndName struct {
-	ID     int
+	ID     string
 	Name   string
 	Outlet string
 	Region string

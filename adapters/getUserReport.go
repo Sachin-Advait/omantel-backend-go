@@ -3,7 +3,6 @@ package adapters
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,24 +17,6 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
-
-	id, err := strconv.Atoi(req.ClientId)
-	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetUserReport : incorrect client id")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "incorrect client id: " + err.Error(),
-			CreateTime: time.Now().Local(),
-		}
-
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "invalid userID",
-		}
-	}
 
 	if !((req.Month >= 1 && req.Month <= 12) || (req.Quarter >= 1 && req.Quarter <= 4)) {
 		logger.FileLogger.CtxError(ctx).Err(errors.New("monthly and quarterly type is incorrect")).Stack().Msg("GetUserReport : incorrect client id")
@@ -60,7 +41,7 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 		isQuarterReport = true
 	}
 
-	response, errs := theProvider.GetUserReport(ctx, id, req.Month, req.Quarter, isQuarterReport)
+	response, errs := theProvider.GetUserReport(ctx, req.ClientId, req.Month, req.Quarter, isQuarterReport)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetUserReport : provider failed")
 		logger.LogChan <- &logger.Logging{

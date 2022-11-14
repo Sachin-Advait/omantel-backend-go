@@ -398,10 +398,10 @@ func (dbConn *DBImplementation) FetchMaxPayout() *errors.Error {
 ///////////
 
 // FetchUserSales returns all sale transaction of a given user
-func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter int, isQuarterReport bool) (*models.SaleTransaction, *errors.Error) {
+func (dbConn *DBImplementation) FetchUserSales(clientID string, month, year, quarter int, isQuarterReport bool) (*models.SaleTransaction, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", clientID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSales start")
-	defer logger.FileLogger.Info().Int("clientID", clientID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("end", time.Now()).Msg("FetchUserSales done")
+	logger.FileLogger.Info().Str("clientID", clientID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSales start")
+	defer logger.FileLogger.Info().Str("clientID", clientID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("end", time.Now()).Msg("FetchUserSales done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -710,10 +710,10 @@ func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet 
 	return count, nil
 }
 
-func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (map[int]*models.SaleTransaction, map[int]*models.SaleTransaction, *errors.Error) {
+func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID string) (map[int]*models.SaleTransaction, map[int]*models.SaleTransaction, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", clientID).Time("start", time.Now()).Msg("FetchPromotersPresentYearSales start")
-	defer logger.FileLogger.Info().Int("clientID", clientID).Time("end", time.Now()).Msg("FetchPromotersPresentYearSales done")
+	logger.FileLogger.Info().Str("clientID", clientID).Time("start", time.Now()).Msg("FetchPromotersPresentYearSales start")
+	defer logger.FileLogger.Info().Str("clientID", clientID).Time("end", time.Now()).Msg("FetchPromotersPresentYearSales done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -812,10 +812,10 @@ func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (ma
 }
 
 // FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
-func (dbConn *DBImplementation) FetchEmployeeContactNumber(clientID int) (int, *errors.Error) {
+func (dbConn *DBImplementation) FetchEmployeeContactNumber(clientID string) (int, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", clientID).Time("start", time.Now()).Msg("FetchEmployeeContactNumber start")
-	defer logger.FileLogger.Info().Int("clientID", clientID).Time("end", time.Now()).Msg("FetchEmployeeContactNumber done")
+	logger.FileLogger.Info().Str("clientID", clientID).Time("start", time.Now()).Msg("FetchEmployeeContactNumber start")
+	defer logger.FileLogger.Info().Str("clientID", clientID).Time("end", time.Now()).Msg("FetchEmployeeContactNumber done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -942,10 +942,10 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 	return nil
 }
 
-func (dbConn *DBImplementation) FetchOTPValidity(clientID int) (*models.OtpModel, *errors.Error) {
+func (dbConn *DBImplementation) FetchOTPValidity(clientID string) (*models.OtpModel, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", clientID).Time("start", time.Now()).Msg("FetchOTPValidity start")
-	defer logger.FileLogger.Info().Int("clientID", clientID).Time("end", time.Now()).Msg("FetchOTPValidity done")
+	logger.FileLogger.Info().Str("clientID", clientID).Time("start", time.Now()).Msg("FetchOTPValidity start")
+	defer logger.FileLogger.Info().Str("clientID", clientID).Time("end", time.Now()).Msg("FetchOTPValidity done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -1057,10 +1057,10 @@ func (dbConn *DBImplementation) FetchAllGivenPositionEmpIdAndTheirManager(positi
 }
 
 // FetchAllEmployeesReportingToGivenManager returns all employees reporting to given manager, returns empty array if no records found
-func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(managerPosition string, managerID int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(managerPosition string, managerID string) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
-	logger.FileLogger.Info().Int("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllEmployeesReportingToGivenManagerRole start")
-	defer logger.FileLogger.Info().Int("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllEmployeesReportingToGivenManagerRole done")
+	logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllEmployeesReportingToGivenManagerRole start")
+	defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllEmployeesReportingToGivenManagerRole done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -1122,10 +1122,10 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 	return array, nil
 }
 
-func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRole(managerPosition string, managerID int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRole(managerPosition string, managerID string) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
-	logger.FileLogger.Info().Int("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole start")
-	defer logger.FileLogger.Info().Int("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole done")
+	logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole start")
+	defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -1314,7 +1314,7 @@ func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*models.User
 	// 	return &commons.GenericError{Code: 1001, ErrorMessage: "InsertEmployeeMultipleRecords db delete error " + err.Error()}
 	// }
 
-	if usr[0].EmpId == 34296 {
+	if usr[0].EmpId == "34296" {
 		for _, v := range usr {
 			fmt.Printf("%+v\n", v)
 		}
@@ -2586,10 +2586,10 @@ func (dbConn *DBImplementation) FetchTargetRecord(targetCodes []string, outletCo
 	return response, nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*models.UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) FetchIndividualUserRecord(id string) ([]*models.UserRecord, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", id).Time("start", time.Now()).Msg("FetchIndividualUserRecord start")
-	defer logger.FileLogger.Info().Int("clientID", id).Time("end", time.Now()).Msg("FetchIndividualUserRecord done")
+	logger.FileLogger.Info().Str("clientID", id).Time("start", time.Now()).Msg("FetchIndividualUserRecord start")
+	defer logger.FileLogger.Info().Str("clientID", id).Time("end", time.Now()).Msg("FetchIndividualUserRecord done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -2657,10 +2657,10 @@ func (dbConn *DBImplementation) FetchIndividualUserRecord(id int) ([]*models.Use
 	return rcrds, nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id string, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserPayoutReport start")
-	defer logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserPayoutReport done")
+	logger.FileLogger.Info().Str("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserPayoutReport start")
+	defer logger.FileLogger.Info().Str("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserPayoutReport done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -2714,10 +2714,10 @@ func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id, month, quart
 	return rcrd, nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id string, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserTargetReport start")
-	defer logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserTargetReport done")
+	logger.FileLogger.Info().Str("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserTargetReport start")
+	defer logger.FileLogger.Info().Str("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserTargetReport done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -2774,10 +2774,10 @@ func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id, month, quart
 	return rcrd, nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id string, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserSaleCountPerPlanReport start")
-	defer logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserSaleCountPerPlanReport done")
+	logger.FileLogger.Info().Str("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserSaleCountPerPlanReport start")
+	defer logger.FileLogger.Info().Str("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserSaleCountPerPlanReport done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -2824,10 +2824,10 @@ func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id, mo
 	return rcrd, nil
 }
 
-func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
+func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id string, month, quarter int, isQuarterly bool) (*models.UserRecord, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserOverAllReport start")
-	defer logger.FileLogger.Info().Int("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserOverAllReport done")
+	logger.FileLogger.Info().Str("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchIndividualUserOverAllReport start")
+	defer logger.FileLogger.Info().Str("clientID", id).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchIndividualUserOverAllReport done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -2894,10 +2894,10 @@ func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id, month, quar
 	return rcrd, nil
 }
 
-func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id, month, year, quarter int, isQuarterly bool) (*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
+func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id string, month, year, quarter int, isQuarterly bool) (*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", id).Int("year", year).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchProductSalesPerOutletManager start")
-	defer logger.FileLogger.Info().Int("clientID", id).Int("year", year).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchProductSalesPerOutletManager done")
+	logger.FileLogger.Info().Str("clientID", id).Int("year", year).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("start", time.Now()).Msg("FetchProductSalesPerOutletManager start")
+	defer logger.FileLogger.Info().Str("clientID", id).Int("year", year).Int("month", month).Int("quarter", quarter).Bool("isQuarterReport", isQuarterly).Time("end", time.Now()).Msg("FetchProductSalesPerOutletManager done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -2953,10 +2953,10 @@ func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id, month, yea
 	return rcrds, nil
 }
 
-func (dbConn *DBImplementation) FetchUserPosition(id int) (string, *errors.Error) {
+func (dbConn *DBImplementation) FetchUserPosition(id string) (string, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", id).Time("start", time.Now()).Msg("FetchUserPosition start")
-	defer logger.FileLogger.Info().Int("clientID", id).Time("end", time.Now()).Msg("FetchUserPosition done")
+	logger.FileLogger.Info().Str("clientID", id).Time("start", time.Now()).Msg("FetchUserPosition start")
+	defer logger.FileLogger.Info().Str("clientID", id).Time("end", time.Now()).Msg("FetchUserPosition done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -3001,10 +3001,10 @@ func (dbConn *DBImplementation) FetchUserPosition(id int) (string, *errors.Error
 	return position, nil
 }
 
-func (dbConn *DBImplementation) FetchUserName(id int) (string, *errors.Error) {
+func (dbConn *DBImplementation) FetchUserName(id string) (string, *errors.Error) {
 
-	logger.FileLogger.Info().Int("clientID", id).Time("start", time.Now()).Msg("FetchUserName start")
-	defer logger.FileLogger.Info().Int("clientID", id).Time("end", time.Now()).Msg("FetchUserName done")
+	logger.FileLogger.Info().Str("clientID", id).Time("start", time.Now()).Msg("FetchUserName start")
+	defer logger.FileLogger.Info().Str("clientID", id).Time("end", time.Now()).Msg("FetchUserName done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

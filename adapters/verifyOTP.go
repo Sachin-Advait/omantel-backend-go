@@ -3,7 +3,6 @@ package adapters
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,24 +17,6 @@ func VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
-
-	id, err := strconv.Atoi(req.ClientId)
-	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("VerifyOTP : incorrect client id")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "incorrect client id: " + err.Error(),
-			CreateTime: time.Now().Local(),
-		}
-
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "invalid userID",
-		}
-	}
 
 	if req.Otp == 0 {
 		logger.FileLogger.CtxError(ctx).Err(errors.New("incorrect OTP")).Stack().Msg("VerifyOTP : blank otp")
@@ -54,7 +35,7 @@ func VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (int, interface{}) {
 		}
 	}
 
-	response, errs := theProvider.VerifyOTP(ctx, id, req.Otp)
+	response, errs := theProvider.VerifyOTP(ctx, req.ClientId, req.Otp)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("VerifyOTP : provider failed")
 		logger.LogChan <- &logger.Logging{

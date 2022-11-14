@@ -2,17 +2,18 @@ package business
 
 import (
 	"fmt"
+	"math"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	"math"
-	"net/http"
-	"time"
 )
 
-func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) (*models.ChartDataResponse, *errors.Error) {
+func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, clientID string, quarter int, isQuarterReport bool, t time.Time) (*models.ChartDataResponse, *errors.Error) {
 
 	trx, err := impl.PsqlDb.FetchUserSales(clientID, int(t.Month()), t.Year(), quarter, isQuarterReport)
 	if err != nil {
@@ -44,7 +45,7 @@ func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, clientID, 
 
 	totalEmp--
 
-	logger.FileLogger.CtxInfo(ctx).Int("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", clientID).Str("outlet", trx.Outlet).Str("region", trx.Region).
 		Int("totalEmp", totalEmp).Msg("GetSingleUserTargetChart : sales info")
 
 	for grp, rcds := range trx.SaleRecords {
