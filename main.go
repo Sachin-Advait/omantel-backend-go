@@ -81,8 +81,6 @@ func initEnvConfigs() {
 
 func initLogger() {
 
-	configs.Init(flags.BaseConfigPath() + "/" + flags.Env())
-
 	loggerConfig, err := configs.Get(constant.LoggerConfigFile)
 	if err != nil {
 		logger.Fatal(context.TODO()).Stack().Err(err).Msg("error loading logger config file, env - " + flags.Env())
@@ -92,8 +90,6 @@ func initLogger() {
 }
 
 func initFileLogger() {
-
-	configs.Init(flags.BaseConfigPath() + "/" + flags.Env())
 
 	applicationConfig, err := configs.Get(constant.LoggerConfigFile)
 	if err != nil {
@@ -118,8 +114,6 @@ func initFileLogger() {
 }
 
 func buildIncentiveProvider() models.IncentiveProvider {
-
-	configs.Init(flags.BaseConfigPath() + "/" + flags.Env())
 
 	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
 	if err != nil {
@@ -156,7 +150,7 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		RefreshTokenExpiryTime: time.Duration(applicationConfig.GetInt(constant.RefreshTokenExpiryHours)) * time.Hour,
 	}
 
-	logConfig := &models.DbClientConfig{
+	dbLogConfig := &models.DbClientConfig{
 		Host:               applicationConfig.GetString(constant.LogPsqlHost),
 		Port:               applicationConfig.GetInt(constant.LogPsqlPort),
 		DbName:             applicationConfig.GetString(constant.LogPsqlDbName),
@@ -168,7 +162,7 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.LogConnMaxIdleTime)) * time.Hour,
 	}
 
-	logger.InitDBLogger(logConfig)
+	logger.InitDBLogger(dbLogConfig)
 
 	return business.NewIncentiveService(incentiveConfig, dbConfig)
 }

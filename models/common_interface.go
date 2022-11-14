@@ -8,13 +8,10 @@ import (
 )
 
 type IncentiveProvider interface {
-	HandleDataInputFile()
-	HandleUserMasterInputFile()
-	HandlePlansInputFile()
-	HandleTargetInputFile()
-	HandleScaleOrderInputFile()
-	HandleMaxPayInputFile()
-	HandleHierarchyFile()
+	LoadPlansFromDB()
+	LoadTargetFromDB()
+	LoadScaleOrderFromDB()
+	LoadMaxPayFromDB()
 
 	GetSingleUserIncentive(ctx *gin.Context, id, quarter int, isQuarterReport bool, date time.Time) (*TotalIncentive, *errors.Error)
 	GetSingleUserTargetChart(ctx *gin.Context, clientID, quarter int, isQuarterReport bool, t time.Time) (*ChartDataResponse, *errors.Error)

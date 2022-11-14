@@ -1,7 +1,9 @@
 package adapters
 
 import (
+	"github.com/jasonlvhit/gocron"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
 var theProvider models.IncentiveProvider
@@ -12,21 +14,21 @@ func InitIncentive(provider models.IncentiveProvider) {
 
 func InitIncentiveCron() {
 
-	//if err := gocron.Every(1).Day().At("12:00").Do(theProvider.HandleDataInputFile); err != nil {
-	//	utils.LogObj.Error("failed to initate upload pledge file task, err: " + err.Error())
-	//}
-	//
-	//if err := gocron.Every(1).Day().At("12:00").Do(theProvider.HandlePlansInputFile); err != nil {
-	//	utils.LogObj.Error("failed to initate upload pledge file task, err: " + err.Error())
-	//}
+	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadPlansFromDB); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("InitIncentiveCron: productPlans cron failed")
+	}
 
-	//go theProvider.HandleDataInputFile()
-	//go theProvider.HandleUserMasterInputFile()
-	go theProvider.HandlePlansInputFile()
-	go theProvider.HandleTargetInputFile()
-	go theProvider.HandleScaleOrderInputFile()
-	go theProvider.HandleMaxPayInputFile()
-	//go theProvider.HandleHierarchyFile()
+	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadTargetFromDB); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("InitIncentiveCron: saleTarget cron failed")
+	}
 
-	//<-gocron.Start()
+	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadScaleOrderFromDB); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("InitIncentiveCron: vop cron failed")
+	}
+
+	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadMaxPayFromDB); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("InitIncentiveCron: maxPay cron failed")
+	}
+
+	<-gocron.Start()
 }
