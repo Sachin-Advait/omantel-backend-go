@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions targetNamespace="http://www.omantel.om/esb/services/sendnotification" xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:sendnotification="http://www.omantel.om/esb/services/sendnotification" xmlns:sendnotificationMsg="http://www.omantel.om/esb/messages/sendnotification" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <types>
+    <xs:schema targetNamespace="http://www.omantel.om/esb/services/sendnotification" xmlns="http://www.w3.org/2001/XMLSchema">
+      <xs:import namespace="http://www.omantel.om/esb/messages/sendnotification" schemaLocation="SendNotification.xsd"/>
+    </xs:schema>
+  </types>
+  <message name="SendNotificationRq">
+    <part name="SendNotificationRq" element="sendnotificationMsg:SendNotificationRq"/>
+  </message>
+  <message name="SendNotificationRs">
+    <part name="SendNotificationRs" element="sendnotificationMsg:SendNotificationRs"/>
+  </message>
+  <portType name="SendNotificationPortType">
+    <operation name="SendNotification">
+      <input message="sendnotification:SendNotificationRq"/>
+      <output message="sendnotification:SendNotificationRs"/>
+    </operation>
+  </portType>
+  <binding name="SendNotificationBinding" type="sendnotification:SendNotificationPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="SendNotification">
+      <soap:operation soapAction="SendNotification" style="document"/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+  </binding>
+  <service name="SendNotificationService">
+    <port name="SendNotificationServicePort" binding="sendnotification:SendNotificationBinding">
+      <soap:address location="http://10.164.78.123:7800/services/SendNotification"/>
+    </port>
+  </service>
+</definitions>

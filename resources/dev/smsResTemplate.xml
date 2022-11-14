@@ -1,0 +1,9 @@
+<NS1:SendNotificationRs xmlns:NS1="http://www.omantel.om/esb/messages/sendnotification">
+   <NS1:ResponseHeader>
+      <FunctionId>17002004</FunctionId>
+      <TransactionId>0</TransactionId>
+      <RequestId>ZONE_1588842153120</RequestId>
+      <ReturnCode>0</ReturnCode>
+      <ReturnDesc>Success/ Successfully validated the request</ReturnDesc>
+   </NS1:ResponseHeader>
+</NS1:SendNotificationRs>

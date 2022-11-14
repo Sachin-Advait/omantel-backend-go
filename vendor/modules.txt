@@ -222,6 +222,9 @@ github.com/swaggo/gin-swagger/swaggerFiles
 # github.com/swaggo/swag v1.8.1
 ## explicit; go 1.18
 github.com/swaggo/swag
+# github.com/tiaguinho/gosoap v1.4.4
+## explicit; go 1.13
+github.com/tiaguinho/gosoap
 # github.com/ugorji/go/codec v1.1.7
 ## explicit
 github.com/ugorji/go/codec

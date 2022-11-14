@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://www.omantel.om/esb/messages/sendnotification" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:common="http://www.huawei.com/ucmpinterface/common" xmlns:sendnotificationMsg="http://www.omantel.om/esb/messages/sendnotification">
+  <xs:import namespace="http://www.huawei.com/ucmpinterface/common" schemaLocation="UCMPInterface_Common.xsd"/>
+  <xs:element name="SendNotificationRq">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="RequestHeader" type="common:RequestHeader"/>
+        <xs:element name="RequestBody" type="sendnotificationMsg:RequestMessageBody"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name="RequestMessageBody">
+    <xs:sequence>
+      <xs:element name="Notification" type="common:NotificationType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="SendNotificationRs">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="ResponseHeader" type="common:ResponseHeader"/>
+        <xs:element name="ResponseBody" type="sendnotificationMsg:RequestMessageBody" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

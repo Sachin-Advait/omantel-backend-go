@@ -1,0 +1,2212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://www.huawei.com/ucmpinterface/common" elementFormDefault="unqualified" attributeFormDefault="unqualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:common="http://www.huawei.com/ucmpinterface/common">
+  <xs:simpleType name="Action">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="1"/>
+      <xs:enumeration value="U" id="Update"/>
+      <xs:enumeration value="I" id="Insert"/>
+      <xs:enumeration value="D" id="Delete"/>
+      <xs:enumeration value="A" id="Add"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Gender">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="1"/>
+      <xs:enumeration value="1" id="Male"/>
+      <xs:enumeration value="2" id="Female"/>
+      <xs:enumeration value="3" id="NA-Organization"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Date">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="12"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="DateTime">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="30"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Week">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="1"/>
+      <xs:enumeration value="0" id="Sunday"/>
+      <xs:enumeration value="1" id="Monday"/>
+      <xs:enumeration value="2" id="Tuesday"/>
+      <xs:enumeration value="3" id="Wednesday"/>
+      <xs:enumeration value="4" id="Thursday"/>
+      <xs:enumeration value="5" id="Friday"/>
+      <xs:enumeration value="6" id="Saturday"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="UserList">
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="User" type="common:User"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="PaidMode">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="0" id="Prepaid"/>
+      <xs:enumeration value="1" id="Postpaid"/>
+      <xs:enumeration value="2" id="Hybrid"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="IMSI">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="20"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ICCID">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="20"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="IMEI">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="20"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SubscriberNo">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="20"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="OfferType">
+    <xs:restriction base="xs:int">
+      <xs:enumeration value="0" id="PrimaryOffer"/>
+      <xs:enumeration value="1" id="OptionalOffer"/>
+      <xs:enumeration value="2" id="CUGOffer"/>
+      <xs:enumeration value="3" id="GroupOffer"/>
+      <xs:enumeration value="4" id="GroupMemberOffer"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="OfferLevel">
+    <xs:restriction base="xs:int">
+      <xs:enumeration value="0" id="SubscriberLevel"/>
+      <xs:enumeration value="1" id="AccountLevel"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ProductType">
+    <xs:restriction base="xs:int">
+      <xs:enumeration value="0" id="AppendantServiceProduct"/>
+      <xs:enumeration value="1" id="AppendantTariffProduct"/>
+      <xs:enumeration value="2" id="IndividualIncentiveProduct"/>
+      <xs:enumeration value="3" id="GroupIncentiveProduct"/>
+      <xs:enumeration value="20" id="MainProduct"/>
+      <xs:enumeration value="21" id="GroupProduct"/>
+      <xs:enumeration value="22" id="CUGProduct"/>
+      <xs:enumeration value="23" id="GroupMemberProduct"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Boolean">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="1"/>
+      <xs:enumeration value="Y" id="Yes"/>
+      <xs:enumeration value="N" id="No"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="decimal-or-empty">
+    <xs:union memberTypes="xs:decimal common:empty-string"/>
+  </xs:simpleType>
+  <xs:simpleType name="empty-string">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value=""/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="UsernameToken">
+    <xs:sequence>
+      <xs:element name="Username" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*XML Signature – Currently Not Used)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="50"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Password" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*XML Signature – Currently Not Used)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="50"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="SecurityType">
+    <xs:sequence>
+      <xs:element name="UsernameToken" type="common:UsernameToken"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RequestHeader">
+    <xs:annotation>
+      <xs:documentation>for user information use(add,modify,delete)</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="FunctionId">
+        <xs:annotation>
+          <xs:documentation>(*Function Id element will determine the function
+    				itself. ESB provide special value according special
+    				interface)*)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:int">
+            <xs:totalDigits value="8"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Version" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*Version ID,current version is 1</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="24"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="TransactionId" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*Transaction ID,used to compound session, default
+    				null )</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="SubTransactionId" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*Sequence ID,used to compound session,default 1)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="RequestId">
+        <xs:annotation>
+          <xs:documentation>(*Serial number of a request, which must be unique.)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="64"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="RequestorId" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*OM – Oman mobile)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="50"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="RequestorChannelId">
+        <xs:annotation>
+          <xs:documentation>(*The id of the caller)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="50"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="RequestorUserId">
+        <xs:annotation>
+          <xs:documentation>(*User ID of the caller)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="50"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="RequestorLanguage" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*E/A for English or Arabic)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="1"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="RequestorSecurityInfo" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*XML Signature – Currently Not Used)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="128"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Timestamp" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*Request call time yyyy-MM-dd HH:mm:ss.SSS)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:dateTime"/>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="Security" type="common:SecurityType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ResponseHeader">
+    <xs:sequence>
+      <xs:element name="FunctionId" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*Function Id element will determine the function itself. ESB provide special value according special interface)*)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:int">
+            <xs:totalDigits value="8"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="TransactionId" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*Transaction ID,used to compound session, default null )</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="SubTransactionId" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>(*Sequence ID,used to compound session,default 1)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="RequestId">
+        <xs:annotation>
+          <xs:documentation>(*Serial number of a request, which must be unique.)</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="20"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="ReturnCode">
+        <xs:annotation>
+          <xs:documentation>Indicates a code of success/failure, failure reasons.                              405000000: success                Other values: failure reasons</xs:documentation>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="6"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="ReturnDesc">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:maxLength value="256"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CharacteristicValueType">
+    <xs:annotation>
+      <xs:documentation>Key-Value parameters</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="Type" type="xs:string" minOccurs="0"/>
+      <xs:element name="Value" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValue" type="common:CharacteristicValueType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CharacteristicValueListType">
+    <xs:sequence>
+      <xs:element name="CharacteristicValue" type="common:CharacteristicValueType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="NameType">
+    <xs:all>
+      <xs:element name="Title" type="xs:string" minOccurs="0"/>
+      <xs:element name="FirstName" type="xs:string" minOccurs="0"/>
+      <xs:element name="MiddleName" type="xs:string" minOccurs="0"/>
+      <xs:element name="LastName" type="xs:string" minOccurs="0"/>
+      <xs:element name="FatherName" type="xs:string" minOccurs="0"/>
+      <xs:element name="GrandFatherName" type="xs:string" minOccurs="0"/>
+      <xs:element name="FamilyName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_Title" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_FirstName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_MiddleName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_LastName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_FatherName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_GrandFatherName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_FamilyName" type="xs:string" minOccurs="0"/>
+      <!--Added from UCMP Interface-->
+      <xs:element name="WomenName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_WomenName" type="xs:string" minOccurs="0"/>
+      <xs:element name="FullName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_FullName" type="xs:string" minOccurs="0"/>
+      <xs:element name="MotherName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_MotherName" type="xs:string" minOccurs="0"/>
+      <xs:element name="Suffix" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_Suffix" type="xs:string" minOccurs="0"/>
+      <xs:element name="NickName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_NickName" type="xs:string" minOccurs="0"/>
+      <xs:element name="SpouseName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_SpouseName" type="xs:string" minOccurs="0"/>
+      <!--End of Added from UCMP Interface-->
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="AddressType">
+    <xs:all>
+      <xs:element name="AddressId" type="xs:string" minOccurs="0"/>
+      <xs:element name="AddressType" type="xs:string" minOccurs="0"/>
+      <xs:element name="Address" type="xs:string" minOccurs="0"/>
+      <xs:element name="FlatNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="BuildingNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="BuildingName" type="xs:string" minOccurs="0"/>
+      <xs:element name="HouseNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="WayNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="WayName" type="xs:string" minOccurs="0"/>
+      <xs:element name="Wilayat" type="xs:string" minOccurs="0"/>
+      <xs:element name="Village" type="xs:string" minOccurs="0"/>
+      <xs:element name="District" type="xs:string" minOccurs="0"/>
+      <xs:element name="Governorate" type="xs:string" minOccurs="0"/>
+      <xs:element name="POBox" type="xs:string" minOccurs="0"/>
+      <xs:element name="PostalCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="PostalAddress" type="xs:string" minOccurs="0"/>
+      <xs:element name="ZipCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="City" type="xs:string" minOccurs="0"/>
+      <xs:element name="Country" type="xs:string" minOccurs="0"/>
+      <!--Added from UCMP Interface-->
+      <xs:element name="AddressArea" type="xs:string" minOccurs="0"/>
+      <xs:element name="AddressBlock" type="xs:string" minOccurs="0"/>
+      <xs:element name="Directions" type="xs:string" minOccurs="0"/>
+      <xs:element name="Floor" type="xs:string" minOccurs="0"/>
+      <xs:element name="Zone" type="xs:string" minOccurs="0"/>
+      <xs:element name="Checked" type="xs:string" minOccurs="0"/>
+      <xs:element name="Action" type="common:Action" minOccurs="0"/>
+      <!--End of Added from UCMP Interface-->
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="AddressListType">
+    <xs:sequence>
+      <xs:element name="Address" type="common:AddressType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="DebitInfoType">
+    <xs:all>
+      <xs:element name="DebitAccountCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="IsDirectDebitExists" type="xs:string" minOccurs="0"/>
+      <xs:element name="Limit" type="xs:string" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="ExternalRef" type="xs:string" minOccurs="0"/>
+      <xs:element name="InternalRef" type="xs:string" minOccurs="0"/>
+      <xs:element name="FinanationalInstitutionDirectDebit" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="DepositRefundInfoType">
+    <xs:all>
+      <xs:element name="RefundType" type="xs:string" minOccurs="0"/>
+      <xs:element name="RefundAmount" type="common:decimal-or-empty" nillable="true" minOccurs="0"/>
+      <xs:element name="Customer" type="common:Customer" minOccurs="0"/>
+      <xs:element name="Account" type="common:Account" minOccurs="0"/>
+      <xs:element name="Subscriber" type="common:Subscriber" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="OrganizationInfoType">
+    <xs:all>
+      <xs:element name="OrganizationId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="AR_Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="Type" type="xs:string" minOccurs="0"/>
+      <xs:element name="Size" type="xs:string" minOccurs="0"/>
+      <xs:element name="IdExpiry" type="xs:string" minOccurs="0"/>
+      <xs:element name="Category" type="xs:string" minOccurs="0"/>
+      <xs:element name="MainActivity" type="xs:string" minOccurs="0"/>
+      <xs:element name="Specialization" type="xs:string" minOccurs="0"/>
+      <xs:element name="NoOfBranches" type="xs:string" minOccurs="0"/>
+      <xs:element name="EstablishmentYear" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaxRegistrationNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="CommercialRegistrationNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="FoundationId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Website" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="MarketSegmentType">
+    <xs:all>
+      <xs:element name="MarketCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="MarketClass" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="RelationType">
+    <xs:all>
+      <xs:element name="CustomerCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="CustomerType" type="xs:string" minOccurs="0"/>
+      <xs:element name="RelationType" type="xs:string" minOccurs="0"/>
+      <xs:element name="Relation" type="xs:string" minOccurs="0"/>
+      <xs:element name="RelationSequence" type="xs:string" minOccurs="0"/>
+      <xs:element name="Action" type="common:Action" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="CurrencyInfoType">
+    <xs:all>
+      <xs:element name="Currency" type="xs:string" minOccurs="0"/>
+      <xs:element name="CurrencyId" type="xs:string" minOccurs="0"/>
+      <xs:element name="CurrencyName" type="xs:string" minOccurs="0"/>
+      <xs:element name="Amount" type="xs:string" minOccurs="0"/>
+      <xs:element name="Rate" type="xs:string" minOccurs="0"/>
+      <xs:element name="ExchangeType" type="xs:string" minOccurs="0"/>
+      <!--Sell/Buy-->
+      <xs:element name="RateDateTime" type="common:DateTime" minOccurs="0"/>
+      <!--Timestamp when given rate is updated/applied-->
+      <xs:element name="StartDateTime" type="common:DateTime" minOccurs="0"/>
+      <!--start date of rate (can be old date)-->
+      <xs:element name="EndDateTime" type="common:DateTime" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="RelationInfoListType">
+    <xs:sequence>
+      <xs:element name="RelationInfo" type="common:RelationType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ContactType">
+    <xs:all>
+      <xs:element name="Priority" type="xs:int" minOccurs="0"/>
+      <xs:element name="Method" type="xs:string" minOccurs="0"/>
+      <xs:element name="ContactInfo" type="xs:string" minOccurs="0"/>
+      <xs:element name="PreferredTime" type="common:DateTime" minOccurs="0"/>
+      <!--Added from UCMP Interface-->
+      <xs:element name="ContactSeq" type="xs:string" minOccurs="0"/>
+      <xs:element name="Action" type="common:Action" minOccurs="0"/>
+      <!--End of Added from UCMP Interface-->
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ContactsType">
+    <xs:sequence>
+      <xs:element name="DispatchMethod" type="xs:string" minOccurs="0"/>
+      <xs:element name="Contact" type="common:ContactType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="StatementType">
+    <xs:all>
+      <xs:element name="StatementApplicable" type="xs:string" minOccurs="0"/>
+      <xs:element name="DispatchTo" type="xs:string" minOccurs="0"/>
+      <xs:element name="DispatchFlag" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="AuthorizedPersonType">
+    <xs:all>
+      <xs:element name="Type" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="Contacts" type="common:ContactsType" minOccurs="0"/>
+      <xs:element name="AuthorizationLetter" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="AuthorizedPersonsType">
+    <xs:sequence>
+      <xs:element name="AuthorizedPerson" type="common:AuthorizedPersonType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="IDInfoType">
+    <xs:all>
+      <xs:element name="IdCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="IdType" type="xs:string" minOccurs="0"/>
+      <xs:element name="IdIssuer" type="xs:string" minOccurs="0"/>
+      <xs:element name="IdIssueDate" type="xs:string" minOccurs="0"/>
+      <xs:element name="IdIssueDateHijri" type="common:Date" minOccurs="0"/>
+      <xs:element name="IdExpiryDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="IdExpiryDateHijri" type="common:Date" minOccurs="0"/>
+      <xs:element name="HijriFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="IdCodeOld" type="xs:string" minOccurs="0"/>
+      <xs:element name="IdTypeOld" type="xs:string" minOccurs="0"/>
+      <xs:element name="Action" type="common:Action" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="IDInfoListType">
+    <xs:sequence>
+      <xs:element name="IdInfo" type="common:IDInfoType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="BillInfoType">
+    <xs:all>
+      <xs:element name="BillCycleType" type="xs:string" minOccurs="0"/>
+      <xs:element name="BillLanguage" type="xs:string" minOccurs="0"/>
+      <xs:element name="BillingRegion" type="xs:string" minOccurs="0"/>
+      <xs:element name="DispatchMethod" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentMethod" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentType" type="xs:string" minOccurs="0"/>
+      <!--H: High Usage & M: Monthly Payment-->
+      <xs:element name="BillGroup" type="xs:string" minOccurs="0"/>
+      <xs:element name="PreferredBillFreq" type="xs:string" minOccurs="0"/>
+      <xs:element name="PreferredBillDate" type="common:Date" minOccurs="0"/>
+      <!--Newly added to fulfil CRM requirement-->
+      <xs:element name="BillCycleStartDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="BillCycleEndDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="CreditDetailsType">
+    <xs:all>
+      <xs:element name="CreditDays" type="xs:string" minOccurs="0"/>
+      <xs:element name="CreditRating" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="CreditControlInfoType">
+    <xs:all>
+      <xs:element name="CreditLevel" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="CreditLimit" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="CreditControlApplicable" type="xs:string" minOccurs="0"/>
+      <xs:element name="CreditControlScheduleCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="DunningDetailsType">
+    <xs:all>
+      <xs:element name="DunningSchedule" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="RetailerInfoType">
+    <xs:all>
+      <xs:element name="RetailerId" type="xs:string" minOccurs="0"/>
+      <xs:element name="RetailerType" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ReferenceType">
+    <xs:all>
+      <xs:element name="IdCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="IdType" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="common:NameType" minOccurs="0"/>
+      <xs:element name="AddressList" type="common:AddressListType" minOccurs="0"/>
+      <xs:element name="Contacts" type="common:ContactsType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ReferencesListType">
+    <xs:sequence>
+      <xs:element name="Reference" type="common:ReferenceType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RefundInfoType">
+    <xs:all>
+      <xs:element name="RefundType" type="xs:string" minOccurs="0"/>
+      <!--All or Specific Payment-->
+      <xs:element name="RefundPaymentId" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="PaymentType">
+    <xs:all>
+      <xs:element name="PaymentId" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentType" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentKey" type="xs:string" minOccurs="0"/>
+      <!--Payment / Deposit / Refund-->
+      <xs:element name="PaymentMethod" type="xs:string" minOccurs="0"/>
+      <!--Cash / Cheque / DC / CC-->
+      <xs:element name="PaymentAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="PaymentDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="ChargeCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaxDetails" type="common:TaxDetailsType" minOccurs="0"/>
+      <xs:element name="PaymentReferenceNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="Currency" type="xs:string" minOccurs="0"/>
+      <xs:element name="CardDetails" type="common:CardDetailsType" minOccurs="0"/>
+      <xs:element name="BankDetails" type="common:BankDetailsType" minOccurs="0"/>
+      <xs:element name="Invoice" type="common:InvoiceType" minOccurs="0"/>
+      <xs:element name="Receipt" type="common:ReceiptInfo" minOccurs="0"/>
+      <xs:element name="RefundInfo" type="common:RefundInfoType" minOccurs="0"/>
+      <xs:element name="Comments" type="xs:string" minOccurs="0"/>
+      <xs:element name="SalesCollectionType" type="xs:string" minOccurs="0"/>
+      <xs:element name="CollectionMachineId" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentAgency" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentAgencyCMA" type="xs:string" minOccurs="0"/>
+      <!--This is specific to CMA-->
+      <xs:element name="PaymentSourceId" type="xs:string" minOccurs="0"/>
+      <!--This is specific to CMA-->
+      <xs:element name="AdjustedAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="SubPreferredCurrency" type="xs:string" minOccurs="0"/>
+      <xs:element name="CurrencyConversionAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="User" type="common:User" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ServiceUsageType">
+    <xs:all>
+      <xs:element name="NationalUsageAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="IntUsageAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="DataUsageAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="UnbilledCreditLimit" type="xs:string" minOccurs="0"/>
+      <xs:element name="RemainingUBCLCurrentMonth" type="xs:string" minOccurs="0"/>
+      <xs:element name="GPRSUnits" type="xs:string" minOccurs="0"/>
+      <xs:element name="GPRSAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="MMSIntUnits" type="xs:string" minOccurs="0"/>
+      <xs:element name="MMSIntAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="MMSNatUnits" type="xs:string" minOccurs="0"/>
+      <xs:element name="MMSNatAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoiceIntUnits" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoiceIntAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoiceNatUnits" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoiceNatAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="SMSIntUnits" type="xs:string" minOccurs="0"/>
+      <xs:element name="SMSIntAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="SMSNatUnits" type="xs:string" minOccurs="0"/>
+      <xs:element name="SMSNatAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="RoamingAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="RoamingUnits" type="xs:string" minOccurs="0"/>
+      <xs:element name="HalaUnbilledAmt" type="xs:string" minOccurs="0"/>
+      <xs:element name="UnbilledAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="ReferenceNum" type="xs:string" minOccurs="0"/>
+      <xs:element name="AdvanceAmountPaid" type="xs:string" minOccurs="0"/>
+      <xs:element name="OutstandingBilledBalance" type="xs:string" minOccurs="0"/>
+      <xs:element name="UnbilledUsage" type="xs:string" minOccurs="0"/>
+      <xs:element name="PendingInstallmentsBalance" type="xs:string" minOccurs="0"/>
+      <xs:element name="DepositAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="BillableCharges" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="BankDetailsType">
+    <xs:all>
+      <xs:element name="ChequeNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="ExpiryDate" type="xs:string" minOccurs="0"/>
+      <xs:element name="BankAccountNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="BankAccountHolderName" type="xs:string" minOccurs="0"/>
+      <xs:element name="BankAccountType" type="xs:string" minOccurs="0"/>
+      <xs:element name="BankName" type="xs:string" minOccurs="0"/>
+      <xs:element name="BankCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="BranchName" type="xs:string" minOccurs="0"/>
+      <xs:element name="BranchCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="PromiseToPayDetailsListType">
+    <xs:sequence>
+      <xs:element name="PromiseToPayDetails" type="common:PromiseToPayDetailsType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PromiseToPayDetailsType">
+    <xs:all>
+      <xs:element name="PromiseToPay" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Comments" type="xs:string" minOccurs="0"/>
+      <xs:element name="PromiseToPayDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="ReasonCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <!---->
+  <xs:complexType name="DataUsageSummaryListType">
+    <xs:sequence>
+      <xs:element name="DataUsageSummary" type="common:DataUsageSummaryType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="DataUsageSummaryType">
+    <xs:all>
+      <xs:element name="UsageType" type="xs:string" minOccurs="0"/>
+      <xs:element name="PlanNames" type="xs:string" minOccurs="0"/>
+      <xs:element name="ServiceQuotaDetails" type="common:ServiceQuotaDetailsType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <!---->
+  <xs:complexType name="DunningDetailsItemListType">
+    <xs:sequence>
+      <xs:element name="DunningDetailsItem" type="common:DunningDetailsItemType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="DunningDetailsItemType">
+    <xs:all>
+      <xs:element name="ServiceType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ActionType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ActionDateTime" type="xs:string" minOccurs="0"/>
+      <xs:element name="MessageMedia" type="xs:string" minOccurs="0"/>
+      <xs:element name="MessageCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="MessageDescription" type="xs:string" minOccurs="0"/>
+      <xs:element name="ProvisioningActionCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="ProvisioningActionDesc" type="xs:string" minOccurs="0"/>
+      <xs:element name="OrderId" type="xs:string" minOccurs="0"/>
+      <xs:element name="OverDue" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="CardDetailsType">
+    <xs:all>
+      <xs:element name="CardNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="CardType" type="xs:string" minOccurs="0"/>
+      <!--Debit or Credit-->
+      <xs:element name="CardProvider" type="xs:string" minOccurs="0"/>
+      <!--VISA or MasterCard ... etc-->
+      <xs:element name="CardHolderName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AuthorizationNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="ExpiryDate" type="xs:string" minOccurs="0"/>
+      <xs:element name="Address1" type="xs:string" minOccurs="0"/>
+      <xs:element name="BankName" type="xs:string" minOccurs="0"/>
+      <xs:element name="BankCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="Issuer" type="xs:string" minOccurs="0"/>
+      <xs:element name="ReceiptId" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="AutoDebitDetailsType">
+    <xs:all>
+      <xs:element name="AutoDebitApplicable" type="xs:string" minOccurs="0"/>
+      <xs:element name="AutoDebitType" type="xs:string" minOccurs="0"/>
+      <xs:element name="StartDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="EndDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="MaxLimit" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="CardDetails" type="common:CardDetailsType" minOccurs="0"/>
+      <xs:element name="BankDetails" type="common:BankDetailsType" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="Comments" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="AdjustmentType">
+    <xs:all>
+      <xs:element name="AdjustmentId" type="xs:string" minOccurs="0"/>
+      <xs:element name="AdjustmentTransNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="AdjustmentType" type="xs:string" minOccurs="0"/>
+      <xs:element name="Amount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="Currency" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargeCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="AdjustmentReason" type="xs:string" minOccurs="0"/>
+      <xs:element name="ReasonCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="Remark" type="xs:string" minOccurs="0"/>
+      <xs:element name="Invoice" type="common:InvoiceType" minOccurs="0"/>
+      <xs:element name="InvoiceList" type="common:InvoiceListType" minOccurs="0"/>
+      <xs:element name="AdjustmentDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="AdjustmentPostingDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="Customer" type="common:Customer" minOccurs="0"/>
+      <xs:element name="Account" type="common:Account" minOccurs="0"/>
+      <xs:element name="Subscriber" type="common:Subscriber" minOccurs="0"/>
+      <xs:element name="User" type="common:User" minOccurs="0"/>
+      <xs:element name="ChargeCodeDesc" type="xs:string" minOccurs="0"/>
+      <xs:element name="InternalRefNote" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaxIncluded" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Complaint" type="common:Complaint" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="InvoiceType">
+    <xs:all>
+      <xs:element name="InvoiceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="InvoiceNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubscriberCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="CustomerCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="InvoiceOriginalNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="InvoiceAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="UnpaidAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="Adjustment" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="BalanceDue" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="DisputeAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="Payment" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="InvoiceDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="InvoiceOriginalDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="InvoicePostingDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="DueDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="InvoiceStatus" type="xs:string" minOccurs="0"/>
+      <xs:element name="InvoiceType" type="xs:string" minOccurs="0"/>
+      <xs:element name="OutstandingAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="ChargeFromDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ChargeToDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="DiscountAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="TaxAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="InvoiceContents" type="xs:base64Binary" minOccurs="0"/>
+      <xs:element name="AdjustmentList" type="common:AdjusmentsListType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="AdjusmentsListType">
+    <xs:sequence>
+      <xs:element name="Adjustment" type="common:AdjustmentType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="InvoiceListType">
+    <xs:sequence>
+      <xs:element name="Invoice" type="common:InvoiceType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Document">
+    <xs:all>
+      <xs:element name="DocumentCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="DocumentName" type="xs:string" minOccurs="0"/>
+      <xs:element name="DocumentType" type="xs:string" minOccurs="0"/>
+      <xs:element name="DocumentDescription" type="xs:string" minOccurs="0"/>
+      <xs:element name="DocumentSize" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="MimeType" type="xs:string" minOccurs="0"/>
+      <xs:element name="DocumentStatus" type="xs:int" minOccurs="0"/>
+      <xs:element name="UploadDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="CreationDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="UpdateDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="DocumentContent" type="xs:base64Binary" minOccurs="0"/>
+      <xs:element name="CreatedBy" type="common:User" minOccurs="0"/>
+      <xs:element name="TransactionType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ServiceType" type="xs:string" minOccurs="0"/>
+      <xs:element name="Customer" type="common:Customer" minOccurs="0"/>
+      <xs:element name="Account" type="common:Account" minOccurs="0"/>
+      <xs:element name="Subscriber" type="common:Subscriber" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ResourceType">
+    <xs:all>
+      <xs:element name="ResourceId" type="xs:string" minOccurs="0"/>
+      <xs:element name="ResourceType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ResourceTypeId" type="xs:string" minOccurs="0"/>
+      <xs:element name="ResourceCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="ResourceNo" type="xs:string" minOccurs="0"/>
+      <!--added fields plan for (BS_type [voice,data,fax,…etc]) and category for num_type [silver, gold, …etc]-->
+      <xs:element name="ResourcePlan" type="xs:string" minOccurs="0"/>
+      <xs:element name="ResourceCategroy" type="xs:string" minOccurs="0"/>
+      <xs:element name="Product" type="common:Product" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="CategoryInfo" type="common:ResourceCategoryInfoType" minOccurs="0"/>
+      <xs:element name="Action" type="common:Action" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="Alias" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="SerialNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="ModelNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="WarrantyPeriod" type="xs:int" minOccurs="0"/>
+      <xs:element name="WarrantyPeriodType" type="xs:string" minOccurs="0"/>
+      <xs:element name="Price" type="common:ResourcePriceType" minOccurs="0"/>
+      <xs:element name="WeightingAverageCost" type="xs:double" minOccurs="0"/>
+      <xs:element name="CalculateWeightingAverageCost" type="xs:string" minOccurs="0"/>
+      <xs:element name="Comments" type="xs:string" minOccurs="0"/>
+      <!--Added from UCMP Interface-->
+      <xs:element name="Used" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="DamageCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="UsedItemCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="ServiceCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="EquipmentSubtype" type="xs:string" minOccurs="0"/>
+      <xs:element name="EquipmentType" type="xs:string" minOccurs="0"/>
+      <xs:element name="IsSimCard" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Parent" type="xs:string" minOccurs="0"/>
+      <xs:element name="Weight" type="xs:int" minOccurs="0"/>
+      <xs:element name="Quantity" type="xs:int" minOccurs="0"/>
+      <xs:element name="MinimumQuantity" type="xs:int" minOccurs="0"/>
+      <xs:element name="HasSerial" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="FromSerialNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="ToSerialNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubsidySubNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubsidyArea" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubsidySubtype" type="xs:string" minOccurs="0"/>
+      <xs:element name="StartDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="EndDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="Retailer" type="common:RetailerInfoType" minOccurs="0"/>
+      <xs:element name="SIMInfo" type="common:SIMInfoType" minOccurs="0"/>
+      <!--End of Added from UCMP Interface-->
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="SIMInfoType">
+    <xs:all>
+      <xs:element name="CardNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="ICCID" type="xs:string" minOccurs="0"/>
+      <xs:element name="IMSI" type="xs:string" minOccurs="0"/>
+      <xs:element name="PINCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="PINCode2" type="xs:string" minOccurs="0"/>
+      <xs:element name="ExchangeSystem" type="xs:string" minOccurs="0"/>
+      <xs:element name="PUK_CODE" type="xs:string" minOccurs="0"/>
+      <xs:element name="PUK_CODE2" type="xs:string" minOccurs="0"/>
+      <xs:element name="A4KI" type="xs:string" minOccurs="0"/>
+      <xs:element name="SIMVendor" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ResourceCategoryInfoType">
+    <xs:all>
+      <xs:element name="Category" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubCategory" type="xs:string" minOccurs="0"/>
+      <xs:element name="WorkCategory" type="xs:string" minOccurs="0"/>
+      <xs:element name="InventoryClass" type="xs:string" minOccurs="0"/>
+      <xs:element name="ProductFamily" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="TaxDetailsType">
+    <xs:all>
+      <xs:element name="TaxSequence" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountTaxCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="CurrencyInfo" type="common:CurrencyInfoType" minOccurs="0"/>
+      <xs:element name="TaxPlanType" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaxPlanCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaxAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="TaxAmountInt" type="xs:decimal" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ResourcePriceType">
+    <xs:all>
+      <xs:element name="PricePlanId" type="xs:string" minOccurs="0"/>
+      <xs:element name="PriceGroup" type="xs:string" minOccurs="0"/>
+      <xs:element name="Amount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="AmountInt" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="GrossAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="TaxDetails" type="common:TaxDetailsType" minOccurs="0"/>
+      <xs:element name="ShipmentAddress" type="common:AddressType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="OrderLocation">
+    <xs:sequence>
+      <xs:element name="From" type="xs:string" minOccurs="0"/>
+      <xs:element name="ToWarehouse" type="xs:string" minOccurs="0"/>
+      <xs:element name="DefaultBinId" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="BuyerInfoType">
+    <xs:sequence>
+      <xs:element name="BuyerId" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="VendorInfoType">
+    <xs:sequence>
+      <xs:element name="VendorId" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <!--no more required, EventHistoryDetails is added instead.
+	<xs:complexType name="CallDetails">
+		<xs:all>
+			<xs:element name="RoamType" type="xs:double" minOccurs="0"/>
+			<xs:element name="MeasureUnits" type="xs:string" minOccurs="0"/>
+			<xs:element name="UnitPrice" type="xs:double" minOccurs="0"/>
+			<xs:element name="ActualVolume" type="xs:double" minOccurs="0"/>
+			<xs:element name="RatingVolume" type="xs:double" minOccurs="0"/>
+			<xs:element name="TotalAmount" type="xs:double" minOccurs="0"/>
+			<xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+		</xs:all>
+	</xs:complexType>-->
+  <xs:complexType name="ChargedFromListType">
+    <xs:all>
+      <xs:element name="ChargedAccount" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargedAmount" type="xs:long" minOccurs="0"/>
+      <xs:element name="NewBalance" type="xs:long" minOccurs="0"/>
+      <xs:element name="ExpiryDate" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="EventHistoryDetails">
+    <xs:all>
+      <xs:element name="A_Number" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubscriberCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="IMSI" type="xs:string" minOccurs="0"/>
+      <xs:element name="OriginatorLocationInfo" type="xs:string" minOccurs="0"/>
+      <xs:element name="B_Number" type="xs:string" minOccurs="0"/>
+      <xs:element name="EventTime" type="xs:string" minOccurs="0"/>
+      <xs:element name="EventDuration" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargedCallDuration" type="xs:string" minOccurs="0"/>
+      <xs:element name="EventVolume" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargedVolume" type="xs:string" minOccurs="0"/>
+      <xs:element name="TotalCharge" type="xs:string" minOccurs="0"/>
+      <xs:element name="DiscountAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="PrimaryOffer" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargedFrom" type="common:ChargedFromListType" minOccurs="0"/>
+      <xs:element name="MainAccountFinalCharge" type="xs:string" minOccurs="0"/>
+      <xs:element name="MainAccountRemainingBalance" type="xs:string" minOccurs="0"/>
+      <xs:element name="RateEventType" type="xs:string" minOccurs="0"/>
+      <xs:element name="RechargeAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="RechargeChannel" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoucherSRNO" type="xs:string" minOccurs="0"/>
+      <xs:element name="ErrorReason" type="xs:string" minOccurs="0"/>
+      <xs:element name="ExpiryDate" type="xs:string" minOccurs="0"/>
+      <xs:element name="UserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="AdjustmentAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="LoanAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="RepaymentDueDays" type="xs:string" minOccurs="0"/>
+      <xs:element name="RepaymentAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="AdminFee" type="xs:string" minOccurs="0"/>
+      <xs:element name="DailyPenaltyFee" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargedPenaltyAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="CurrentsOutstandingAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="TransferAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargedTotalAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="EventUnits" type="xs:string" minOccurs="0"/>
+      <xs:element name="DurationDetailsList" type="common:DurationDetailsListType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="DurationDetailsListType">
+    <xs:sequence>
+      <xs:element name="DurationDetails" type="common:DurationDetailsType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="DurationDetailsType">
+    <xs:all>
+      <xs:element name="DurationName" type="xs:string" minOccurs="0"/>
+      <xs:element name="Hours" type="xs:int" minOccurs="0"/>
+      <xs:element name="Minutes" type="xs:int" minOccurs="0"/>
+      <xs:element name="Seconds" type="xs:int" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="TaskType">
+    <xs:all>
+      <xs:element name="TaskId" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskType" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskCategory" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskAction" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskDetails" type="xs:string" minOccurs="0"/>
+      <xs:element name="EventType" type="xs:string" minOccurs="0"/>
+      <!--CSR-->
+      <xs:element name="AddressList" type="common:AddressListType" minOccurs="0"/>
+      <xs:element name="Attachment" type="xs:string" minOccurs="0"/>
+      <xs:element name="EntityType" type="xs:string" minOccurs="0"/>
+      <xs:element name="Owner" type="common:User" minOccurs="0"/>
+      <xs:element name="AssignedTo" type="common:User" minOccurs="0"/>
+      <xs:element name="Contacts" type="common:ContactsType" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskCreationDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="LastUpdateDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="TaskRetryingInfo" type="common:TaskRetryingInfo" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="TaskRetryingInfo">
+    <xs:all>
+      <xs:element name="TaskInput" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskInputContext" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskInputMQRFH2" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskInputMQMD" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskInputReqQueue" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskRequestId" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskTransactionId" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskFunctionId" type="xs:string" minOccurs="0"/>
+      <xs:element name="OrgRequestorChannelId" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskRequeueSerial" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskErrorCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskErrorDesc" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaskErrorGroup" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="User">
+    <xs:all>
+      <xs:element name="UserId" type="xs:string" minOccurs="0"/>
+      <xs:element name="UserName" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="common:NameType" minOccurs="0"/>
+      <xs:element name="AddressList" type="common:AddressListType" minOccurs="0"/>
+      <xs:element name="Contacts" type="common:ContactsType" minOccurs="0"/>
+      <xs:element name="UserType" type="xs:string" minOccurs="0"/>
+      <!--Internal | External-->
+      <xs:element name="ResetUserPassword" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="UserGroupList" type="common:UserGroupList" minOccurs="0"/>
+      <xs:element name="Division" type="xs:string" minOccurs="0"/>
+      <xs:element name="PassChangeAtLogin" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="IdleTime" type="xs:long" minOccurs="0"/>
+      <xs:element name="Photo" type="xs:base64Binary" minOccurs="0"/>
+      <xs:element name="InheritGroup" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Active" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="Gender" type="common:Gender" minOccurs="0"/>
+      <xs:element name="BackupUserStartDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="BackupUserEndDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="NumberOfSession" type="xs:long" minOccurs="0"/>
+      <xs:element name="CurrentNoOfSessions" type="xs:int" minOccurs="0"/>
+      <xs:element name="Language" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccessTimeIntervalStart" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccessTimeIntervalEnd" type="xs:string" minOccurs="0"/>
+      <xs:element name="LoginTrialsCount" type="xs:long" minOccurs="0"/>
+      <xs:element name="LastLoginTrialDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ModifiedDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ChangedBy" type="common:User" minOccurs="0"/>
+      <xs:element name="Channel" type="xs:string" minOccurs="0"/>
+      <xs:element name="IPAddress" type="xs:string" minOccurs="0"/>
+      <xs:element name="CabinId" type="xs:string" minOccurs="0"/>
+      <xs:element name="ShiftId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Location" type="xs:string" minOccurs="0"/>
+      <xs:element name="Region" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="UserGroupList">
+    <xs:sequence>
+      <xs:element name="UserGroup" type="common:UserGroup" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="UserGroup">
+    <xs:all>
+      <xs:element name="GroupId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="Active" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="Action" type="common:Action" minOccurs="0"/>
+      <xs:element name="Channel" type="xs:string" minOccurs="0"/>
+      <xs:element name="RolesList" type="common:RolesListType" minOccurs="0"/>
+      <xs:element name="CannotChangePassword" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="PasswordNeverExpires" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="ChangePasswordAtLogin" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="PasswordLocking" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="AccessTimeIntervalStart" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccessTimeIntervalEnd" type="xs:string" minOccurs="0"/>
+      <xs:element name="NumberOfUsers" type="xs:int" minOccurs="0"/>
+      <xs:element name="LimitedGroup" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="LimitAlert" type="xs:int" minOccurs="0"/>
+      <xs:element name="MaximumLimit" type="xs:int" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="RolesListType">
+    <xs:sequence>
+      <xs:element name="Role" type="common:Role" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Role">
+    <xs:all>
+      <xs:element name="RoleId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="RoleType">
+    <xs:all>
+      <xs:element name="RoleId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="Applications" type="common:ApplicationListType" minOccurs="0"/>
+      <xs:element name="CreatedBy" type="common:User" minOccurs="0"/>
+      <xs:element name="CreationDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ModifiedBy" type="common:User" minOccurs="0"/>
+      <xs:element name="ModifyDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ApplicationListType">
+    <xs:sequence>
+      <xs:element name="Application" type="common:ApplicationType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ApplicationType">
+    <xs:all>
+      <xs:element name="ApplicationId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="Modules" type="common:ModuleListType" minOccurs="0"/>
+      <xs:element name="CreatedBy" type="common:User" minOccurs="0"/>
+      <xs:element name="CreationDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ModifiedBy" type="common:User" minOccurs="0"/>
+      <xs:element name="ModifyDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ModuleListType">
+    <xs:sequence>
+      <xs:element name="Module" type="common:ModuleType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ModuleType">
+    <xs:all>
+      <xs:element name="ModuleId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="CreatedBy" type="common:User" minOccurs="0"/>
+      <xs:element name="CreationDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ModifiedBy" type="common:User" minOccurs="0"/>
+      <xs:element name="ModifyDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="SalesPerson">
+    <xs:all>
+      <xs:element name="SalesPersonId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="common:NameType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="CustomerHierarchy">
+    <xs:all>
+      <xs:element name="RootCustomerCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="BranchCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubBranchCode" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="Customer">
+    <xs:all>
+      <xs:element name="CustomerCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="common:NameType" minOccurs="0"/>
+      <xs:element name="AddressList" type="common:AddressListType" minOccurs="0"/>
+      <xs:element name="IdInfo" type="common:IDInfoType" minOccurs="0"/>
+      <xs:element name="Gender" type="common:Gender" minOccurs="0"/>
+      <xs:element name="DateOfBirth" type="common:Date" minOccurs="0"/>
+      <xs:element name="Salary" type="xs:string" minOccurs="0"/>
+      <xs:element name="Contacts" type="common:ContactsType" minOccurs="0"/>
+      <xs:element name="Category" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubCategory" type="xs:string" minOccurs="0"/>
+      <xs:element name="MarketSegment" type="common:MarketSegmentType" minOccurs="0"/>
+      <xs:element name="Nationality" type="xs:string" minOccurs="0"/>
+      <xs:element name="Education" type="xs:string" minOccurs="0"/>
+      <xs:element name="MaritalStatus" type="xs:string" minOccurs="0"/>
+      <xs:element name="SocialNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="InvoicingType" type="xs:string" minOccurs="0"/>
+      <xs:element name="PreferredLanguage" type="xs:string" minOccurs="0"/>
+      <xs:element name="PreferredCurrency" type="xs:string" minOccurs="0"/>
+      <xs:element name="CustomerType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ParentCustomerCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="Statement" type="common:StatementType" minOccurs="0"/>
+      <xs:element name="BillInfo" type="common:BillInfoType" minOccurs="0"/>
+      <xs:element name="AuthorizedPersons" type="common:AuthorizedPersonsType" minOccurs="0"/>
+      <!--Added from UCMP Interface-->
+      <xs:element name="CustomerHierarchy" type="common:CustomerHierarchy" minOccurs="0"/>
+      <xs:element name="FamilyNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="NoOfChildern" type="xs:string" minOccurs="0"/>
+      <xs:element name="StaffNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="CountryOfBirth" type="xs:string" minOccurs="0"/>
+      <xs:element name="Occupation" type="xs:string" minOccurs="0"/>
+      <xs:element name="Profession" type="xs:string" minOccurs="0"/>
+      <xs:element name="TotalYearsExperience" type="xs:string" minOccurs="0"/>
+      <xs:element name="IncomeRange" type="xs:string" minOccurs="0"/>
+      <xs:element name="LengthOfResidence" type="xs:string" minOccurs="0"/>
+      <xs:element name="HouseHoldSize" type="xs:string" minOccurs="0"/>
+      <xs:element name="Comments" type="xs:string" minOccurs="0"/>
+      <xs:element name="WebSite" type="xs:string" minOccurs="0"/>
+      <xs:element name="Income" type="xs:string" minOccurs="0"/>
+      <xs:element name="Segmentation" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentResponsibiltyFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="MailingType" type="xs:string" minOccurs="0"/>
+      <xs:element name="MaxLimit" type="xs:string" minOccurs="0"/>
+      <xs:element name="DeductDate" type="xs:string" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="RejectReason" type="xs:string" minOccurs="0"/>
+      <xs:element name="CardDetails" type="common:CardDetailsType" minOccurs="0"/>
+      <xs:element name="BankDetails" type="common:BankDetailsType" minOccurs="0"/>
+      <xs:element name="DebitInfo" type="common:DebitInfoType" minOccurs="0"/>
+      <xs:element name="OrganizationInfo" type="common:OrganizationInfoType" minOccurs="0"/>
+      <xs:element name="RelationInfoList" type="common:RelationInfoListType" minOccurs="0"/>
+      <xs:element name="AddtionalIdInfoList" type="common:IDInfoListType" minOccurs="0"/>
+      <xs:element name="DateOfBirthHijri" type="common:Date" minOccurs="0"/>
+      <xs:element name="DateOfBirthHijriFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="BillSummary" type="common:BillSummaryType" minOccurs="0"/>
+      <!--End of Added from UCMP Interface-->
+      <xs:element name="ProductOfferList" type="common:ProductOfferListType" minOccurs="0"/>
+      <xs:element name="AccountList" type="common:AccountListType" minOccurs="0"/>
+      <xs:element name="BillCycleId" type="xs:string" minOccurs="0"/>
+      <!--BillCycleId: 0 for Prepaid, 2 for Postpaid-->
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="AccountListType">
+    <xs:sequence>
+      <xs:element name="Account" type="common:Account" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Account">
+    <xs:all>
+      <xs:element name="AccountCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="common:NameType" minOccurs="0"/>
+      <xs:element name="Gender" type="common:Gender" minOccurs="0"/>
+      <xs:element name="DateOfBirth" type="common:Date" minOccurs="0"/>
+      <xs:element name="DateOfBirthHijri" type="common:Date" minOccurs="0"/>
+      <xs:element name="DateOfBirthHijriFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Nationality" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaidMode" type="xs:string" minOccurs="0"/>
+      <xs:element name="NetworkType" type="xs:string" minOccurs="0"/>
+      <!--GSM or Fixed Line-->
+      <xs:element name="AddressList" type="common:AddressListType" minOccurs="0"/>
+      <xs:element name="SalesPersonNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="Contacts" type="common:ContactsType" minOccurs="0"/>
+      <xs:element name="BillInfo" type="common:BillInfoType" minOccurs="0"/>
+      <xs:element name="isMainAccount" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Comments" type="xs:string" minOccurs="0"/>
+      <xs:element name="Segmentation" type="xs:string" minOccurs="0"/>
+      <xs:element name="TaxPolicy" type="xs:string" minOccurs="0"/>
+      <xs:element name="CreditDetails" type="common:CreditDetailsType" minOccurs="0"/>
+      <xs:element name="DunningDetails" type="common:DunningDetailsType" minOccurs="0"/>
+      <xs:element name="MarketSegment" type="common:MarketSegmentType" minOccurs="0"/>
+      <xs:element name="AutoDebitDetails" type="common:AutoDebitDetailsType" minOccurs="0"/>
+      <!--Added from UCMP Interface-->
+      <xs:element name="GSMOperator" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountCategory" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountSubCategory" type="xs:string" minOccurs="0"/>
+      <xs:element name="TariffProfile" type="xs:string" minOccurs="0"/>
+      <xs:element name="Language" type="xs:string" minOccurs="0"/>
+      <xs:element name="FinancialInstitute" type="xs:string" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChangedDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="AppliedDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="Delivarychannel" type="xs:string" minOccurs="0"/>
+      <xs:element name="BalanceTransferRuleFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="AllowedSubscribers" type="xs:int" minOccurs="0"/>
+      <xs:element name="SalesTaxNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="NationalTaxNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="ReferredBy" type="xs:string" minOccurs="0"/>
+      <xs:element name="PrintGroup" type="xs:string" minOccurs="0"/>
+      <xs:element name="Bin" type="xs:string" minOccurs="0"/>
+      <xs:element name="BinBint" type="xs:string" minOccurs="0"/>
+      <xs:element name="ArBin" type="xs:string" minOccurs="0"/>
+      <xs:element name="ArBinBint" type="xs:string" minOccurs="0"/>
+      <xs:element name="SalesNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="Income" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentResponsibiltyFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="MailingType" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountType" type="xs:string" minOccurs="0"/>
+      <xs:element name="DeductDate" type="xs:string" minOccurs="0"/>
+      <xs:element name="IsAccountInCollection" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="RejectReason" type="xs:string" minOccurs="0"/>
+      <xs:element name="DebitInfo" type="common:DebitInfoType" minOccurs="0"/>
+      <xs:element name="RetailerDetails" type="common:RetailerInfoType" minOccurs="0"/>
+      <xs:element name="OrganizationInfo" type="common:OrganizationInfoType" minOccurs="0"/>
+      <xs:element name="BankDetails" type="common:BankDetailsType" minOccurs="0"/>
+      <xs:element name="CardDetails" type="common:CardDetailsType" minOccurs="0"/>
+      <xs:element name="ReferencesList" type="common:ReferencesListType" minOccurs="0"/>
+      <xs:element name="RelationInfoList" type="common:RelationInfoListType" minOccurs="0"/>
+      <xs:element name="BillSummary" type="common:BillSummaryType" minOccurs="0"/>
+      <!--End of Added from UCMP Interface-->
+      <xs:element name="ProductOfferList" type="common:ProductOfferListType" minOccurs="0"/>
+      <xs:element name="Customer" type="common:Customer" minOccurs="0"/>
+      <xs:element name="SubscriberList" type="common:SubscriberListType" minOccurs="0"/>
+      <xs:element name="PromiseToPayDetailsList" type="common:PromiseToPayDetailsListType" minOccurs="0"/>
+      <xs:element name="CUGMemberList" type="common:CUGMemberListType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="Subscriber">
+    <xs:all>
+      <xs:element name="SubscriberCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubscriberNo" type="common:SubscriberNo" minOccurs="0"/>
+      <xs:element name="AccessKeyType" type="xs:string" minOccurs="0"/>
+      <!--AccessKeyType: 0 for Mobile (MSISDN), 2001 for DN_Number 2002 for DSL UserName 2003 for IP Address-->
+      <xs:element name="SAKDomain" type="xs:string" minOccurs="0"/>
+      <!--SAKDomain: CA or GMF. CA will be default value. SAKs will be deleted based on this value-->
+      <xs:element name="Name" type="common:NameType" minOccurs="0"/>
+      <xs:element name="PaidMode" type="xs:string" minOccurs="0"/>
+      <xs:element name="AddressList" type="common:AddressListType" minOccurs="0"/>
+      <xs:element name="IMSI" type="common:IMSI" minOccurs="0"/>
+      <xs:element name="ICCID" type="common:ICCID" minOccurs="0"/>
+      <xs:element name="IMEI" type="common:IMEI" minOccurs="0"/>
+      <xs:element name="SIMType" type="xs:string" minOccurs="0"/>
+      <xs:element name="OptInLMS" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="CommunicationLanguage" type="xs:string" minOccurs="0"/>
+      <xs:element name="Password" type="xs:string" minOccurs="0"/>
+      <xs:element name="Area" type="xs:string" minOccurs="0"/>
+      <xs:element name="ServiceType" type="xs:string" minOccurs="0"/>
+      <!--GSM, Internet, Land Line-->
+      <xs:element name="SubServiceType" type="xs:string" minOccurs="0"/>
+      <!--Ex: fixed line is the ServiceType, SubServiceType could be PSTN, Leased Line, Email Hosting.. etc-->
+      <xs:element name="CreditControlInfo" type="common:CreditControlInfoType" minOccurs="0"/>
+      <xs:element name="Contacts" type="common:ContactsType" minOccurs="0"/>
+      <xs:element name="CreateDummyAccountFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="ScheduleHotbillFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Comments" type="xs:string" minOccurs="0"/>
+      <xs:element name="Account" type="common:Account" minOccurs="0"/>
+      <xs:element name="ProductOfferList" type="common:ProductOfferListType" minOccurs="0"/>
+      <xs:element name="Action" type="common:Action" minOccurs="0"/>
+      <!--Directory listed: Y|N-->
+      <xs:element name="IsListed" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="SecondaryIMSI" type="common:IMSI" minOccurs="0"/>
+      <xs:element name="SecondaryICCID" type="common:ICCID" minOccurs="0"/>
+      <xs:element name="AdditionalDataMSISDN" type="common:SubscriberNo" minOccurs="0"/>
+      <xs:element name="AdditionalFaxMSISDN" type="common:SubscriberNo" minOccurs="0"/>
+      <!--New attributes-->
+      <xs:element name="LineExpiryDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="FirstCallDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="Balance" type="xs:string" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <!--Line Status-->
+      <xs:element name="LoanDetails" type="common:LoanDetailsType" minOccurs="0"/>
+      <xs:element name="BillSummary" type="common:BillSummaryType" minOccurs="0"/>
+      <xs:element name="LoyaltyDetails" type="common:LoyaltyDetails" minOccurs="0"/>
+      <xs:element name="DunningDetails" type="common:DunningDetailsItemListType" minOccurs="0"/>
+      <xs:element name="PromiseToPayDetailsList" type="common:PromiseToPayDetailsListType" minOccurs="0"/>
+      <xs:element name="DataUsageSummaryList" type="common:DataUsageSummaryListType" minOccurs="0"/>
+      <xs:element name="ServiceUsage" type="common:ServiceUsageType" minOccurs="0"/>
+      <xs:element name="MemberGroup" type="common:MemberGroupType" minOccurs="0"/>
+      <!--to hold FNF member list-->
+      <xs:element name="DepositRefundInfo" type="common:DepositRefundInfoType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+      <!--New Attributes required by ROP-->
+      <xs:element name="ActivationDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="DateOfBirth" type="common:Date" minOccurs="0"/>
+      <xs:element name="Nationality" type="xs:string" minOccurs="0"/>
+      <xs:element name="Gender" type="common:Gender" minOccurs="0"/>
+      <xs:element name="PlaceOfBirth" type="xs:string" minOccurs="0"/>
+      <xs:element name="User" type="common:User" minOccurs="0"/>
+      <!--Added at the time of Fixed line implementation-->
+      <xs:element name="OwnerNotificationMSISDN" type="xs:string" minOccurs="0"/>
+      <!--OwnerNotificationMSISDN: If not specified then SubscriberNo should be used-->
+      <xs:element name="BillCycleId" type="xs:string" minOccurs="0"/>
+      <!--BillCycleId: 0 for Prepaid, 2 for Postpaid-->
+      <xs:element name="BillingType" type="xs:string" minOccurs="0"/>
+      <!--BillingType: 1=Postpaid, 2=Hybrid, 0=Prepaid.-->
+      <xs:element name="CreditLimit" type="common:SubscriberCreditLimitType" minOccurs="0"/>
+      <!--IsFirstCallPassed: TRUE for POST, FALSE for PRE-->
+      <xs:element name="IsFirstCallPassed" type="xs:boolean" minOccurs="0"/>
+      <!--LastKnownPeriod: Active for POST/Fixed, PreActive for PREP-->
+      <xs:element name="LastKnownPeriod" type="xs:string" minOccurs="0"/>
+      <!--IsLocked:POST/FIX: FALSE, PREP:TRUE-->
+      <xs:element name="IsLocked" type="xs:boolean" minOccurs="0"/>
+      <xs:element name="CASAKList" type="common:ServiceAccessKeyListType" minOccurs="0"/>
+      <!--CASAKList: SAK list which should be added using CA domain/namespace-->
+      <xs:element name="GMFSAKList" type="common:ServiceAccessKeyListType" minOccurs="0"/>
+      <!--GMFSAKList: SAK list which should be added using GMF domain/namespace. 
+		  This will be used for Fixed Lines where hundreds of such SAK should be created at a time-->
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="SubscriberCreditLimitType">
+    <xs:all>
+      <xs:element name="LimitAggr" type="common:CreditLimitType" minOccurs="0"/>
+      <xs:element name="OnPeakAccountID" type="common:CreditLimitType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="CreditLimitType">
+    <xs:all>
+      <xs:element name="CreditLimit" type="xs:long" minOccurs="1"/>
+      <xs:element name="CreditMax" type="xs:long" minOccurs="1"/>
+      <xs:element name="Precision" type="xs:int" minOccurs="1"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ServiceAccessKeyListType">
+    <xs:sequence>
+      <xs:element name="ServiceAccessKey" type="common:ServiceAccessKeyType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ServiceAccessKeyType">
+    <xs:all>
+      <xs:element name="Key" type="xs:string" minOccurs="1"/>
+      <!--Key: MSISDN, IMSI, DN_Number etc-->
+      <xs:element name="KeyType" type="xs:string" minOccurs="1"/>
+      <!--KeyType: 0 for MSISDN, 1 for IMSI, 2001 for DN_Number, 2002 for DSL UserName, 2003 for IP Address-->
+      <xs:element name="ROPKey" type="xs:int" minOccurs="1"/>
+      <!--ROPKey: 1 for all-->
+    </xs:all>
+  </xs:complexType>
+  <!--*****************************************************-->
+  <xs:complexType name="SubscriberListType">
+    <xs:sequence>
+      <xs:element name="Subscriber" type="common:Subscriber" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="LoyaltyDetails">
+    <xs:all>
+      <xs:element name="SubscriberTier" type="xs:string" minOccurs="0"/>
+      <xs:element name="RewardPoints" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="LoanDetailsType">
+    <xs:all>
+      <xs:element name="LoanAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="PenaltyAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="LoanRepaymentRemainingDays" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="CommitmentDetailsType">
+    <xs:all>
+      <xs:element name="TotalPeriods" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="PendingPeriods" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="CommitmentPenaltyAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="StartDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="EndDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="MbFreePerPeriod" type="xs:string" minOccurs="0"/>
+      <xs:element name="Rate" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="DiscountDetailsListType">
+    <xs:sequence>
+      <xs:element name="DiscountDetails" type="common:DiscountDetailsType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="DiscountDetailsType">
+    <xs:all>
+      <xs:element name="DiscountType" type="xs:string" minOccurs="0"/>
+      <xs:element name="DiscountCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="DiscountDesc" type="xs:string" minOccurs="0"/>
+      <xs:element name="DiscountStartDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="DiscountEndDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="BillSummaryType">
+    <xs:all>
+      <xs:element name="PastDue" type="common:decimal-or-empty" nillable="true" minOccurs="0"/>
+      <xs:element name="TotalUnbilled" type="common:decimal-or-empty" nillable="true" minOccurs="0"/>
+      <xs:element name="DueDeposit" type="common:decimal-or-empty" nillable="true" minOccurs="0"/>
+      <xs:element name="OverDue" type="common:decimal-or-empty" nillable="true" minOccurs="0"/>
+      <xs:element name="DepositPaid" type="common:decimal-or-empty" nillable="true" minOccurs="0"/>
+      <xs:element name="DepositDue" type="common:decimal-or-empty" nillable="true" minOccurs="0"/>
+      <xs:element name="LastBillDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="NextBillDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="DeliverMethod" type="xs:string" minOccurs="0"/>
+      <xs:element name="WriteOffAmounts" type="xs:string" minOccurs="0"/>
+      <xs:element name="TotalBilled" type="common:decimal-or-empty" nillable="true" minOccurs="0"/>
+      <xs:element name="FinalSettlementAmount" type="common:decimal-or-empty" nillable="true" minOccurs="0"/>
+      <xs:element name="Remarks" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="MemberGroupType">
+    <xs:sequence>
+      <xs:element name="Customer" type="common:Customer" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="Account" type="common:Account" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="Subscriber" type="common:Subscriber" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="EffectMode_ModeType">
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:complexType name="EffectModeType">
+    <xs:all>
+      <xs:element name="Mode" type="common:EffectMode_ModeType" minOccurs="0"/>
+      <xs:element name="EffectiveDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ExpiryDate" type="common:DateTime" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ProductPriceType">
+    <xs:all>
+      <xs:element name="ChargeAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="ChargeCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargeType" type="xs:string" minOccurs="0"/>
+      <xs:element name="DiscountCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargeUpFront" type="xs:string" minOccurs="0"/>
+      <xs:element name="Rate" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="DiscountAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="DiscountPercentage" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="TaxAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="TaxPercentage" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="PriceType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ChargeDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="StartDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="EndDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="RentalType" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:simpleType name="InteractionRule">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="1"/>
+      <xs:enumeration value="1" id="Excluded"/>
+      <xs:enumeration value="2" id="Other"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="IntegrationSystemsList">
+    <xs:sequence>
+      <xs:element name="IntegrationSystem" type="common:IntegrationSystem" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="IntegrationSystem">
+    <xs:all>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="InteractionRule " type="common:InteractionRule" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ProductPriceListType">
+    <xs:sequence>
+      <xs:element name="ProductPrice" type="common:ProductPriceType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Product">
+    <xs:all>
+      <xs:element name="ProductId" type="xs:string" minOccurs="0"/>
+      <!--VOICE | SMS | DATA | RO (Money Bundle)-->
+      <xs:element name="SubscriptionType" type="xs:string" minOccurs="0"/>
+      <xs:element name="GroupId" type="xs:string" minOccurs="0"/>
+      <xs:element name="ShortCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="ProductCode" type="xs:string" minOccurs="0"/>
+      <!--ProductCode is temporary field to hold UCMP ProductCode (the 7 digit code) used in RPC-BIP-->
+      <xs:element name="ProductLevel" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="Type" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="Category" type="xs:string" minOccurs="0"/>
+      <xs:element name="Class" type="xs:string" minOccurs="0"/>
+      <!--On-Net Minutes | International SMS | ....-->
+      <xs:element name="SubClass" type="xs:string" minOccurs="0"/>
+      <xs:element name="ServiceType" type="xs:string" minOccurs="0"/>
+      <xs:element name="NextProductId" type="xs:string" minOccurs="0"/>
+      <!--Prepaid, Postpaid, Fixed Line-->
+      <xs:element name="isPrimaryOffer" type="xs:string" minOccurs="0"/>
+      <!--Primary offer | Additional offer-->
+      <xs:element name="ProductPriceList" type="common:ProductPriceListType" minOccurs="0"/>
+      <xs:element name="DepositRefundInfo" type="common:DepositRefundInfoType" minOccurs="0"/>
+      <xs:element name="ChargeMode" type="xs:string" minOccurs="0"/>
+      <!--Default 0 will be sent by ESB if not provided-->
+      <xs:element name="UserNotificationType" type="xs:string" minOccurs="0"/>
+      <!--Default SMS will be sent by ESB if not provided-->
+      <xs:element name="DesubscribeMode" type="xs:string" minOccurs="0"/>
+      <!--Default 0 will be sent by ESB if not provided-->
+      <xs:element name="IntegrationSystemsList" type="common:IntegrationSystemsList" minOccurs="0"/>
+      <!--Added from UCMP Interface-->
+      <xs:element name="StartDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="EndDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ReasonCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="TariffProfile" type="xs:string" minOccurs="0"/>
+      <xs:element name="Action" type="common:Action" minOccurs="0"/>
+      <xs:element name="HLRProfile" type="xs:string" minOccurs="0"/>
+      <xs:element name="SerialNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="SendCommandFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="SubsidyFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="Quantity" type="xs:integer" minOccurs="0"/>
+      <xs:element name="CommitmentDetails" type="common:CommitmentDetailsType" minOccurs="0"/>
+      <xs:element name="BalanceInfoList" type="common:BalanceInfoListType" minOccurs="0"/>
+      <xs:element name="ServiceQuotaDetails" type="common:ServiceQuotaDetailsType" minOccurs="0"/>
+      <xs:element name="DiscountDetailsList" type="common:DiscountDetailsListType" minOccurs="0"/>
+      <!--IsMultipleSubscriptionAllowed, IsRoaming, IsUnlimited, UpperCapBalance
+		 are added on 22 May 2018 by Shahab to allow CICM to get additional information from Arbor.
+		 These elements will come for Version 2.0 or more-->
+      <xs:element name="IsMultipleSubscriptionAllowed" type="xs:string" minOccurs="0"/>
+      <xs:element name="IsRoaming" type="xs:string" minOccurs="0"/>
+      <xs:element name="IsUnlimited" type="xs:string" minOccurs="0"/>
+      <xs:element name="UpperCapBalance" type="xs:decimal" minOccurs="0"/>
+      <!--End of Added from UCMP Interface-->
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ProductListType">
+    <xs:sequence>
+      <xs:element name="Product" type="common:Product" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="BalanceInfoListType">
+    <xs:sequence>
+      <xs:element name="BalanceInfo" type="common:BalanceInfoType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ServiceQuotaDetailsType">
+    <xs:all>
+      <xs:element name="QuotaName" type="xs:string" minOccurs="0"/>
+      <xs:element name="QuotaValue" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="QuotaBalance" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="QuotaConsumption" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="QuotaExtraUsage" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="QuotaExtraCharge" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="QuotaTimestamp" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="QuotaResetDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="BalanceInfoType">
+    <xs:all>
+      <xs:element name="BalanceType" type="xs:string" minOccurs="0"/>
+      <xs:element name="BalanceAmount" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="ValidFrom" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ValidTo" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="Units" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="PromotionInfoType">
+    <xs:all>
+      <xs:element name="ApplyPromotion" type="xs:string" minOccurs="0"/>
+      <xs:element name="DiscountAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="DiscountPercentage" type="xs:string" minOccurs="0"/>
+      <xs:element name="DiscountCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ProductOfferListType">
+    <xs:sequence>
+      <xs:element name="ProductOffer" type="common:ProductOffer" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ProductOffer">
+    <xs:all>
+      <xs:element name="ProductOfferId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="ProductLevel" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="Category" type="xs:string" minOccurs="0"/>
+      <xs:element name="Class" type="xs:string" minOccurs="0"/>
+      <!--On-Net Minutes | International SMS | ....-->
+      <xs:element name="SubClass" type="xs:string" minOccurs="0"/>
+      <xs:element name="ServiceType" type="xs:string" minOccurs="0"/>
+      <!--Prepaid, Postpaid, Fixed Line-->
+      <xs:element name="Type" type="xs:string" minOccurs="0"/>
+      <xs:element name="isPrimaryOffer" type="xs:string" minOccurs="0"/>
+      <!--Primary offer | Additional offer-->
+      <xs:element name="ProductPriceList" type="common:ProductPriceListType" minOccurs="0"/>
+      <!--Added from UCMP Interface-->
+      <xs:element name="StartDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="EndDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ReasonCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="TariffProfile" type="xs:string" minOccurs="0"/>
+      <xs:element name="Action" type="common:Action" minOccurs="0"/>
+      <xs:element name="HLRProfile" type="xs:string" minOccurs="0"/>
+      <xs:element name="SerialNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="SendCommandFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="SubsidyFlag" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="PromotionDetails" type="common:PromotionInfoType" minOccurs="0"/>
+      <!--End of Added from UCMP Interface-->
+      <xs:element name="ProductList" type="common:ProductListType" minOccurs="0"/>
+      <xs:element name="CommitmentDetails" type="common:CommitmentDetailsType" minOccurs="0"/>
+      <xs:element name="UpgradeDowngradeFlag" type="xs:string" minOccurs="0"/>
+      <xs:element name="CUGAbbNoList" type="common:GeneralListType" minOccurs="0"/>
+      <!--U, D-->
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="LookupType">
+    <xs:sequence>
+      <xs:element name="FromDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ToDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="AdditionalSearchCriteria" type="common:AdditionalSearchCriteria" minOccurs="0"/>
+      <xs:element name="FiltrationCriteria" type="common:FiltrationCriteriaType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="AdditionalSearchCriteria">
+    <xs:all>
+      <xs:element name="TransactionType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ServiceType" type="xs:string" minOccurs="0"/>
+      <xs:element name="Adjustment" type="common:AdjustmentType" minOccurs="0"/>
+      <xs:element name="FoldersList" type="common:FolderListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="FolderListType">
+    <xs:sequence>
+      <xs:element name="FolderName" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="AccountLookupType">
+    <xs:sequence>
+      <xs:element name="Customer" type="common:Customer" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="Account" type="common:Account" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="Subscriber" type="common:Subscriber" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="User" type="common:User" minOccurs="0"/>
+      <xs:element name="FromDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ToDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="AdditionalSearchCriteria" type="common:AdditionalSearchCriteria" minOccurs="0"/>
+      <xs:element name="FiltrationCriteria" type="common:FiltrationCriteriaType" minOccurs="0"/>
+      <xs:element name="OrderLevel" type="xs:string" minOccurs="0"/>
+      <xs:element name="Remarks" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountDueDetails" type="common:AccountDueDetailsType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ResourceLookupType">
+    <xs:sequence>
+      <xs:element name="Resource" type="common:ResourceType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="Customer" type="common:Customer" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="Account" type="common:Account" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="Subscriber" type="common:Subscriber" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="User" type="common:User" minOccurs="0"/>
+      <xs:element name="FromDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ToDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="AdditionalSearchCriteria" type="common:AdditionalSearchCriteria" minOccurs="0"/>
+      <xs:element name="FiltrationCriteria" type="common:FiltrationCriteriaType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="OfferLookupType">
+    <xs:sequence>
+      <xs:element name="ProductOffer" type="common:ProductOffer" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="User" type="common:User" minOccurs="0"/>
+      <xs:element name="FromDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ToDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="AdditionalSearchCriteria" type="common:AdditionalSearchCriteria" minOccurs="0"/>
+      <xs:element name="FiltrationCriteria" type="common:FiltrationCriteriaType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PagingType">
+    <xs:sequence>
+      <xs:element name="PageSize" type="xs:string" minOccurs="0"/>
+      <xs:element name="PageId" type="xs:string" minOccurs="0"/>
+      <xs:element name="TotalResultCount" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FiltrationCriteriaType">
+    <xs:sequence>
+      <xs:element name="OrderBy" type="xs:string" minOccurs="0"/>
+      <xs:element name="OrderBehavior" type="xs:string" minOccurs="0"/>
+      <xs:element name="isRandom" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="MaxResultCount" type="xs:string" minOccurs="0"/>
+      <xs:element name="Paging" type="common:PagingType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Complaint">
+    <xs:all>
+      <xs:element name="ComplaintId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Approver" type="common:User" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="NotificationType">
+    <xs:all>
+      <xs:element name="NotificationId" type="xs:string" minOccurs="0"/>
+      <xs:element name="NotificationType" type="xs:string" minOccurs="0"/>
+      <!--SMS | Email-->
+      <xs:element name="NotificationEventType" type="xs:string" minOccurs="0"/>
+      <!--CSR | Application | Agent | Complaint-->
+      <xs:element name="NotificationChannel" type="xs:string" minOccurs="0"/>
+      <!--BIP | RTCS-->
+      <xs:element name="NotificationReason" type="xs:string" minOccurs="0"/>
+      <!--BIP_DUNNING | RTCS_LANG_CHANGE .....etc-->
+      <xs:element name="NotificationReasonDescription" type="xs:string" minOccurs="0"/>
+      <xs:element name="NotificationDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="NotificationEndDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="NotificationLanguage" type="xs:string" minOccurs="0"/>
+      <xs:element name="Sender" type="xs:string" minOccurs="0"/>
+      <!--New SMS GW Params Start-->
+      <xs:element name="DeliveryStatus" type="xs:string" minOccurs="0"/>
+      <xs:element name="ShortCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="SMSCommand" type="xs:string" minOccurs="0"/>
+      <xs:element name="ActivateFlag" type="xs:string" minOccurs="0"/>
+      <xs:element name="OriginationAddress" type="xs:string" minOccurs="0"/>
+      <xs:element name="DestinationAddress" type="xs:string" minOccurs="0"/>
+      <xs:element name="NotificationDirection" type="xs:string" minOccurs="0"/>
+      <xs:element name="ClientId" type="xs:string" minOccurs="0"/>
+      <xs:element name="BodyTemplateId" type="xs:string" minOccurs="0"/>
+      <xs:element name="LangTemplateId" type="xs:string" minOccurs="0"/>
+      <xs:element name="BodyCoding" type="xs:string" minOccurs="0"/>
+      <xs:element name="DeliveryStatusReportURL" type="xs:string" minOccurs="0"/>
+      <xs:element name="IsDeliveryStatusRequired" type="xs:string" minOccurs="0"/>
+      <xs:element name="NotificaitionValidityPeriod" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="NotificationParentRequestId" type="xs:string" minOccurs="0"/>
+      <xs:element name="NotificaitionParentTransactionId" type="xs:string" minOccurs="0"/>
+      <xs:element name="BulkMessageInfoList" type="common:BulkMessageInfoListType" minOccurs="0"/>
+      <!--New SMS GW Params End-->
+      <xs:element name="ReceiverList" type="common:ReceiverList" minOccurs="0"/>
+      <xs:element name="CCList" type="common:ReceiverList" minOccurs="0"/>
+      <xs:element name="BCCList" type="common:ReceiverList" minOccurs="0"/>
+      <xs:element name="ReplyTo" type="xs:string" minOccurs="0"/>
+      <xs:element name="Subject" type="xs:string" minOccurs="0"/>
+      <xs:element name="SubjectParameterList" type="common:ParameterList" minOccurs="0"/>
+      <xs:element name="Body" type="xs:string" minOccurs="0"/>
+      <xs:element name="BodyContentType" type="xs:string" minOccurs="0"/>
+      <xs:element name="BodyParameterList" type="common:ParameterList" minOccurs="0"/>
+      <xs:element name="AttachmentList" type="common:AttachmentList" minOccurs="0"/>
+      <xs:element name="Customer" type="common:Customer" minOccurs="0"/>
+      <xs:element name="Account" type="common:Account" minOccurs="0"/>
+      <xs:element name="Subscriber" type="common:Subscriber" minOccurs="0"/>
+      <!--Below Payment element is added by Shahab on 2 Jun 2020 to support CR19281-CMS phase 2 Real Time Payment-->
+      <xs:element name="Payment" type="common:PaymentType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="BulkMessageInfoListType">
+    <xs:sequence>
+      <xs:element name="BulkMessageInfo" type="common:BulkMessageInfoType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="BulkMessageInfoType">
+    <xs:all>
+      <xs:element name="Receiver" type="xs:string" minOccurs="0"/>
+      <xs:element name="MsgId" type="xs:string" minOccurs="0"/>
+      <xs:element name="MsgBody" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="AttachmentList">
+    <xs:sequence>
+      <xs:element name="Attachment" type="common:Attachment" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Attachment">
+    <xs:all>
+      <xs:element name="AttachmentContentName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AttachmentContentType" type="xs:string" minOccurs="0"/>
+      <xs:element name="AttachmentContent" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ReceiverList">
+    <xs:sequence>
+      <xs:element name="Receiver" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ParameterList">
+    <xs:sequence>
+      <xs:element name="Parameter" type="common:ParameterType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ParameterType">
+    <xs:sequence>
+      <xs:element name="ParamName" type="xs:string" minOccurs="0"/>
+      <xs:element name="ParamValue" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ReceiptInfo">
+    <xs:sequence>
+      <xs:element name="ReceiptId" type="xs:string" minOccurs="0"/>
+      <xs:element name="ReceiptNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="ReceiptAmount" type="xs:float" minOccurs="0"/>
+      <xs:element name="ReceiptDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ReceiptStatus" type="xs:string" minOccurs="0"/>
+      <xs:element name="SaleReceiptId" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ShipmentType">
+    <xs:all>
+      <xs:element name="ShipmentId" type="xs:string" minOccurs="0"/>
+      <xs:element name="ShipmentType" type="xs:string" minOccurs="0"/>
+      <xs:element name="Source" type="xs:string" minOccurs="0"/>
+      <xs:element name="Destination" type="xs:string" minOccurs="0"/>
+      <xs:element name="ShipmentAddress" type="common:AddressType" minOccurs="0"/>
+      <xs:element name="Serials" type="common:SerialsType" minOccurs="0"/>
+      <xs:element name="ShipmentDate" type="common:Date" minOccurs="0"/>
+      <xs:element name="ShippedQuantity" type="xs:int" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="SerialsType">
+    <xs:sequence>
+      <xs:element name="SerialNumber" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ShipmentListType">
+    <xs:sequence>
+      <xs:element name="Shipment" type="common:ShipmentType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="LineItemType">
+    <xs:all>
+      <xs:element name="LineItemId" type="xs:string" minOccurs="0"/>
+      <xs:element name="ExternalLineItemId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Resource" type="common:ResourceType" minOccurs="0"/>
+      <xs:element name="Quantity" type="xs:integer" minOccurs="0"/>
+      <xs:element name="Shipments" type="common:ShipmentListType" minOccurs="0"/>
+      <xs:element name="Price" type="common:ResourcePriceType" minOccurs="0"/>
+      <xs:element name="Serials" type="common:SerialsType" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="DeliveredQuantity" type="xs:int" minOccurs="0"/>
+      <xs:element name="PromotionDetails" type="common:PromotionInfoType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="NotificationLookupType">
+    <xs:sequence>
+      <xs:element name="Notifications" type="common:NotificationType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="User" type="common:User" minOccurs="0"/>
+      <xs:element name="FromDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="ToDateTime" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="AdditionalSearchCriteria" type="common:AdditionalSearchCriteria" minOccurs="0"/>
+      <xs:element name="FiltrationCriteria" type="common:FiltrationCriteriaType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ProductChargesSummeryType">
+    <xs:all>
+      <xs:element name="ChargType" type="xs:string" minOccurs="0"/>
+      <xs:element name="IsUpFront" type="common:Boolean" minOccurs="0"/>
+      <xs:element name="TotalAmount" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="ProductChargesSummeryListType">
+    <xs:sequence>
+      <xs:element name="ProductChargesSummery" type="common:ProductChargesSummeryType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="VoucherInfo">
+    <xs:all>
+      <xs:element name="VoucherId" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoucherSerialNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoucherTypeName" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoucherProviderName" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoucherPrinterName" type="xs:string" minOccurs="0"/>
+      <xs:element name="VouchExpirationDate" type="common:DateTime" minOccurs="0"/>
+      <xs:element name="AccountName" type="xs:string" minOccurs="0"/>
+      <xs:element name="BonusAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="DealerName" type="xs:string" minOccurs="0"/>
+      <xs:element name="IsEVoucher" type="xs:string" minOccurs="0"/>
+      <xs:element name="IsVoucherOnTheFly" type="xs:string" minOccurs="0"/>
+      <xs:element name="PackageId" type="xs:string" minOccurs="0"/>
+      <xs:element name="State" type="xs:string" minOccurs="0"/>
+      <xs:element name="StateDesc" type="xs:string" minOccurs="0"/>
+      <xs:element name="Units" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountSCPId" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoucherTypeSCPId" type="xs:string" minOccurs="0"/>
+      <xs:element name="MSISDN" type="xs:string" minOccurs="0"/>
+      <xs:element name="VoucherUsedDate" type="common:DateTime" minOccurs="0"/>
+      <!--1-4 digits which means[ from 0 to 9999] in days-->
+      <xs:element name="RechargePeriod" type="xs:integer" minOccurs="0"/>
+      <!--1-18 digits which means[ from 0 to 999999999999999999999] in pisa-->
+      <xs:element name="RechargeValue" type="xs:long" minOccurs="0"/>
+      <xs:element name="OCSAccountName" type="xs:string" minOccurs="0"/>
+      <!--1-9 digits which means[ from 0 to 999999999]-->
+      <xs:element name="LayoutId" type="xs:integer" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <xs:complexType name="FetchrOrderType">
+    <xs:sequence>
+      <xs:element name="Username" type="xs:string" minOccurs="0"/>
+      <xs:element name="Password" type="xs:string" minOccurs="0"/>
+      <xs:element name="ClientAddressId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Data" type="common:FetchrOrderDataType" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="ErrorCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="Message" type="xs:string" minOccurs="0"/>
+      <xs:element name="TraceId" type="xs:string" minOccurs="0"/>
+      <!--xs:element name="ErrorCode" type="xs:string" minOccurs="0"/-->
+      <xs:element name="Success" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FetchrOrderDataType">
+    <xs:sequence>
+      <xs:element name="OrderReference" type="xs:string" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string" minOccurs="0"/>
+      <xs:element name="Email" type="xs:string" minOccurs="0"/>
+      <xs:element name="PhoneNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="AlternatePhone" type="xs:string" minOccurs="0"/>
+      <xs:element name="Address" type="xs:string" minOccurs="0"/>
+      <xs:element name="ReceiverCountry" type="xs:string" minOccurs="0"/>
+      <xs:element name="OrderPackageType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ReceiverCity" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentType" type="xs:string" minOccurs="0"/>
+      <xs:element name="TotalAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="Weight" type="xs:string" minOccurs="0"/>
+      <xs:element name="Latitude" type="xs:string" minOccurs="0"/>
+      <xs:element name="Longitude" type="xs:string" minOccurs="0"/>
+      <xs:element name="BagCount" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="Comments" type="xs:string" minOccurs="0"/>
+      <xs:element name="Message" type="xs:string" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="TrackingNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="ShipmentNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="SoNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="Latest" type="common:FetchrOrderStatusType" minOccurs="0"/>
+      <xs:element name="History" type="common:FetchrOrderStatusHistoryType" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FetchrOrderStatusHistoryType">
+    <xs:sequence>
+      <xs:element name="OrderStatus" type="common:FetchrOrderStatusType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FetchrOrderStatusType">
+    <xs:sequence>
+      <xs:element name="UpdatedAt" type="xs:string" minOccurs="0"/>
+      <xs:element name="StatusCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="StatusName" type="xs:string" minOccurs="0"/>
+      <xs:element name="StatusReason" type="common:FetchrOrderStatusReasonType" minOccurs="0"/>
+      <xs:element name="Comments" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="FetchrOrderStatusReasonType">
+    <xs:sequence>
+      <xs:element name="Code" type="xs:string" minOccurs="0"/>
+      <xs:element name="Reason" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArborGSMOrderDetailsType">
+    <xs:sequence>
+      <xs:element name="AccountCategory" type="xs:string" minOccurs="0"/>
+      <xs:element name="Address" type="xs:string" minOccurs="0"/>
+      <xs:element name="AssignedTo" type="xs:string" minOccurs="0"/>
+      <xs:element name="BillDispatchMethod" type="xs:string" minOccurs="0"/>
+      <xs:element name="BuildingNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="CancelReason" type="xs:string" minOccurs="0"/>
+      <xs:element name="CardReaderFlag" type="xs:string" minOccurs="0"/>
+      <xs:element name="CompanyName" type="xs:string" minOccurs="0"/>
+      <xs:element name="CompanyNameAr" type="xs:string" minOccurs="0"/>
+      <xs:element name="ContactNumber1" type="xs:string" minOccurs="0"/>
+      <xs:element name="ContactNumber2" type="xs:string" minOccurs="0"/>
+      <xs:element name="CreatedBy" type="xs:string" minOccurs="0"/>
+      <xs:element name="CreatedDate" type="xs:string" minOccurs="0"/>
+      <xs:element name="CustomerId" type="xs:string" minOccurs="0"/>
+      <xs:element name="CustomerIdType" type="xs:string" minOccurs="0"/>
+      <xs:element name="CustomerType" type="xs:string" minOccurs="0"/>
+      <xs:element name="DateOfBirth" type="xs:string" minOccurs="0"/>
+      <xs:element name="DocumentPath" type="xs:string" minOccurs="0"/>
+      <xs:element name="EmailId" type="xs:string" minOccurs="0"/>
+      <xs:element name="FatherName" type="xs:string" minOccurs="0"/>
+      <xs:element name="FatherNameAr" type="xs:string" minOccurs="0"/>
+      <xs:element name="FirstName" type="xs:string" minOccurs="0"/>
+      <xs:element name="FirstNameAr" type="xs:string" minOccurs="0"/>
+      <xs:element name="FlatNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="Gender" type="xs:string" minOccurs="0"/>
+      <xs:element name="GrandFatherName" type="xs:string" minOccurs="0"/>
+      <xs:element name="GrandFatherNameAr" type="xs:string" minOccurs="0"/>
+      <xs:element name="IdExpiry" type="xs:string" minOccurs="0"/>
+      <xs:element name="Language" type="xs:string" minOccurs="0"/>
+      <xs:element name="LastName" type="xs:string" minOccurs="0"/>
+      <xs:element name="LastNameAr" type="xs:string" minOccurs="0"/>
+      <xs:element name="Latitude" type="xs:string" minOccurs="0"/>
+      <xs:element name="Longitude" type="xs:string" minOccurs="0"/>
+      <xs:element name="MobileNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="Nationality" type="xs:string" minOccurs="0"/>
+      <xs:element name="OrderId" type="xs:string" minOccurs="0"/>
+      <xs:element name="PartnerCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentAmount" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentChannel" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentMode" type="xs:string" minOccurs="0"/>
+      <xs:element name="PaymentStatus" type="xs:string" minOccurs="0"/>
+      <xs:element name="PlansSelected" type="xs:string" minOccurs="0"/>
+      <xs:element name="PlansSelectedStr" type="xs:string" minOccurs="0"/>
+      <xs:element name="PoBox" type="xs:string" minOccurs="0"/>
+      <xs:element name="PostalCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="PreferredTimeToContact" type="xs:string" minOccurs="0"/>
+      <xs:element name="Region" type="xs:string" minOccurs="0"/>
+      <xs:element name="Remarks" type="xs:string" minOccurs="0"/>
+      <xs:element name="RequestChannel" type="xs:string" minOccurs="0"/>
+      <xs:element name="RequestId" type="xs:string" minOccurs="0"/>
+      <xs:element name="RequestType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ServiceType" type="xs:string" minOccurs="0"/>
+      <xs:element name="ShipmentCompany" type="xs:string" minOccurs="0"/>
+      <xs:element name="ShipmentNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="ShipmentStatus" type="xs:string" minOccurs="0"/>
+      <xs:element name="Status" type="xs:string" minOccurs="0"/>
+      <xs:element name="Title" type="xs:string" minOccurs="0"/>
+      <xs:element name="UpdatedBy" type="xs:string" minOccurs="0"/>
+      <xs:element name="UpdatedDate" type="xs:string" minOccurs="0"/>
+      <xs:element name="WayNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="Willayat" type="xs:string" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="TransactionEventType">
+    <xs:all>
+      <xs:element name="SubscriberNo" type="xs:string" minOccurs="0"/>
+      <xs:element name="OrginalRequestID" type="xs:string" minOccurs="0"/>
+      <xs:element name="EventType" type="xs:string" minOccurs="0"/>
+      <xs:element name="EventTime" type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="ErrorCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="EventInfo" type="xs:string" minOccurs="0"/>
+      <xs:element name="FilterID" type="xs:string" minOccurs="0"/>
+      <!--FilterRechargesSoap,FilterUsageSoap,FilterRechargesSoap,FilterAdjustmentsSoap,FilterTCLSoap,FilterMoneyTransferSoap-->
+      <xs:element name="DateFrom" type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="DateTo" type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="CharacteristicValueList" type="common:CharacteristicValueListType" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <!--Cheque through BPM-->
+  <xs:complexType name="AccountDueDetailsType">
+    <xs:all>
+      <xs:element name="AccountNumber" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountCategory" type="xs:string" minOccurs="0"/>
+      <xs:element name="AccountSubCategory" type="xs:string" minOccurs="0"/>
+      <xs:element name="BalanceDue" type="xs:decimal" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+  <!--GeneralListType can be used as List of String-->
+  <xs:complexType name="GeneralListType">
+    <xs:sequence>
+      <xs:element name="Item" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CUGMemberListType">
+    <xs:sequence>
+      <xs:element name="CUGMember" type="common:CUGMemberType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CUGMemberType">
+    <xs:all>
+      <xs:element name="ObjectReference" type="xs:string" minOccurs="0"/>
+      <xs:element name="MSISDN" type="xs:string" minOccurs="0"/>
+      <xs:element name="GroupId" type="xs:string" minOccurs="0"/>
+      <xs:element name="UserData" type="xs:string" minOccurs="0"/>
+    </xs:all>
+  </xs:complexType>
+</xs:schema>

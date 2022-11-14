@@ -71,6 +71,7 @@ type NewOutletRequest struct {
 	OutletCode string  `json:"outlet_code"`
 	OutletName string  `json:"outlet_name"`
 	RegionCode string  `json:"region_code"`
+	RegionName string  `json:"region_name"`
 	Lat        float64 `json:"lat"`
 	Lang       float64 `json:"lang"`
 	IsUpdate   bool    `json:"isUpdate"`
@@ -474,3 +475,37 @@ var SalesTrgt SaleTarget
 var PlanRates PlanRate
 var ValOfPoint ValueOfPoint
 var MaxPay MaxPayout
+
+var SMSRequestTemplate = []byte(`<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sen="http://www.omantel.om/esb/messages/sendnotification">
+<soapenv:Header/>
+<soapenv:Body>
+   <sen:SendNotificationRq>
+	  <sen:RequestHeader>
+		 <FunctionId>{{.FunctionId}}</FunctionId>
+		 <TransactionId>0</TransactionId>
+		 <RequestId>OMSIP_{{.RequestId}}</RequestId>
+		 <RequestorChannelId>OMSIP</RequestorChannelId>
+		 <RequestorUserId>OMSIP</RequestorUserId>
+		 <Timestamp>{{.Timestamp}}</Timestamp>
+	  </sen:RequestHeader>
+	  <sen:RequestBody>
+		 <sen:Notification>
+			<NotificationType>SMS</NotificationType>
+			<NotificationDateTime>{{.NotificationDateTime}}</NotificationDateTime>
+			<NotificationLanguage>1</NotificationLanguage>
+			<ShortCode>ROP Permit</ShortCode>
+			<IsDeliveryStatusRequired>1</IsDeliveryStatusRequired>
+			<NotificaitionValidityPeriod>{{.NotificaitionValidityPeriod}}</NotificaitionValidityPeriod>
+			<Body>Dear {{.UserId}}, Your OTP is {{.OTP}}
+
+		</Body>
+			<BodyCoding>8</BodyCoding>
+			<BodyContentType>1</BodyContentType>
+			<ReceiverList>
+			   <Receiver>{{.Receiver}}</Receiver>
+			</ReceiverList>
+		 </sen:Notification>
+	  </sen:RequestBody>
+   </sen:SendNotificationRq>
+</soapenv:Body>
+</soapenv:Envelope>`)

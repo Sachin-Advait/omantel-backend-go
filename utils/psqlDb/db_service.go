@@ -16,213 +16,16 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-// InsertUserMasterRecord reads data from user master input file and inserts into table
-func (dbConn *DBImplementation) InsertUserMasterRecord(emp *models.Employee) *errors.Error {
-
-	logger.FileLogger.Info().Interface("record", emp).Time("start", time.Now()).Msg("InsertUserMasterRecord start")
-	defer logger.FileLogger.Info().Interface("record", emp).Time("end", time.Now()).Msg("InsertUserMasterRecord done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	query := "insert into User_Master_Table(created, modified, emp_id, name, usr_position, region, outlet, mobile_number ,remark) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
-
-	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), emp.Id, emp.Name, emp.Position, emp.Region, emp.Outlet, emp.MobileNos, emp.Remark)
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "InsertUserMasterRecord: failed",
-			Details:    "InsertUserMasterRecord: " + err.Error(),
-		}
-	}
-
-	return nil
-}
-
-// InsertSaleTransaction reads data from input file and inserts into table
-func (dbConn *DBImplementation) InsertSaleTransaction(trx *models.Transaction) *errors.Error {
-
-	logger.FileLogger.Info().Interface("record", trx).Time("start", time.Now()).Msg("InsertSaleTransaction start")
-	defer logger.FileLogger.Info().Interface("record", trx).Time("end", time.Now()).Msg("InsertSaleTransaction done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	query := "insert into Sale_Transaction_Table(created, modified, region, outlet, emp_id, category_type, prev_product, curr_product, quantity, category, product_group, sales_date, quarter) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
-
-	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), trx.Reqion, trx.Outlet, trx.Id, trx.CategoryType, trx.PreviousProduct,
-		trx.CurrentProduct, trx.Quantity, trx.Category, trx.ProductGrp, trx.SaleDate, trx.Quarter)
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "InsertSaleTransaction: failed",
-			Details:    "InsertSaleTransaction: " + err.Error(),
-		}
-	}
-
-	return nil
-}
-
-// DeleteProductPlans removes product plan data from table
-func (dbConn *DBImplementation) DeleteProductPlans() *errors.Error {
-
-	logger.FileLogger.Info().Interface("record", "*").Time("start", time.Now()).Msg("DeleteProductPlans start")
-	defer logger.FileLogger.Info().Interface("record", "*").Time("end", time.Now()).Msg("DeleteProductPlans done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM Product_Plans_Table")
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "DeleteProductPlans: failed",
-			Details:    "DeleteProductPlans: " + err.Error(),
-		}
-	}
-
-	return nil
-}
-
-// InsertProductPlans reads data from plan input file and inserts into table
-func (dbConn *DBImplementation) InsertProductPlans(plan *models.ProductPlans) *errors.Error {
-
-	logger.FileLogger.Info().Interface("record", plan).Time("start", time.Now()).Msg("InsertProductPlans start")
-	defer logger.FileLogger.Info().Interface("record", plan).Time("end", time.Now()).Msg("InsertProductPlans done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	query := "insert into Product_Plans_Table(created, modified, plan_name, plan_price, sip_plan_rate) values($1,$2,$3,$4,$5)"
-
-	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), plan.PlanName, plan.PlanPrice, plan.SIPRatePlan)
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "InsertProductPlans: failed",
-			Details:    "InsertProductPlans: " + err.Error(),
-		}
-	}
-
-	return nil
-}
-
-// DeleteStoreTargets removes store target data from table
-func (dbConn *DBImplementation) DeleteStoreTargets() *errors.Error {
-
-	logger.FileLogger.Info().Interface("record", "*").Time("start", time.Now()).Msg("DeleteStoreTargets start")
-	defer logger.FileLogger.Info().Interface("record", "*").Time("end", time.Now()).Msg("DeleteStoreTargets done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM Sales_Target_Table")
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "DeleteStoreTargets: failed",
-			Details:    "DeleteStoreTargets: " + err.Error(),
-		}
-	}
-
-	return nil
-}
-
-// DeleteHierarchy removes all hierarchy data from table
-func (dbConn *DBImplementation) DeleteHierarchy() *errors.Error {
-
-	logger.FileLogger.Info().Interface("record", "*").Time("start", time.Now()).Msg("DeleteHierarchy start")
-	defer logger.FileLogger.Info().Interface("record", "*").Msg("DeleteHierarchy done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM user_hierarchy_table")
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "DeleteHierarchy: failed",
-			Details:    "DeleteHierarchy: " + err.Error(),
-		}
-	}
-
-	return nil
-}
-
-// InsertStoreTargets reads data from target input file and inserts into table
-func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month int, trgt *models.ProductGrpTarget) *errors.Error {
-
-	logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Int("month", month).Interface("record", trgt).Time("start", time.Now()).Msg("InsertStoreTargets start")
-	defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Int("month", month).Interface("record", trgt).Time("end", time.Now()).Msg("InsertStoreTargets done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	query := "insert into Sales_Target_Table(created, modified, region, outlet, months, Baqati, HBB, Hayyak, Upgrade) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
-
-	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), region, outlet, month, trgt.Baqati, trgt.HBB, trgt.Hayyak, trgt.Upgrade)
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "InsertStoreTargets: failed",
-			Details:    "InsertStoreTargets: " + err.Error(),
-		}
-	}
-
-	return nil
-}
-
-// InsertValueOfPoints reads data from ScakeOrder input file and inserts into table
-func (dbConn *DBImplementation) InsertValueOfPoints(category string, percent int, vop float64) (int64, *errors.Error) {
-
-	logger.FileLogger.Info().Str("category", category).Int("percent", percent).Float64("vop", vop).Time("start", time.Now()).Msg("InsertValueOfPoints start")
-	defer logger.FileLogger.Info().Str("category", category).Int("percent", percent).Float64("vop", vop).Time("end", time.Now()).Msg("InsertValueOfPoints done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	query := "insert into Scale_Order_Table(category, percentage, vop) values($1,$2,$3)"
-
-	rslt, err := dbConn.Operation.ExecContext(ctx, query, category, percent, vop)
-	if err != nil {
-		return -1, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "InsertValueOfPoints: failed",
-			Details:    "InsertValueOfPoints: " + err.Error(),
-		}
-	}
-
-	id, err := rslt.LastInsertId()
-	if err != nil {
-		return -1, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "InsertValueOfPoints LastInsertId: failed",
-			Details:    "InsertValueOfPoints LastInsertId: " + err.Error(),
-		}
-	}
-
-	return id, nil
-}
-
 // FetchPlans loads the global variable PlanRates with the rate plan for each plan type
 func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 
-	logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchPlans start")
-	defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchPlans done")
+	// logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchPlans start")
+	// defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchPlans done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select id, plan_name, plan_price, sip_plan_rate from Product_Plans_Table")
+	rows, err := dbConn.Operation.QueryContext(ctx, "select plan_code, plan_name, plan_price, sip_plan_rate from plans_table")
 	if err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -270,15 +73,15 @@ func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 // FetchSaleTarget loads the global variable SalesTrgt with the target for each outlet
 func (dbConn *DBImplementation) FetchSaleTarget() *errors.Error {
 
-	logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchSaleTarget start")
-	defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchSaleTarget done")
+	// logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchSaleTarget start")
+	// defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchSaleTarget done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	models.SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*models.ProductGrpTarget)
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select region, outlet, months, Baqati, HBB, Hayyak, Upgrade from Sales_Target_Table")
+	rows, err := dbConn.Operation.QueryContext(ctx, "select region, outlet, month, baqati, hbb, hayyak, upgrade from targets_table")
 	if err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -592,41 +395,7 @@ func (dbConn *DBImplementation) FetchMaxPayout() *errors.Error {
 	return nil
 }
 
-// FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
-func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, *errors.Error) {
-
-	logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
-	defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and position!= $3", region, outlet, commons.OutletManager)
-	rows, err := dbConn.Operation.QueryContext(ctx, "select count(*) from User_Master_Table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'", region, outlet)
-	if err != nil {
-		return -1, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "FetchTotalNonManagerialEmployees Query: failed",
-			Details:    "FetchTotalNonManagerialEmployees Query: " + err.Error(),
-		}
-	}
-
-	var count int
-
-	for rows.Next() {
-		if err := rows.Scan(&count); err != nil {
-			return -1, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerError,
-				Message:    "FetchTotalNonManagerialEmployees Scan: failed",
-				Details:    "FetchTotalNonManagerialEmployees Scan: " + err.Error(),
-			}
-		}
-	}
-
-	return count, nil
-}
+///////////
 
 // FetchUserSales returns all sale transaction of a given user
 func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter int, isQuarterReport bool) (*models.SaleTransaction, *errors.Error) {
@@ -704,6 +473,241 @@ func (dbConn *DBImplementation) FetchUserSales(clientID, month, year, quarter in
 	}
 
 	return trx, nil
+}
+
+///////////////
+
+// InsertUserMasterRecord reads data from user master input file and inserts into table
+func (dbConn *DBImplementation) InsertUserMasterRecord(emp *models.Employee) *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", emp).Time("start", time.Now()).Msg("InsertUserMasterRecord start")
+	defer logger.FileLogger.Info().Interface("record", emp).Time("end", time.Now()).Msg("InsertUserMasterRecord done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "insert into User_Master_Table(created, modified, emp_id, name, usr_position, region, outlet, mobile_number ,remark) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+
+	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), emp.Id, emp.Name, emp.Position, emp.Region, emp.Outlet, emp.MobileNos, emp.Remark)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertUserMasterRecord: failed",
+			Details:    "InsertUserMasterRecord: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// InsertSaleTransaction reads data from input file and inserts into table
+func (dbConn *DBImplementation) InsertSaleTransaction(trx *models.Transaction) *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", trx).Time("start", time.Now()).Msg("InsertSaleTransaction start")
+	defer logger.FileLogger.Info().Interface("record", trx).Time("end", time.Now()).Msg("InsertSaleTransaction done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "insert into Sale_Transaction_Table(created, modified, region, outlet, emp_id, category_type, prev_product, curr_product, quantity, category, product_group, sales_date, quarter) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)"
+
+	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), trx.Reqion, trx.Outlet, trx.Id, trx.CategoryType, trx.PreviousProduct,
+		trx.CurrentProduct, trx.Quantity, trx.Category, trx.ProductGrp, trx.SaleDate, trx.Quarter)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertSaleTransaction: failed",
+			Details:    "InsertSaleTransaction: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// DeleteProductPlans removes product plan data from table
+func (dbConn *DBImplementation) DeleteProductPlans() *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", "*").Time("start", time.Now()).Msg("DeleteProductPlans start")
+	defer logger.FileLogger.Info().Interface("record", "*").Time("end", time.Now()).Msg("DeleteProductPlans done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM Product_Plans_Table")
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteProductPlans: failed",
+			Details:    "DeleteProductPlans: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// InsertProductPlans reads data from plan input file and inserts into table
+func (dbConn *DBImplementation) InsertProductPlans(plan *models.ProductPlans) *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", plan).Time("start", time.Now()).Msg("InsertProductPlans start")
+	defer logger.FileLogger.Info().Interface("record", plan).Time("end", time.Now()).Msg("InsertProductPlans done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "insert into Product_Plans_Table(created, modified, plan_name, plan_price, sip_plan_rate) values($1,$2,$3,$4,$5)"
+
+	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), plan.PlanName, plan.PlanPrice, plan.SIPRatePlan)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertProductPlans: failed",
+			Details:    "InsertProductPlans: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// DeleteStoreTargets removes store target data from table
+func (dbConn *DBImplementation) DeleteStoreTargets() *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", "*").Time("start", time.Now()).Msg("DeleteStoreTargets start")
+	defer logger.FileLogger.Info().Interface("record", "*").Time("end", time.Now()).Msg("DeleteStoreTargets done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM Sales_Target_Table")
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteStoreTargets: failed",
+			Details:    "DeleteStoreTargets: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// DeleteHierarchy removes all hierarchy data from table
+func (dbConn *DBImplementation) DeleteHierarchy() *errors.Error {
+
+	logger.FileLogger.Info().Interface("record", "*").Time("start", time.Now()).Msg("DeleteHierarchy start")
+	defer logger.FileLogger.Info().Interface("record", "*").Msg("DeleteHierarchy done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := dbConn.Operation.ExecContext(ctx, "DELETE FROM user_hierarchy_table")
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "DeleteHierarchy: failed",
+			Details:    "DeleteHierarchy: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// InsertStoreTargets reads data from target input file and inserts into table
+func (dbConn *DBImplementation) InsertStoreTargets(region, outlet string, month int, trgt *models.ProductGrpTarget) *errors.Error {
+
+	logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Int("month", month).Interface("record", trgt).Time("start", time.Now()).Msg("InsertStoreTargets start")
+	defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Int("month", month).Interface("record", trgt).Time("end", time.Now()).Msg("InsertStoreTargets done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "insert into Sales_Target_Table(created, modified, region, outlet, months, Baqati, HBB, Hayyak, Upgrade) values($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+
+	_, err := dbConn.Operation.ExecContext(ctx, query, time.Now(), time.Now(), region, outlet, month, trgt.Baqati, trgt.HBB, trgt.Hayyak, trgt.Upgrade)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertStoreTargets: failed",
+			Details:    "InsertStoreTargets: " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+// InsertValueOfPoints reads data from ScakeOrder input file and inserts into table
+func (dbConn *DBImplementation) InsertValueOfPoints(category string, percent int, vop float64) (int64, *errors.Error) {
+
+	logger.FileLogger.Info().Str("category", category).Int("percent", percent).Float64("vop", vop).Time("start", time.Now()).Msg("InsertValueOfPoints start")
+	defer logger.FileLogger.Info().Str("category", category).Int("percent", percent).Float64("vop", vop).Time("end", time.Now()).Msg("InsertValueOfPoints done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "insert into Scale_Order_Table(category, percentage, vop) values($1,$2,$3)"
+
+	rslt, err := dbConn.Operation.ExecContext(ctx, query, category, percent, vop)
+	if err != nil {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertValueOfPoints: failed",
+			Details:    "InsertValueOfPoints: " + err.Error(),
+		}
+	}
+
+	id, err := rslt.LastInsertId()
+	if err != nil {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertValueOfPoints LastInsertId: failed",
+			Details:    "InsertValueOfPoints LastInsertId: " + err.Error(),
+		}
+	}
+
+	return id, nil
+}
+
+// FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
+func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, *errors.Error) {
+
+	logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
+	defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and position!= $3", region, outlet, commons.OutletManager)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select count(*) from User_Master_Table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'", region, outlet)
+	if err != nil {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchTotalNonManagerialEmployees Query: failed",
+			Details:    "FetchTotalNonManagerialEmployees Query: " + err.Error(),
+		}
+	}
+
+	var count int
+
+	for rows.Next() {
+		if err := rows.Scan(&count); err != nil {
+			return -1, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchTotalNonManagerialEmployees Scan: failed",
+				Details:    "FetchTotalNonManagerialEmployees Scan: " + err.Error(),
+			}
+		}
+	}
+
+	return count, nil
 }
 
 func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID int) (map[int]*models.SaleTransaction, map[int]*models.SaleTransaction, *errors.Error) {
