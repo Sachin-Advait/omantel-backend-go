@@ -2188,7 +2188,7 @@ func (dbConn *DBImplementation) InsertEmployeeRecord(usr *models.UserRecord) *er
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := dbConn.Operation.QueryContext(ctx, "INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31);",
+	_, err := dbConn.Operation.QueryContext(ctx, "INSERT INTO reports_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31);",
 		usr.EmpId,
 		usr.Created,
 		usr.ReportingManager,
@@ -2286,7 +2286,7 @@ func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*models.User
 		count += 31
 	}
 
-	smt := `INSERT INTO staff_daily_report_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan)
+	smt := `INSERT INTO reports_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan)
     VALUES %s ON CONFLICT (emp_id, months, quarter) DO NOTHING`
 	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
 
@@ -2300,7 +2300,7 @@ func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*models.User
 		}
 	}
 
-	// _, err = tx.Exec("Delete FROM staff_daily_report_table where emp_id=$1", usr[0].EmpId)
+	// _, err = tx.Exec("Delete FROM reports_table where emp_id=$1", usr[0].EmpId)
 	// if err != nil {
 	// 	tx.Rollback()
 	// 	return &commons.GenericError{Code: 1001, ErrorMessage: "InsertEmployeeMultipleRecords db delete error " + err.Error()}
@@ -2721,7 +2721,7 @@ func (dbConn *DBImplementation) FetchIndividualUserRecord(id string) ([]*models.
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1", id)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from reports_table where emp_id= $1", id)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -2798,9 +2798,9 @@ func (dbConn *DBImplementation) FetchIndividualUserPayoutReport(id string, month
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from reports_table where emp_id= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_payout, hayyak_extra_payout, hbb_payout, hbb_extra_payout, baqati_payout, baqati_extra_payout, upgrade_payout, upgrade_extra_payout, total_payout from reports_table where emp_id= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {
@@ -2855,9 +2855,9 @@ func (dbConn *DBImplementation) FetchIndividualUserTargetReport(id string, month
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from reports_table where emp_id= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hbb_sales_count, hbb_target, hbb_achieved_percentage, baqati_sales_count, baqati_target, baqati_achieved_percentage, upgrade_sales_count, upgrade_target, uprade_achieved_percentage from reports_table where emp_id= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {
@@ -2915,9 +2915,9 @@ func (dbConn *DBImplementation) FetchIndividualUserSaleCountPerPlanReport(id str
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from reports_table where emp_id= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan from reports_table where emp_id= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {
@@ -2965,9 +2965,9 @@ func (dbConn *DBImplementation) FetchIndividualUserOverAllReport(id string, mont
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from reports_table where emp_id= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from staff_daily_report_table where emp_id= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout from reports_table where emp_id= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {
@@ -3035,9 +3035,9 @@ func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id string, mon
 	)
 
 	if !isQuarterly {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and months= $2", id, month)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from reports_table where reporting_manager= $1 and months= $2", id, month)
 	} else {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from staff_daily_report_table where reporting_manager= $1 and quarter= $2", id, quarter)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select hayyak_sales_count, hbb_sales_count, baqati_sales_count, upgrade_sales_count from reports_table where reporting_manager= $1 and quarter= $2", id, quarter)
 	}
 
 	if err != nil {

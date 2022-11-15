@@ -8,10 +8,10 @@ import (
 )
 
 type IncentiveProvider interface {
-	LoadPlansFromDB()
-	LoadTargetFromDB()
-	LoadScaleOrderFromDB()
-	LoadMaxPayFromDB()
+	LoadPlansFromDB(printLogs bool) error
+	LoadTargetFromDB(printLogs bool) error
+	LoadScaleOrderFromDB(printLogs bool) error
+	LoadMaxPayFromDB(printLogs bool) error
 
 	GetSingleUserIncentive(ctx *gin.Context, id string, quarter int, isQuarterReport bool, date time.Time) (*TotalIncentive, *errors.Error)
 	GetSingleUserTargetChart(ctx *gin.Context, clientID string, quarter int, isQuarterReport bool, t time.Time) (*ChartDataResponse, *errors.Error)
