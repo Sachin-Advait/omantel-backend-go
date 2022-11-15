@@ -3,6 +3,7 @@ package adapters
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,7 @@ func DeletePlans(ctx *gin.Context, req *models.DeletePlanRequest) (int, interfac
 			}
 		}
 
-		req.PlanCodes[i] = v
+		req.PlanCodes[i] = strings.ToUpper(strings.TrimSpace(v))
 	}
 
 	errs := theProvider.DeletePlans(ctx, req)

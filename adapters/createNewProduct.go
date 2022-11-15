@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,6 +38,11 @@ func CreateNewProduct(ctx *gin.Context, req []*models.NewProductRequest) (int, i
 				Message: "Invalid product params",
 			}
 		}
+	}
+
+	for i := 0; i < len(req); i++ {
+		req[i].ProductCode = strings.ToUpper(strings.TrimSpace(req[i].ProductCode))
+		req[i].ProductName = strings.ToUpper(strings.TrimSpace(req[i].ProductName))
 	}
 
 	failedResp, errs := theProvider.CreateNewProduct(ctx, req)

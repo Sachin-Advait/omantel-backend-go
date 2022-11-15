@@ -3,6 +3,7 @@ package adapters
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,7 @@ func DeleteOutlets(ctx *gin.Context, req *models.DeleteOutletRequest) (int, inte
 			}
 		}
 
-		req.OutletCodes[i] = v
+		req.OutletCodes[i] = strings.ToUpper(strings.TrimSpace(v))
 	}
 
 	errs := theProvider.DeleteOutlets(ctx, req)

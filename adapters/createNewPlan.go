@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,6 +38,12 @@ func CreateNewPlan(ctx *gin.Context, req []*models.NewPlanRequest) (int, interfa
 				Message: "Invalid plan params",
 			}
 		}
+	}
+
+	for i := 0; i < len(req); i++ {
+		req[i].PlanCode = strings.ToUpper(strings.TrimSpace(req[i].PlanCode))
+		req[i].PlanName = strings.ToUpper(strings.TrimSpace(req[i].PlanName))
+		req[i].ProductCode = strings.ToUpper(strings.TrimSpace(req[i].ProductCode))
 	}
 
 	failedResp, errs := theProvider.CreateNewPlan(ctx, req)

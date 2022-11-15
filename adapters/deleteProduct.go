@@ -3,6 +3,7 @@ package adapters
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,7 @@ func DeleteProducts(ctx *gin.Context, req *models.DeleteProductRequest) (int, in
 			}
 		}
 
-		req.ProductCodes[i] = v
+		req.ProductCodes[i] = strings.ToUpper(strings.TrimSpace(v))
 	}
 
 	errs := theProvider.DeleteProducts(ctx, req)

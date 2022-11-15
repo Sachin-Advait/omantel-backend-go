@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,6 +37,11 @@ func CreateNewTarget(ctx *gin.Context, req []*models.NewTargetRequest) (int, int
 				Message: "Invalid target param",
 			}
 		}
+	}
+
+	for i := 0; i < len(req); i++ {
+		req[i].RegionCode = strings.ToUpper(strings.TrimSpace(req[i].RegionCode))
+		req[i].OutletCode = strings.ToUpper(strings.TrimSpace(req[i].OutletCode))
 	}
 
 	failedResp, errs := theProvider.CreateNewTarget(ctx, req)

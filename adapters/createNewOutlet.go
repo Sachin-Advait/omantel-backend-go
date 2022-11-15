@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,6 +38,12 @@ func CreateNewOutlet(ctx *gin.Context, req []*models.NewOutletRequest) (int, int
 				Message: "Blank value found",
 			}
 		}
+	}
+
+	for i := 0; i < len(req); i++ {
+		req[i].OutletCode = strings.ToUpper(strings.TrimSpace(req[i].OutletCode))
+		req[i].RegionCode = strings.ToUpper(strings.TrimSpace(req[i].RegionCode))
+		req[i].OutletName = strings.ToUpper(strings.TrimSpace(req[i].OutletName))
 	}
 
 	failedResp, errs := theProvider.CreateNewOutlet(ctx, req)

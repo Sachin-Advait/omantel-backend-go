@@ -3,6 +3,7 @@ package adapters
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,7 @@ func DeleteRegions(ctx *gin.Context, req *models.DeleteRegionRequest) (int, inte
 			}
 		}
 
-		req.RegionCodes[i] = v
+		req.RegionCodes[i] = strings.ToUpper(strings.TrimSpace(v))
 	}
 
 	errs := theProvider.DeleteRegions(ctx, req)

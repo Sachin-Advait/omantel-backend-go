@@ -71,7 +71,6 @@ type NewOutletRequest struct {
 	OutletCode string  `json:"outlet_code"`
 	OutletName string  `json:"outlet_name"`
 	RegionCode string  `json:"region_code"`
-	RegionName string  `json:"region_name"`
 	Lat        float64 `json:"lat"`
 	Lang       float64 `json:"lang"`
 	IsUpdate   bool    `json:"isUpdate"`

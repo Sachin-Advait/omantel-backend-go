@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,6 +38,11 @@ func CreateNewRegion(ctx *gin.Context, req []*models.NewRegionRequest) (int, int
 				Message: "RegionName or RegionCode is blank",
 			}
 		}
+	}
+
+	for i := 0; i < len(req); i++ {
+		req[i].RegionCode = strings.ToUpper(strings.TrimSpace(req[i].RegionCode))
+		req[i].RegionName = strings.ToUpper(strings.TrimSpace(req[i].RegionName))
 	}
 
 	failedResp, errs := theProvider.CreateNewRegion(ctx, req)
