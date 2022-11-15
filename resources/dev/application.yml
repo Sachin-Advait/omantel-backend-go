@@ -7,7 +7,7 @@ verifyCaptchaGoogleApi: https://www.google.com/recaptcha/api/siteverify
 psqlDB:
   host: 93.114.128.202
   port: 5432
-  dbName: postgres
+  dbName: sales
   user: postgres
   password: pass@123
   maxOpenConnections: 20
@@ -17,7 +17,7 @@ psqlDB:
 logPsqlDB:
   host: 93.114.128.202
   port: 5432
-  dbName: postgres
+  dbName: sales
   user: postgres
   password: pass@123
   maxOpenConnections: 20

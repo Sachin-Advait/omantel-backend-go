@@ -3,6 +3,7 @@ package business
 import (
 	"fmt"
 	"math"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -83,9 +84,14 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, clientID str
 	for grp, plans := range grpPlans {
 
 		targetPerOutlet := impl.getSaleTargetPerOutlet(t, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)
-		//if targetPerOutlet == -1 {
-		//	return nil, errors.New("outlet target not found")
-		//}
+		if targetPerOutlet == -1 {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    trx.Outlet + " target not found",
+				Details:    trx.Outlet + " target not found",
+			}
+		}
 
 		switch grp {
 

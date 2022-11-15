@@ -120,12 +120,12 @@ func (impl *IncentiveImpl) getSaleTargetPerOutlet(t time.Time, quarter int, isQu
 
 	rMap, ok := models.SalesTrgt.SaleTargetMap[region]
 	if !ok {
-		fmt.Println("region")
+		fmt.Println("region", region)
 		return -1
 	}
 
 	if _, ok := rMap[outlet]; !ok {
-		fmt.Println("outlet")
+		fmt.Println("outlet", outlet)
 		return -1
 	}
 

@@ -14,6 +14,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 // FetchPlans loads the global variable PlanRates with the rate plan for each plan type
@@ -1375,9 +1376,9 @@ func (dbConn *DBImplementation) FetchUserSales(clientID string, month, year, qua
 	)
 
 	if isQuarterReport {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and b.quarter= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, quarter, year)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category, b.subcategory, b.sales_date, b.inactive_date from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and b.quarter= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, quarter, year)
 	} else {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('month' from b.sales_date)= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, month, year)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select a.usr_position, a.outlet, a.region, b.prev_product, b.curr_product, b.quantity, b.product_group, b.category, b.subcategory, b.sales_date, b.inactive_date from User_Master_Table a INNER JOIN Sale_Transaction_Table b on a.emp_id=b.emp_id where a.emp_id= $1 and EXTRACT('month' from b.sales_date)= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, month, year)
 	}
 
 	if err != nil {
@@ -1398,6 +1399,9 @@ func (dbConn *DBImplementation) FetchUserSales(clientID string, month, year, qua
 		quantity      int
 		product_group string
 		category      string
+		subcategory   interface{}
+		salesDate     time.Time
+		inactiveDate  time.Time
 	)
 
 	trx := &models.SaleTransaction{}
@@ -1407,7 +1411,7 @@ func (dbConn *DBImplementation) FetchUserSales(clientID string, month, year, qua
 
 	for rows.Next() {
 		count++
-		if err := rows.Scan(&position, &outlet, &region, &prev_product, &curr_product, &quantity, &product_group, &category); err != nil {
+		if err := rows.Scan(&position, &outlet, &region, &prev_product, &curr_product, &quantity, &product_group, &category, &subcategory, &salesDate, &inactiveDate); err != nil {
 			return trx, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerError,
@@ -1420,6 +1424,31 @@ func (dbConn *DBImplementation) FetchUserSales(clientID string, month, year, qua
 		trx.Position = position
 		trx.Outlet = outlet
 		trx.Region = region
+
+		switch {
+		case strings.Contains(product_group, "FIXED"):
+			product_group = "HBB"
+		case strings.Contains(product_group, "PREPAID"):
+			product_group = "HAYYAK"
+		case strings.Contains(product_group, "POSTPAID"):
+			product_group = "BAQATI"
+		default:
+			return trx, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "Product Group Not Found",
+				Details:    "FetchUserSales: invalid productGrp-" + product_group,
+			}
+		}
+
+		lapsedSecs := salesDate.Sub(inactiveDate).Seconds()
+
+		if objecthelper.RoundTime(lapsedSecs/2600640) < 3 { //Months<3
+			if !strings.Contains(subcategory.(string), "INVOLUNTARY DEACTIVATION") {
+				//terminated logs
+				continue
+			}
+		}
 
 		rcrd := &models.SaleRecord{
 			Quantity:        quantity,
@@ -1436,6 +1465,42 @@ func (dbConn *DBImplementation) FetchUserSales(clientID string, month, year, qua
 	}
 
 	return trx, nil
+}
+
+// FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
+func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, *errors.Error) {
+
+	logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
+	defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and position!= $3", region, outlet, commons.OutletManager)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select count(*) from User_Master_Table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'", region, outlet)
+	if err != nil {
+		return -1, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchTotalNonManagerialEmployees Query: failed",
+			Details:    "FetchTotalNonManagerialEmployees Query: " + err.Error(),
+		}
+	}
+
+	var count int
+
+	for rows.Next() {
+		if err := rows.Scan(&count); err != nil {
+			return -1, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchTotalNonManagerialEmployees Scan: failed",
+				Details:    "FetchTotalNonManagerialEmployees Scan: " + err.Error(),
+			}
+		}
+	}
+
+	return count, nil
 }
 
 ///////////////
@@ -1635,42 +1700,6 @@ func (dbConn *DBImplementation) InsertValueOfPoints(category string, percent int
 	}
 
 	return id, nil
-}
-
-// FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
-func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, *errors.Error) {
-
-	logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
-	defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and position!= $3", region, outlet, commons.OutletManager)
-	rows, err := dbConn.Operation.QueryContext(ctx, "select count(*) from User_Master_Table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'", region, outlet)
-	if err != nil {
-		return -1, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "FetchTotalNonManagerialEmployees Query: failed",
-			Details:    "FetchTotalNonManagerialEmployees Query: " + err.Error(),
-		}
-	}
-
-	var count int
-
-	for rows.Next() {
-		if err := rows.Scan(&count); err != nil {
-			return -1, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerError,
-				Message:    "FetchTotalNonManagerialEmployees Scan: failed",
-				Details:    "FetchTotalNonManagerialEmployees Scan: " + err.Error(),
-			}
-		}
-	}
-
-	return count, nil
 }
 
 func (dbConn *DBImplementation) FetchPromotersPresentYearSales(clientID string) (map[int]*models.SaleTransaction, map[int]*models.SaleTransaction, *errors.Error) {

@@ -475,6 +475,17 @@ var PlanRates PlanRate
 var ValOfPoint ValueOfPoint
 var MaxPay MaxPayout
 
+var (
+	ProductTypeMap = map[string]string{
+		"EBU Fixed":    "HBB",
+		"CBU Fixed":    "HBB",
+		"EBU Prepaid":  "Hayyak",
+		"CBU Prepaid":  "Hayyak",
+		"EBU Postpaid": "Baqati",
+		"CBU Postpaid": "Baqati",
+	}
+)
+
 var SMSRequestTemplate = []byte(`<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sen="http://www.omantel.om/esb/messages/sendnotification">
 <soapenv:Header/>
 <soapenv:Body>
