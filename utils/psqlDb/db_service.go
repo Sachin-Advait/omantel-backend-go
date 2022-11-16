@@ -37,7 +37,7 @@ func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 	}
 
 	var (
-		id            int
+		id            string
 		plan_name     string
 		plan_price    float64
 		sip_plan_rate float64
@@ -55,7 +55,7 @@ func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 
 		models.PlanRates.Mutex.Lock()
 		if models.PlanRates.PlanRateMap == nil {
-			models.PlanRates.PlanRateMap = make(map[int]*models.ProductPlans)
+			models.PlanRates.PlanRateMap = make(map[string]*models.ProductPlans)
 		}
 
 		models.PlanRates.PlanRateMap[id] = &models.ProductPlans{

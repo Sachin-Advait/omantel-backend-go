@@ -68,7 +68,7 @@ func (impl *IncentiveImpl) getExtraPay(grp string, achievedPercent float64) floa
 
 func (impl *IncentiveImpl) getSIPRatePlan(planName string) float64 {
 
-	planID := 0
+	planID := ""
 
 	models.PlanRates.Mutex.RLock()
 	defer models.PlanRates.Mutex.RUnlock()
@@ -80,7 +80,7 @@ func (impl *IncentiveImpl) getSIPRatePlan(planName string) float64 {
 		}
 	}
 
-	if planID != 0 {
+	if planID != "" {
 		return models.PlanRates.PlanRateMap[planID].SIPRatePlan
 	}
 

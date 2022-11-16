@@ -407,7 +407,7 @@ type SaleTarget struct {
 
 type PlanRate struct {
 	Mutex       sync.RWMutex
-	PlanRateMap map[int]*ProductPlans
+	PlanRateMap map[string]*ProductPlans
 }
 
 type Calculator struct {

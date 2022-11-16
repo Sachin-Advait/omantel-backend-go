@@ -1,6 +1,8 @@
 package business
 
 import (
+	"errors"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
@@ -8,9 +10,9 @@ func (impl *IncentiveImpl) LoadPlansFromDB(printLog bool) error {
 
 	if err := impl.PsqlDb.FetchPlans(); err != nil {
 		if printLog {
-			logger.FileLogger.Error().Err(err).Msg("LoadPlansFromDB : productPlans fetching failed")
+			logger.FileLogger.Error().Err(errors.New(err.Details.(string))).Msg("LoadPlansFromDB : productPlans fetching failed")
 		}
-		return err
+		return errors.New(err.Details.(string))
 	}
 
 	if printLog {
@@ -24,9 +26,9 @@ func (impl *IncentiveImpl) LoadTargetFromDB(printLog bool) error {
 
 	if err := impl.PsqlDb.FetchSaleTarget(); err != nil {
 		if printLog {
-			logger.FileLogger.Error().Err(err).Msg("LoadTargetFromDB : saleTarget fetching failed")
+			logger.FileLogger.Error().Err(errors.New(err.Details.(string))).Msg("LoadTargetFromDB : saleTarget fetching failed")
 		}
-		return err
+		return errors.New(err.Details.(string))
 	}
 
 	if printLog {
@@ -40,9 +42,9 @@ func (impl *IncentiveImpl) LoadScaleOrderFromDB(printLog bool) error {
 
 	if err := impl.PsqlDb.FetchValueOfPoint(); err != nil {
 		if printLog {
-			logger.FileLogger.Error().Err(err).Msg("LoadScaleOrderFromDB : vop fetching failed")
+			logger.FileLogger.Error().Err(errors.New(err.Details.(string))).Msg("LoadScaleOrderFromDB : vop fetching failed")
 		}
-		return err
+		return errors.New(err.Details.(string))
 	}
 
 	if printLog {
@@ -56,9 +58,9 @@ func (impl *IncentiveImpl) LoadMaxPayFromDB(printLog bool) error {
 
 	if err := impl.PsqlDb.FetchMaxPayout(); err != nil {
 		if printLog {
-			logger.FileLogger.Error().Err(err).Msg("LoadMaxPayFromDB : maxPayout fetching failed")
+			logger.FileLogger.Error().Err(errors.New(err.Details.(string))).Msg("LoadMaxPayFromDB : maxPayout fetching failed")
 		}
-		return err
+		return errors.New(err.Details.(string))
 	}
 
 	if printLog {
