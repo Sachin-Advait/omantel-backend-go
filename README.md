@@ -343,3 +343,5 @@ Password- gis@#42746
 
 And port 8090 is routed on http://omantel.moheoman.live/
 
+
+https://stackoverflow.com/questions/38822764/how-to-send-a-https-request-with-a-certificate-golang

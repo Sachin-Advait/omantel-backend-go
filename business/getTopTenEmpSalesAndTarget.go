@@ -42,7 +42,7 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID
 			return nil, err
 		}
 
-		name, err := impl.PsqlDb.FetchUserName(trx.EmpId)
+		name, _, err := impl.PsqlDb.FetchUserName(trx.EmpId)
 		if err != nil {
 			return nil, err
 		}

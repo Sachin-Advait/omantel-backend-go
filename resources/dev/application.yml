@@ -24,3 +24,12 @@ logPsqlDB:
   maxIdleConnections: 10
   connMaxLifetimeInHour: 24
   connMaxIdleTimeInMinute: 48
+http:
+  tlsCertificate: ./cert/start.omantel.om.cer
+  connectTimeoutInMillis: 10000
+  keepAliveDurationInMillis: 30000
+  maxIdleConnections: 100
+  idleConnectionTimeoutInMillis: 90000
+  tlsHandshakeTimeoutInMillis: 10000
+  expectContinueTimeoutInMillis: 1000
+  timeoutInMillis: 15000

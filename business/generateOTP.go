@@ -17,6 +17,8 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
+var HttpClient *http.Client
+
 type Request struct {
 	//Values are set in below fields as per the request
 	UserId                      string
@@ -75,15 +77,20 @@ type Body struct {
 
 func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[string]string, *errors.Error) {
 
-	var isUpdate = true
+	var (
+		isUpdate      = true
+		contactNumber string
+	)
 
-	otpModel, err := impl.PsqlDb.FetchOTPValidity(clientID)
+	mobile, otpModel, err := impl.PsqlDb.FetchOTPValidity(clientID)
 	if err != nil {
 		return nil, err
 	}
 
+	contactNumber = mobile
+
 	if otpModel.StaffID == "" {
-		name, err := impl.PsqlDb.FetchUserName(clientID)
+		name, mobile, err := impl.PsqlDb.FetchUserName(clientID)
 		if err != nil {
 			return nil, err
 		}
@@ -95,6 +102,10 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[s
 				Message:    errors.UserIDInvalid,
 				Details:    "userId is invalid",
 			}
+		}
+
+		if contactNumber == "" {
+			contactNumber = mobile
 		}
 
 		isUpdate = false
@@ -157,7 +168,7 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[s
 	}
 
 	//TODO: generate random num as OTP
-	otpModel.OTP = 123456 //generateOTP(6)
+	otpModel.OTP = generateOTP(6)
 	otpModel.OTPUsed = false
 	otpModel.OtpCreateTime = time.Now()
 
@@ -187,14 +198,14 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[s
 	// 	return err
 	// }
 
-	// if err := callSOAPClientSteps(clientID, "", otpModel.OTP); err != nil {
-	// 	return nil, &errors.Error{
-	// 		StatusCode: http.StatusInternalServerError,
-	// 		Code:       errors.InternalServerError,
-	// 		Message:    "SOAP CALL FAILED",
-	// 		Details:    "sms call failed: " + err.Error(),
-	// 	}
-	// }
+	if err := callSOAPClientSteps(clientID, contactNumber, otpModel.OTP); err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "SOAP CALL FAILED",
+			Details:    "sms call failed: " + err.Error(),
+		}
+	}
 
 	return map[string]string{"error": "nil"}, nil
 }
@@ -273,9 +284,8 @@ func generateSOAPRequest(req *Request) (*http.Request, error) {
 }
 
 func soapCall(req *http.Request) (*Response, error) {
-	client := &http.Client{}
-	resp, err := client.Do(req)
 
+	resp, err := HttpClient.Do(req)
 	if err != nil {
 		return nil, errors.New("call-" + err.Error())
 	}

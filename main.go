@@ -2,7 +2,14 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net"
+	"net/http"
+	"runtime"
 	"time"
 
 	"gitlab.com/rendezvousPoint/incentive_calculator/adapters"
@@ -22,6 +29,7 @@ func init() {
 	initEnvConfigs()
 	initLogger()
 	initFileLogger()
+	initHTTPClient()
 }
 
 func main() {
@@ -110,6 +118,51 @@ func initFileLogger() {
 
 	if err != nil {
 		logger.Fatal(context.TODO()).Err(err).Msg("unable to initialize file logger")
+	}
+}
+
+func initHTTPClient() {
+
+	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
+	if err != nil {
+		logger.FileLogger.Fatal().Stack().Err(err).Msg("initHTTPClient: error loading application config file, env - " + flags.Env())
+	}
+
+	certificate := applicationConfig.GetString(constant.HTTPTLSCertificateFileLocation)
+	connectTimeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPConnectTimeoutInMillisKey)
+	keepAliveDuration := time.Millisecond * applicationConfig.GetDuration(constant.HTTPKeepAliveDurationInMillisKey)
+	maxIdleConnections := applicationConfig.GetInt(constant.HTTPMaxIdleConnectionsKey)
+	idleConnectionTimeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPIdleConnectionTimeoutInMillisKey)
+	tLSHandshakeTimeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPTlsHandshakeTimeoutInMillisKey)
+	expectContinueTimeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPExpectContinueTimeoutInMillisKey)
+	timeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPTimeoutInMillisKey)
+
+	dialer := &net.Dialer{
+		Timeout:   connectTimeout,
+		KeepAlive: keepAliveDuration,
+	}
+
+	caCert, err := ioutil.ReadFile(certificate)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	business.HttpClient = &http.Client{
+		Transport: &http.Transport{
+			DialContext: dialer.DialContext,
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+			MaxIdleConns:          maxIdleConnections,
+			IdleConnTimeout:       idleConnectionTimeout,
+			TLSHandshakeTimeout:   tLSHandshakeTimeout,
+			ExpectContinueTimeout: expectContinueTimeout,
+			MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+		},
+		Timeout: timeout,
 	}
 }
 

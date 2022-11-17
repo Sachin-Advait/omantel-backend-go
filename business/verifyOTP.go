@@ -13,13 +13,13 @@ import (
 
 func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID string, otp int) (*models.VerifyOTPResponse, *errors.Error) {
 
-	otpModel, err := impl.PsqlDb.FetchOTPValidity(clientID)
+	_, otpModel, err := impl.PsqlDb.FetchOTPValidity(clientID)
 	if err != nil {
 		return nil, err
 	}
 
 	if otpModel.StaffID == "" {
-		name, err := impl.PsqlDb.FetchUserName(clientID)
+		name, _, err := impl.PsqlDb.FetchUserName(clientID)
 		if err != nil {
 			return nil, err
 		}

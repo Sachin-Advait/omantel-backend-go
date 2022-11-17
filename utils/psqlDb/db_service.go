@@ -1934,7 +1934,7 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 	return nil
 }
 
-func (dbConn *DBImplementation) FetchOTPValidity(clientID string) (*models.OtpModel, *errors.Error) {
+func (dbConn *DBImplementation) FetchOTPValidity(clientID string) (string, *models.OtpModel, *errors.Error) {
 
 	logger.FileLogger.Info().Str("clientID", clientID).Time("start", time.Now()).Msg("FetchOTPValidity start")
 	defer logger.FileLogger.Info().Str("clientID", clientID).Time("end", time.Now()).Msg("FetchOTPValidity done")
@@ -1942,9 +1942,9 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID string) (*models.OtpMo
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select a.name, a.usr_position, b.emp_id, b.user_active, b.otp, b.otp_resend_count, b.otp_verify_failed_count, b.otp_used, b.otp_create_time, b.otp_update_time, b.last_login_time from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select a.mobile_number, a.name, a.usr_position, b.emp_id, b.user_active, b.otp, b.otp_resend_count, b.otp_verify_failed_count, b.otp_used, b.otp_create_time, b.otp_update_time, b.last_login_time from User_Master_Table a inner join user_authentication_table b on a.emp_id=b.emp_id and a.emp_id= $1", clientID)
 	if err != nil {
-		return nil, &errors.Error{
+		return "", nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
 			Message:    "FetchOTPValidity: query failed",
@@ -1952,14 +1952,16 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID string) (*models.OtpMo
 		}
 	}
 
-	var count int
-
-	otModel := &models.OtpModel{}
+	var (
+		count   int
+		mobile  string
+		otModel = &models.OtpModel{}
+	)
 
 	for rows.Next() {
 
 		if count == 1 {
-			return nil, &errors.Error{
+			return "", nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerError,
 				Message:    "FetchOTPValidity: found more than on record",
@@ -1967,8 +1969,8 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID string) (*models.OtpMo
 			}
 		}
 
-		if err := rows.Scan(&otModel.StaffName, &otModel.StaffPosition, &otModel.StaffID, &otModel.IsActiveUser, &otModel.OTP, &otModel.OTPResendCount, &otModel.OTPVerifyFailedCount, &otModel.OTPUsed, &otModel.OtpCreateTime, &otModel.OtpLastUpdateTime, &otModel.LastLoginTime); err != nil {
-			return nil, &errors.Error{
+		if err := rows.Scan(&mobile, &otModel.StaffName, &otModel.StaffPosition, &otModel.StaffID, &otModel.IsActiveUser, &otModel.OTP, &otModel.OTPResendCount, &otModel.OTPVerifyFailedCount, &otModel.OTPUsed, &otModel.OtpCreateTime, &otModel.OtpLastUpdateTime, &otModel.LastLoginTime); err != nil {
+			return "", nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerError,
 				Message:    "FetchOTPValidity: scan failed",
@@ -1979,7 +1981,7 @@ func (dbConn *DBImplementation) FetchOTPValidity(clientID string) (*models.OtpMo
 		count++
 	}
 
-	return otModel, nil
+	return mobile, otModel, nil
 }
 
 // FetchAllGivenPositionEmpIdAndTheirManager returns an array of all employees of the given position along with their managers, returns empty array if no records found
@@ -3128,7 +3130,7 @@ func (dbConn *DBImplementation) FetchUserPosition(id string) (string, *errors.Er
 	return position, nil
 }
 
-func (dbConn *DBImplementation) FetchUserName(id string) (string, *errors.Error) {
+func (dbConn *DBImplementation) FetchUserName(id string) (string, string, *errors.Error) {
 
 	logger.FileLogger.Info().Str("clientID", id).Time("start", time.Now()).Msg("FetchUserName start")
 	defer logger.FileLogger.Info().Str("clientID", id).Time("end", time.Now()).Msg("FetchUserName done")
@@ -3136,9 +3138,9 @@ func (dbConn *DBImplementation) FetchUserName(id string) (string, *errors.Error)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select name from user_master_table where emp_id=$1", id)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select name, mobile_number from user_master_table where emp_id=$1", id)
 	if err != nil {
-		return "", &errors.Error{
+		return "", "", &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
 			Message:    "FetchUserName: query failed",
@@ -3147,15 +3149,16 @@ func (dbConn *DBImplementation) FetchUserName(id string) (string, *errors.Error)
 	}
 
 	var (
-		count int
-		name  string
+		count  int
+		name   string
+		mobile string
 	)
 
 	for rows.Next() {
 		count++
 
-		if err := rows.Scan(&name); err != nil {
-			return "", &errors.Error{
+		if err := rows.Scan(&name, &mobile); err != nil {
+			return "", "", &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerError,
 				Message:    "FetchUserName: scan failed",
@@ -3164,7 +3167,7 @@ func (dbConn *DBImplementation) FetchUserName(id string) (string, *errors.Error)
 		}
 
 		if count > 1 {
-			return "", &errors.Error{
+			return "", "", &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerError,
 				Message:    "FetchUserName: more than one record found",
@@ -3173,7 +3176,7 @@ func (dbConn *DBImplementation) FetchUserName(id string) (string, *errors.Error)
 		}
 	}
 
-	return name, nil
+	return name, mobile, nil
 }
 
 func (dbConn *DBImplementation) FetchOutletDetails(outletCode, regionCode string) (float64, float64, *errors.Error) {

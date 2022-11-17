@@ -41,7 +41,7 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, clien
 			return nil, err
 		}
 
-		name, err := impl.PsqlDb.FetchUserName(trx.EmpId)
+		name, _, err := impl.PsqlDb.FetchUserName(trx.EmpId)
 		if err != nil {
 			return nil, err
 		}

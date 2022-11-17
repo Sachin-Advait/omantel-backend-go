@@ -15,42 +15,42 @@ func InitIncentive(provider models.IncentiveProvider) {
 func InitIncentiveCron() {
 
 	if err := theProvider.LoadPlansFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("InitIncentiveCron: load planRate failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadPlansFromDB: load planRate failed")
 	}
 
 	if err := theProvider.LoadTargetFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("InitIncentiveCron: load target failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadTargetFromDB: load target failed")
 	}
 
 	if err := theProvider.LoadScaleOrderFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("InitIncentiveCron: load VOP failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadScaleOrderFromDB: load VOP failed")
 	}
 
 	if err := theProvider.LoadMaxPayFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("InitIncentiveCron: load maxPay failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadMaxPayFromDB: load maxPay failed")
 	}
 
-	logger.FileLogger.Info().Interface("planRate", models.PlanRates.PlanRateMap).Msg("InitIncentiveCron: load planRate success")
-	logger.FileLogger.Info().Interface("target", models.SalesTrgt.SaleTargetMap).Msg("InitIncentiveCron: load target success")
-	logger.FileLogger.Info().Interface("VOP", models.ValOfPoint.VopMap).Msg("InitIncentiveCron: load VOP success")
-	logger.FileLogger.Info().Interface("maxPay", models.MaxPay.Payoutmap).Msg("InitIncentiveCron: load maxPay success")
+	logger.FileLogger.Info().Interface("planRate", models.PlanRates.PlanRateMap).Msg("LoadPlansFromDB: load planRate success")
+	logger.FileLogger.Info().Interface("target", models.SalesTrgt.SaleTargetMap).Msg("LoadTargetFromDB: load target success")
+	logger.FileLogger.Info().Interface("VOP", models.ValOfPoint.VopMap).Msg("LoadScaleOrderFromDB: load VOP success")
+	logger.FileLogger.Info().Interface("maxPay", models.MaxPay.Payoutmap).Msg("LoadMaxPayFromDB: load maxPay success")
 
 	////////
 
 	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadPlansFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("InitIncentiveCron: productPlans cron failed")
+		logger.FileLogger.Error().Err(err).Msg("LoadPlansFromDB: productPlans cron failed")
 	}
 
 	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadTargetFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("InitIncentiveCron: saleTarget cron failed")
+		logger.FileLogger.Error().Err(err).Msg("LoadTargetFromDB: saleTarget cron failed")
 	}
 
 	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadScaleOrderFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("InitIncentiveCron: vop cron failed")
+		logger.FileLogger.Error().Err(err).Msg("LoadScaleOrderFromDB: vop cron failed")
 	}
 
 	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadMaxPayFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("InitIncentiveCron: maxPay cron failed")
+		logger.FileLogger.Error().Err(err).Msg("LoadMaxPayFromDB: maxPay cron failed")
 	}
 
 	<-gocron.Start()

@@ -113,6 +113,18 @@ const (
 	Compress                 = "compress"
 )
 
+//http configuration keywords
+const (
+	HTTPTLSCertificateFileLocation       = "http.tlsCertificate"
+	HTTPConnectTimeoutInMillisKey        = "http.connectTimeoutInMillis"
+	HTTPKeepAliveDurationInMillisKey     = "http.keepAliveDurationInMillis"
+	HTTPMaxIdleConnectionsKey            = "http.maxIdleConnections"
+	HTTPIdleConnectionTimeoutInMillisKey = "http.idleConnectionTimeoutInMillis"
+	HTTPTlsHandshakeTimeoutInMillisKey   = "http.tlsHandshakeTimeoutInMillis"
+	HTTPExpectContinueTimeoutInMillisKey = "http.expectContinueTimeoutInMillis"
+	HTTPTimeoutInMillisKey               = "http.timeoutInMillis"
+)
+
 const (
 	HeaderInContext = "Context-Header"
 )
