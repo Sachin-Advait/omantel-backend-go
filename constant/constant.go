@@ -153,6 +153,7 @@ const (
 //feed configuration keywords
 const (
 	JwtKey                   = "secretKey"
+	OTPEndpoint              = "otpUrl"
 	SessionExpiryTimeMinutes = "sessionExpiryTimeMinutes"
 	RefreshTokenExpiryHours  = "refreshTokenExpiryHours"
 	CaptchaSitesEnableKey    = "captchaSitesEnableKey"

@@ -198,7 +198,7 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[s
 	// 	return err
 	// }
 
-	if err := callSOAPClientSteps(clientID, contactNumber, otpModel.OTP); err != nil {
+	if err := impl.callSOAPClientSteps(clientID, contactNumber, otpModel.OTP); err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
@@ -226,11 +226,11 @@ func generateOTP(max int) int {
 	return otp
 }
 
-func callSOAPClientSteps(userID, mobile string, otp int) error {
+func (impl *IncentiveImpl) callSOAPClientSteps(userID, mobile string, otp int) error {
 
 	req := populateRequest(userID, mobile, otp)
 
-	httpReq, err := generateSOAPRequest(req)
+	httpReq, err := impl.generateSOAPRequest(req)
 	if err != nil {
 		return err
 	}
@@ -254,7 +254,7 @@ func populateRequest(userId, mobile string, otp int) *Request {
 	return &req
 }
 
-func generateSOAPRequest(req *Request) (*http.Request, error) {
+func (impl *IncentiveImpl) generateSOAPRequest(req *Request) (*http.Request, error) {
 	// Using the var getTemplate to construct request
 	template, err := template.New("smsRequest").Parse(string(models.SMSRequestTemplate))
 	if err != nil {
@@ -275,7 +275,7 @@ func generateSOAPRequest(req *Request) (*http.Request, error) {
 		return nil, errors.New("encode-" + err.Error())
 	}
 
-	r, err := http.NewRequest(http.MethodPost, "http://www.omantel.om/esb/messages/sendnotification", bytes.NewBuffer([]byte(doc.String())))
+	r, err := http.NewRequest(http.MethodPost, impl.Config.OTPUrl, bytes.NewBuffer(doc.Bytes()))
 	if err != nil {
 		return nil, errors.New("request-" + err.Error())
 	}

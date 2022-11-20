@@ -199,6 +199,7 @@ func buildIncentiveProvider() models.IncentiveProvider {
 	}
 
 	incentiveConfig := &configs.IncentiveConfig{
+		OTPUrl:                 applicationConfig.GetString(constant.OTPEndpoint),
 		SessionExpiryTime:      time.Duration(applicationConfig.GetInt(constant.SessionExpiryTimeMinutes)) * time.Minute,
 		RefreshTokenExpiryTime: time.Duration(applicationConfig.GetInt(constant.RefreshTokenExpiryHours)) * time.Hour,
 	}
