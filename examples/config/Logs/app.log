@@ -1,0 +1,2 @@
+{"level":"info","fileLogging":true,"jsonLogOutput":true,"logDirectory":"Logs","fileName":"app.log","maxSizeMB":500,"maxBackups":1,"maxAgeInDays":5,"compress":true,"time":"2022-11-17T17:22:17+05:30","message":"logging configured"}
+{"level":"info","fileLogging":true,"jsonLogOutput":true,"logDirectory":"Logs","fileName":"app.log","maxSizeMB":500,"maxBackups":1,"maxAgeInDays":5,"compress":true,"time":"2022-11-17T17:25:15+05:30","message":"logging configured"}

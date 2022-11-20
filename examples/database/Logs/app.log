@@ -1,0 +1,8 @@
+{"level":"info","fileLogging":true,"jsonLogOutput":true,"logDirectory":"Logs","fileName":"app.log","maxSizeMB":500,"maxBackups":1,"maxAgeInDays":5,"compress":true,"time":"2022-11-17T17:37:10+05:30","message":"logging configured"}
+{"level":"info","time":"2022-11-17T17:37:10+05:30","message":"Application is up"}
+{"level":"info","config":{"Host":"93.114.128.202","Port":5432,"DbName":"sales","UserName":"postgres","Password":"pass@123","MaxOpenConnections":20,"MaxIdleConnections":10,"MaxLifetime":86400000000000,"MaxIdletime":172800000000000},"time":"2022-11-17T17:37:10+05:30","message":"PsqlDatabaseService - config"}
+{"level":"error","error":"db conn error - sql: unknown driver \"postgres\" (forgotten import?)","time":"2022-11-17T17:37:10+05:30","message":"DbConfig failed connection"}
+{"level":"info","fileLogging":true,"jsonLogOutput":true,"logDirectory":"Logs","fileName":"app.log","maxSizeMB":500,"maxBackups":1,"maxAgeInDays":5,"compress":true,"time":"2022-11-17T17:37:43+05:30","message":"logging configured"}
+{"level":"info","time":"2022-11-17T17:37:43+05:30","message":"Application is up"}
+{"level":"info","config":{"Host":"93.114.128.202","Port":5432,"DbName":"sales","UserName":"postgres","Password":"pass@123","MaxOpenConnections":20,"MaxIdleConnections":10,"MaxLifetime":86400000000000,"MaxIdletime":172800000000000},"time":"2022-11-17T17:37:43+05:30","message":"PsqlDatabaseService - config"}
+{"level":"info","dbClient":{},"time":"2022-11-17T17:37:44+05:30","message":"DB connection successfull"}

@@ -46,7 +46,8 @@ func InitDBLogger(conf *models.DbClientConfig) {
 		FileLogger.Fatal().Err(err).Msg("LogDatabaseService - ping failed")
 	}
 
-	FileLogger.Info().Msg("LogDatabaseService - success")
+	FileLogger.Info().Msg("LogDatabaseService - DB ping successful")
+	FileLogger.Info().Msg("LogDatabaseService - DB connection successful")
 
 	go insertLogs(dbConn)
 }

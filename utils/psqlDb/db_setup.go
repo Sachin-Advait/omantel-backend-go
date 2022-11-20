@@ -61,5 +61,8 @@ func NewDatabaseSetup(conf *models.DbClientConfig) *DBImplementation {
 		logger.FileLogger.Fatal().Err(err).Msg("PsqlDatabaseService - ping failed")
 	}
 
+	logger.FileLogger.Info().Msg("OperationalDatabaseService - DB ping successful")
+	logger.FileLogger.Info().Msg("OperationalDatabaseService - DB connection successful")
+
 	return &DBImplementation{Operation: dbConn}
 }

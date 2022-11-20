@@ -1,0 +1,35 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sen="http://www.omantel.om/esb/messages/sendnotification">
+    <soapenv:Header/>
+    <soapenv:Body>
+       <sen:SendNotificationRq>
+          <sen:RequestHeader>
+             <FunctionId>17002004</FunctionId>
+             <TransactionId>0</TransactionId>
+             <RequestId>ZONE_1588842179678</RequestId>
+             <RequestorChannelId>ZONE</RequestorChannelId>
+             <RequestorUserId>ZONE</RequestorUserId>
+             <Timestamp> 2022-05-07T09:02:59.678Z</Timestamp>
+          </sen:RequestHeader>
+          <sen:RequestBody>
+             <sen:Notification>
+                <NotificationType>SMS</NotificationType>
+                <NotificationDateTime>2020-05-07 13:02:59</NotificationDateTime>
+                <NotificationLanguage>1</NotificationLanguage>
+                <ShortCode>ROP Permit</ShortCode>
+                <IsDeliveryStatusRequired>1</IsDeliveryStatusRequired>
+                <NotificaitionValidityPeriod>2020-05-07T09:02:59.678Z</NotificaitionValidityPeriod>
+                <Body>Your company has been approved to register your employees for ROP road travel permit.
+ Total approved staff number is 10.
+ Your login details are as below.
+
+            </Body>
+                <BodyCoding>8</BodyCoding>
+                <BodyContentType>1</BodyContentType>
+                <ReceiverList>
+                   <Receiver>98019047</Receiver>
+                </ReceiverList>
+             </sen:Notification>
+          </sen:RequestBody>
+       </sen:SendNotificationRq>
+    </soapenv:Body>
+ </soapenv:Envelope>
