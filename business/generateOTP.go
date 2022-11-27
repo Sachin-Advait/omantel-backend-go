@@ -3,6 +3,7 @@ package business
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"html/template"
@@ -283,6 +284,11 @@ func (impl *IncentiveImpl) generateSOAPRequest(req *Request) (*http.Request, err
 	if err != nil {
 		return nil, errors.New("request-" + err.Error())
 	}
+
+	r.Header.Set("user-agent", "sampleTest")
+	r.Header.Set("Content-Type", "text/xml;charset=UTF-8")
+	r.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("SA-OmantelSIP:Des!B@buEnglishMem@7533")))
+	r.Header.Set("SOAPAction", "SendNotification")
 
 	return r, nil
 }
