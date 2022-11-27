@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/xml"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -42,37 +43,24 @@ type Request struct {
 }
 
 type Response struct {
-	XMLName  xml.Name `xml:"http://schemas.xmlsoap.org/soap/envelope/ Envelope"`
-	SoapBody *SOAPBodyResponse
-}
-
-type SOAPBodyResponse struct {
-	XMLName      xml.Name `xml:"Body"`
-	Resp         *ResponseBody
-	FaultDetails *Fault
-}
-
-type Fault struct {
-	XMLName     xml.Name `xml:"Fault"`
-	Faultcode   string   `xml:"faultcode"`
-	Faultstring string   `xml:"faultstring"`
-}
-
-type ResponseBody struct {
-	XMLName   xml.Name `xml:"Response"`
-	RequestID string   `xml:"RequestID"`
-	Response  *Body
-	Status    string `xml:"Status"`
-}
-
-type Body struct {
-	XMLName       xml.Name `xml:"Body"`
-	Status        string   `xml:"Status"`
-	Salary        string   `xml:"Salary"`
-	Designation   string   `xml:"Designation"`
-	Manager       string   `xml:"Manager"`
-	Company       string   `xml:"Company"`
-	EmployedSince string   `xml:"EmployedSince"`
+	XMLName xml.Name `xml:"Envelope"`
+	Text    string   `xml:",chardata"`
+	Soapenv string   `xml:"soapenv,attr"`
+	Body    struct {
+		Text               string `xml:",chardata"`
+		SendNotificationRs struct {
+			Text           string `xml:",chardata"`
+			NS1            string `xml:"NS1,attr"`
+			ResponseHeader struct {
+				Text          string `xml:",chardata"`
+				FunctionId    string `xml:"FunctionId"`
+				TransactionId string `xml:"TransactionId"`
+				RequestId     string `xml:"RequestId"`
+				ReturnCode    string `xml:"ReturnCode"`
+				ReturnDesc    string `xml:"ReturnDesc"`
+			} `xml:"ResponseHeader"`
+		} `xml:"SendNotificationRs"`
+	} `xml:"Body"`
 }
 
 func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[string]string, *errors.Error) {
@@ -245,10 +233,26 @@ func (impl *IncentiveImpl) callSOAPClientSteps(userID, mobile string, otp int) e
 
 func populateRequest(userId, mobile string, otp int) *Request {
 
+	id := strconv.Itoa(int(time.Now().Unix()))
+
 	req := Request{
-		UserId:   userId,
-		OTP:      strconv.Itoa(otp),
-		Receiver: mobile,
+		UserId:                      userId,
+		FunctionId:                  "17002004",
+		TransactionId:               id,
+		RequestId:                   "OMSIP_" + id,
+		RequestorChannelId:          models.RequestorChannelId,
+		RequestorUserId:             "OMSIP",
+		Timestamp:                   time.Now().Format("2006-01-02T15:04:05"),
+		NotificationType:            "SMS",
+		NotificationDateTime:        time.Now().Format("2006-01-02T15:04:05"),
+		NotificationLanguage:        "1",
+		ShortCode:                   models.ShortCode,
+		IsDeliveryStatusRequired:    "1",
+		NotificaitionValidityPeriod: time.Now().Format("2006-01-02T15:04:05"),
+		Body:                        fmt.Sprintf("Dear %v, Your OTP is %v", userId, otp),
+		BodyCoding:                  "8",
+		BodyContentType:             "1",
+		Receiver:                    mobile,
 	}
 
 	return &req
@@ -302,8 +306,8 @@ func soapCall(req *http.Request) (*Response, error) {
 		return nil, errors.New("unmarshall-" + err.Error())
 	}
 
-	if r.SoapBody.Resp.Status != "200" {
-		return nil, err
+	if r.Body.SendNotificationRs.ResponseHeader.ReturnCode != "0" {
+		return nil, errors.New(r.Body.SendNotificationRs.ResponseHeader.ReturnDesc)
 	}
 
 	return r, nil

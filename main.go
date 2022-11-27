@@ -154,7 +154,8 @@ func initHTTPClient() {
 		Transport: &http.Transport{
 			DialContext: dialer.DialContext,
 			TLSClientConfig: &tls.Config{
-				RootCAs: caCertPool,
+				//RootCAs: caCertPool,
+				InsecureSkipVerify: true,
 			},
 			MaxIdleConns:          maxIdleConnections,
 			IdleConnTimeout:       idleConnectionTimeout,
@@ -178,6 +179,8 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		logger.FileLogger.Fatal().Stack().Err(err).Msg("jwt secret key not found, env - " + flags.Env())
 	}
 
+	models.ShortCode = applicationConfig.GetString(constant.ShortCodeKey)
+	models.RequestorChannelId = applicationConfig.GetString(constant.RequestorChannelIdKey)
 	models.CaptchaSitesEnableKey = applicationConfig.GetString(constant.CaptchaSitesEnableKey)
 	models.CaptchaSecretKey = applicationConfig.GetString(constant.CaptchaSecretKey)
 	models.VerifyCaptchaGoogleApi = applicationConfig.GetString(constant.VerifyCaptchaGoogleApi)

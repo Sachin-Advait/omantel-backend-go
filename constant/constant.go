@@ -159,6 +159,8 @@ const (
 	CaptchaSitesEnableKey    = "captchaSitesEnableKey"
 	CaptchaSecretKey         = "captchaSecretKey"
 	VerifyCaptchaGoogleApi   = "verifyCaptchaGoogleApi"
+	ShortCodeKey             = "shortCode"
+	RequestorChannelIdKey    = "requestorChannelId"
 )
 
 //config file names

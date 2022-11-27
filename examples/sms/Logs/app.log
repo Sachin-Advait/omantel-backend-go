@@ -1,0 +1,5 @@
+{"level":"info","fileLogging":true,"jsonLogOutput":true,"logDirectory":"Logs","fileName":"app.log","maxSizeMB":500,"maxBackups":1,"maxAgeInDays":5,"compress":true,"time":"2022-11-27T01:24:57+05:30","message":"logging configured"}
+{"level":"info","fileLogging":true,"jsonLogOutput":true,"logDirectory":"Logs","fileName":"app.log","maxSizeMB":500,"maxBackups":1,"maxAgeInDays":5,"compress":true,"time":"2022-11-27T01:25:06+05:30","message":"logging configured"}
+{"level":"info","fileLogging":true,"jsonLogOutput":true,"logDirectory":"Logs","fileName":"app.log","maxSizeMB":500,"maxBackups":1,"maxAgeInDays":5,"compress":true,"time":"2022-11-27T01:25:25+05:30","message":"logging configured"}
+{"level":"info","fileLogging":true,"jsonLogOutput":true,"logDirectory":"Logs","fileName":"app.log","maxSizeMB":500,"maxBackups":1,"maxAgeInDays":5,"compress":true,"time":"2022-11-27T01:26:49+05:30","message":"logging configured"}
+{"level":"info","fileLogging":true,"jsonLogOutput":true,"logDirectory":"Logs","fileName":"app.log","maxSizeMB":500,"maxBackups":1,"maxAgeInDays":5,"compress":true,"time":"2022-11-27T01:26:56+05:30","message":"logging configured"}

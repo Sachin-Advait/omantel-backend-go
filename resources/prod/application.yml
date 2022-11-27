@@ -5,6 +5,8 @@ captchaSitesEnableKey: 6LeOsMAhAAAAAFvMjuG5TX3nE_ZGYGvvbHKsyDjd
 captchaSecretKey: 6LeOsMAhAAAAAA66_QKasMPd2ghVhA6Phr1se6FK
 verifyCaptchaGoogleApi: https://www.google.com/recaptcha/api/siteverify
 otpUrl: https://10.64.172.30:17862/services/SendNotification
+shortCode: "OMSIP"
+requestorChannelId: "ZONE"
 psqlDB:
   host: 10.64.172.97
   port: 5432
@@ -26,7 +28,7 @@ logPsqlDB:
   connMaxLifetimeInHour: 24
   connMaxIdleTimeInMinute: 48
 http:
-  tlsCertificate: ./cert/start.omantel.om.cer
+  tlsCertificate: ./cert/omantel.om.cer
   connectTimeoutInMillis: 10000
   keepAliveDurationInMillis: 30000
   maxIdleConnections: 100

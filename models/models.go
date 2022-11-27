@@ -486,16 +486,21 @@ var (
 	}
 )
 
+var (
+	ShortCode          = "OMSIP"
+	RequestorChannelId = "OMSIP"
+)
+
 var SMSRequestTemplate = []byte(`<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sen="http://www.omantel.om/esb/messages/sendnotification">
 <soapenv:Header/>
 <soapenv:Body>
    <sen:SendNotificationRq>
 	  <sen:RequestHeader>
 		 <FunctionId>{{.FunctionId}}</FunctionId>
-		 <TransactionId>0</TransactionId>
-		 <RequestId>OMSIP_{{.RequestId}}</RequestId>
-		 <RequestorChannelId>OMSIP</RequestorChannelId>
-		 <RequestorUserId>OMSIP</RequestorUserId>
+		 <TransactionId>{{.TransactionId}}</TransactionId>
+		 <RequestId>{{.RequestId}}</RequestId>
+		 <RequestorChannelId>{{.RequestorChannelId}}</RequestorChannelId>
+		 <RequestorUserId>{{.RequestorUserId}}</RequestorUserId>
 		 <Timestamp>{{.Timestamp}}</Timestamp>
 	  </sen:RequestHeader>
 	  <sen:RequestBody>
@@ -503,12 +508,10 @@ var SMSRequestTemplate = []byte(`<soapenv:Envelope xmlns:soapenv="http://schemas
 			<NotificationType>SMS</NotificationType>
 			<NotificationDateTime>{{.NotificationDateTime}}</NotificationDateTime>
 			<NotificationLanguage>1</NotificationLanguage>
-			<ShortCode>ROP Permit</ShortCode>
+			<ShortCode>{{.ShortCode}}</ShortCode>
 			<IsDeliveryStatusRequired>1</IsDeliveryStatusRequired>
 			<NotificaitionValidityPeriod>{{.NotificaitionValidityPeriod}}</NotificaitionValidityPeriod>
-			<Body>Dear {{.UserId}}, Your OTP is {{.OTP}}
-
-		</Body>
+			<Body>{{.Body}}</Body>
 			<BodyCoding>8</BodyCoding>
 			<BodyContentType>1</BodyContentType>
 			<ReceiverList>
@@ -519,3 +522,18 @@ var SMSRequestTemplate = []byte(`<soapenv:Envelope xmlns:soapenv="http://schemas
    </sen:SendNotificationRq>
 </soapenv:Body>
 </soapenv:Envelope>`)
+
+// var SMSResponseTemplate = []byte(`<?xml version="1.0" encoding="UTF-8"?>
+// <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+//    <soapenv:Body>
+//       <NS1:SendNotificationRs xmlns:NS1="http://www.omantel.om/esb/messages/sendnotification">
+//          <NS1:ResponseHeader>
+//             <FunctionId>17002004</FunctionId>
+//             <TransactionId>36896</TransactionId>
+//             <RequestId>OMSIP_1669540763</RequestId>
+//             <ReturnCode>0</ReturnCode>
+//             <ReturnDesc>Success/ Successfully validated the request</ReturnDesc>
+//          </NS1:ResponseHeader>
+//       </NS1:SendNotificationRs>
+//    </soapenv:Body>
+// </soapenv:Envelope>`)
