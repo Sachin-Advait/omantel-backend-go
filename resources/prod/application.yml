@@ -1,8 +1,8 @@
 secretKey: gis-jwt-token
 sessionExpiryTimeMinutes: 30
 refreshTokenExpiryHours: 3
-captchaSitesEnableKey: 6LeOsMAhAAAAAFvMjuG5TX3nE_ZGYGvvbHKsyDjd
-captchaSecretKey: 6LeOsMAhAAAAAA66_QKasMPd2ghVhA6Phr1se6FK
+captchaSitesEnableKey: 6Lc61GciAAAAAALcJjbHg364YaqPKyJ3_8jbj_Ks
+captchaSecretKey: 6Lc61GciAAAAALKJWSKqfOtMea39MG9H3FCux1JG
 verifyCaptchaGoogleApi: https://www.google.com/recaptcha/api/siteverify
 otpUrl: https://10.64.172.30:17862/services/SendNotification
 shortCode: "OMSIP"

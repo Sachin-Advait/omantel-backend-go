@@ -265,6 +265,13 @@ var (
 	}
 )
 
+var ProductGroupMap = map[string]struct{}{
+	HBBCategory:     struct{}{},
+	BaqatiCategory:  struct{}{},
+	HayyakCategory:  struct{}{},
+	UpgradeCategory: struct{}{},
+}
+
 const (
 	MaxAllowedLoginAttempt    = 5
 	OtpGenerateBlockTimeInMin = 15

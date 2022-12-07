@@ -1,0 +1,38 @@
+secretKey: gis-jwt-token
+sessionExpiryTimeMinutes: 30
+refreshTokenExpiryHours: 3
+captchaSitesEnableKey: 6LeOsMAhAAAAAFvMjuG5TX3nE_ZGYGvvbHKsyDjd
+captchaSecretKey: 6LeOsMAhAAAAAA66_QKasMPd2ghVhA6Phr1se6FK
+verifyCaptchaGoogleApi: https://www.google.com/recaptcha/api/siteverify
+otpUrl: https://10.64.172.30:17862/services/SendNotification
+shortCode: "OMSIP"
+requestorChannelId: "ZONE"
+psqlDB:
+  host: localhost
+  port: 5432
+  dbName: postgres
+  user: postgres
+  password: pass@123
+  maxOpenConnections: 20
+  maxIdleConnections: 10
+  connMaxLifetimeInHour: 24
+  connMaxIdleTimeInMinute: 48
+logPsqlDB:
+  host: localhost
+  port: 5432
+  dbName: postgres
+  user: postgres
+  password: pass@123
+  maxOpenConnections: 20
+  maxIdleConnections: 10
+  connMaxLifetimeInHour: 24
+  connMaxIdleTimeInMinute: 48
+http:
+  tlsCertificate: ./cert/omantel.om.cer
+  connectTimeoutInMillis: 10000
+  keepAliveDurationInMillis: 30000
+  maxIdleConnections: 100
+  idleConnectionTimeoutInMillis: 90000
+  tlsHandshakeTimeoutInMillis: 10000
+  expectContinueTimeoutInMillis: 1000
+  timeoutInMillis: 15000

@@ -1361,7 +1361,641 @@ func (dbConn *DBImplementation) DeleteTargetRecord(targetCode []string) *errors.
 
 ////////////////
 
-// FetchUserSales returns all sale transaction of a given user
+// InsertEmployeeReport - delete and insert each outlet user report data daily in db
+func (dbConn *DBImplementation) InsertEmployeeReport(usr *models.UserReportDB, isQuarterReport bool, quarter, month, year int) *errors.Error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	trx, err := dbConn.Operation.Begin()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    errors.InternalServerError,
+			Details:    "InsertEmployeeReport: begin trx failed - " + err.Error()}
+	}
+
+	if isQuarterReport {
+		_, err = trx.ExecContext(ctx, "DELETE FROM user_reports_table where emp_id=$1 and isquarterly=true and quarter=$2 and year=$3", usr.UserId, quarter, year)
+	} else {
+		_, err = trx.ExecContext(ctx, "DELETE FROM user_reports_table where emp_id=$1 and isquarterly=false and month=$2 and year=$3", usr.UserId, month, year)
+	}
+
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertEmployeeReport: del failed",
+			Details:    "InsertEmployeeReport del failed: " + err.Error(),
+		}
+	}
+
+	rslt, err := trx.ExecContext(ctx, "INSERT INTO user_reports_table(emp_id, reporting_manager, isquarterly, month, quarter, year, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan, created) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32)",
+		usr.UserId,
+		usr.ManagerId,
+		usr.Isquarterly,
+		usr.Month,
+		usr.Quarter,
+		usr.Year,
+		usr.Hayyak_sales_count,
+		usr.Hayyak_target,
+		usr.Hayyak_achieved_percentage,
+		usr.Hayyak_payout,
+		usr.Hayyak_extra_payout,
+		usr.Hbb_sales_count,
+		usr.Hbb_target,
+		usr.Hbb_achieved_percentage,
+		usr.Hbb_payout,
+		usr.Hbb_extra_payout,
+		usr.Baqati_sales_count,
+		usr.Baqati_target,
+		usr.Baqati_achieved_percentage,
+		usr.Baqati_payout,
+		usr.Baqati_extra_payout,
+		usr.Upgrade_sales_count,
+		usr.Upgrade_target,
+		usr.Uprade_achieved_percentage,
+		usr.Upgrade_payout,
+		usr.Upgrade_extra_payout,
+		usr.Total_payout,
+		usr.HayyakSaleCountPerPlanArray,
+		usr.HBBSaleCountPerPlanArray,
+		usr.BaqatiSaleCountPerPlanArray,
+		usr.UpgradeSaleCountPerPlanArray,
+		usr.CreateAt,
+	)
+
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertEmployeeReport: insert failed",
+			Details:    "InsertEmployeeReport insert failed: " + err.Error(),
+		}
+	}
+
+	rows, _ := rslt.RowsAffected()
+
+	if rows != 1 {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertEmployeeReport: not inserted",
+			Details:    "InsertEmployeeReport: rows affected " + strconv.Itoa(int(rows))}
+	}
+
+	err = trx.Commit()
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertEmployeeReport: commit failed",
+			Details:    "InsertEmployeeReport: commit failed - " + err.Error()}
+	}
+
+	return nil
+}
+
+// InsertManagerReport - delete and insert each manager report data daily in db
+func (dbConn *DBImplementation) InsertManagerReport(mgr *models.ManagerReportDB, isQuarterReport bool, quarter, month, year int) *errors.Error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	trx, err := dbConn.Operation.Begin()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    errors.InternalServerError,
+			Details:    "InsertManagerReport: begin trx failed - " + err.Error()}
+	}
+
+	if isQuarterReport {
+		_, err = trx.ExecContext(ctx, "DELETE FROM manager_reports_table where mngr_id=$1 and isquarterly=true and quarter=$2 and year=$3", mgr.UserId, quarter, year)
+	} else {
+		_, err = trx.ExecContext(ctx, "DELETE FROM manager_reports_table where mngr_id=$1 and isquarterly=false and month=$2 and year=$3", mgr.UserId, month, year)
+	}
+
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertManagerReport: del failed",
+			Details:    "InsertManagerReport del failed: " + err.Error(),
+		}
+	}
+
+	rslt, err := trx.ExecContext(ctx, "INSERT INTO manager_reports_table(mngr_id, position, reporting_manager, isquarterly, month, quarter, year, region, outlet, latitude, longitude, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)",
+		mgr.UserId,
+		mgr.Position,
+		mgr.ManagerId,
+		isQuarterReport,
+		month,
+		quarter,
+		year,
+		mgr.Region,
+		mgr.Outlet,
+		mgr.Latitude,
+		mgr.Longitude,
+		mgr.HBBSalesCount,
+		mgr.HBBTargetCount,
+		mgr.HayyakSalesCount,
+		mgr.HayyakTargetCount,
+		mgr.BaqatiSalesCount,
+		mgr.BaqatiTargetCount,
+		mgr.UpgradeSalesCount,
+		mgr.UpgradeTargetCount,
+		mgr.CreatedAt,
+	)
+
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertManagerReport: insert failed",
+			Details:    "InsertManagerReport insert failed: " + err.Error(),
+		}
+	}
+
+	rows, _ := rslt.RowsAffected()
+
+	if rows != 1 {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertManagerReport: not inserted",
+			Details:    "InsertManagerReport: rows affected " + strconv.Itoa(int(rows))}
+	}
+
+	err = trx.Commit()
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertManagerReport: commit failed",
+			Details:    "InsertManagerReport: commit failed - " + err.Error()}
+	}
+
+	return nil
+}
+
+// InsertOutletReport - delete and insert each outlet report data daily in db
+func (dbConn *DBImplementation) InsertOutletReport(outlet *models.OutletReportDB, isQuarterReport bool, quarter, month, year int) *errors.Error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	trx, err := dbConn.Operation.Begin()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    errors.InternalServerError,
+			Details:    "InsertOutletReport: begin trx failed - " + err.Error()}
+	}
+
+	if isQuarterReport {
+		_, err = trx.ExecContext(ctx, "DELETE FROM outlet_reports_table where outlet=$1 and isquarterly=true and quarter=$2 and year=$3", outlet.Outlet, quarter, year)
+	} else {
+		_, err = trx.ExecContext(ctx, "DELETE FROM outlet_reports_table where outlet=$1 and isquarterly=false and month=$2 and year=$3", outlet.Outlet, month, year)
+	}
+
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertOutletReport: del failed",
+			Details:    "InsertOutletReport del failed: " + err.Error(),
+		}
+	}
+
+	rslt, err := trx.ExecContext(ctx, "INSERT INTO outlet_reports_table(outlet, isquarterly, month, quarter, year, region, latitude, longitude, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)",
+		outlet.Outlet,
+		isQuarterReport,
+		month,
+		quarter,
+		year,
+		outlet.Region,
+		outlet.Latitude,
+		outlet.Longitude,
+		outlet.HBBSalesCount,
+		outlet.HBBTargetCount,
+		outlet.HayyakSalesCount,
+		outlet.HayyakTargetCount,
+		outlet.BaqatiSalesCount,
+		outlet.BaqatiTargetCount,
+		outlet.UpgradeSalesCount,
+		outlet.UpgradeTargetCount,
+		outlet.CreatedAt)
+
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertOutletReport: insert failed",
+			Details:    "InsertOutletReport insert failed: " + err.Error(),
+		}
+	}
+
+	rows, _ := rslt.RowsAffected()
+
+	if rows != 1 {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertOutletReport: not inserted",
+			Details:    "InsertOutletReport: rows affected " + strconv.Itoa(int(rows))}
+	}
+
+	err = trx.Commit()
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertOutletReport: commit failed",
+			Details:    "InsertOutletReport: commit failed - " + err.Error()}
+	}
+
+	return nil
+}
+
+// InsertRegionReport - delete and insert each region report data daily in db
+func (dbConn *DBImplementation) InsertRegionReport(region *models.RegionReportDB, isQuarterReport bool, quarter, month, year int) *errors.Error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	trx, err := dbConn.Operation.Begin()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    errors.InternalServerError,
+			Details:    "InsertRegionReport: begin trx failed - " + err.Error()}
+	}
+
+	if isQuarterReport {
+		_, err = trx.ExecContext(ctx, "DELETE FROM region_reports_table where region=$1 and isquarterly=true and quarter=$2 and year=$3", region.Region, quarter, year)
+	} else {
+		_, err = trx.ExecContext(ctx, "DELETE FROM region_reports_table where region=$1 and isquarterly=false and month=$2 and year=$3", region.Region, month, year)
+	}
+
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertRegionReport: del failed",
+			Details:    "InsertRegionReport del failed: " + err.Error(),
+		}
+	}
+
+	rslt, err := trx.ExecContext(ctx, "INSERT INTO region_reports_table(region, isquarterly, month, quarter, year, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)",
+		region.Region,
+		isQuarterReport,
+		month,
+		quarter,
+		year,
+		region.HBBSalesCount,
+		region.HBBTargetCount,
+		region.HayyakSalesCount,
+		region.HayyakTargetCount,
+		region.BaqatiSalesCount,
+		region.BaqatiTargetCount,
+		region.UpgradeSalesCount,
+		region.UpgradeTargetCount,
+		region.CreatedAt,
+	)
+
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertRegionReport: insert failed",
+			Details:    "InsertRegionReport insert failed: " + err.Error(),
+		}
+	}
+
+	rows, _ := rslt.RowsAffected()
+
+	if rows != 1 {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertRegionReport: not inserted",
+			Details:    "InsertRegionReport: rows affected " + strconv.Itoa(int(rows))}
+	}
+
+	err = trx.Commit()
+	if err != nil {
+		trx.Rollback()
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "InsertRegionReport: commit failed",
+			Details:    "InsertRegionReport: commit failed - " + err.Error()}
+	}
+
+	return nil
+}
+
+// FetchUserReport - pre-computed user report
+func (dbConn *DBImplementation) FetchUserReport(userId string, isQuarterReport bool, quarter, month, year int) (*models.UserReportDB, *errors.Error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if isQuarterReport {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select emp_id, reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan, created from user_reports_table where emp_id=$1 AND isquarterly=true AND quarter=$2 AND year=$3", userId, quarter, year)
+	} else {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select emp_id, reporting_manager, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan, created from user_reports_table where emp_id=$1 AND isquarterly=false AND month=$2 AND year=$3", userId, month, year)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchUserReport: query failed",
+			Details:    "FetchUserReport query failed: " + err.Error(),
+		}
+	}
+
+	rcrd := &models.UserReportDB{}
+
+	for rows.Next() {
+
+		err = rows.Scan(
+			&rcrd.UserId,
+			&rcrd.ManagerId,
+			&rcrd.Hayyak_sales_count,
+			&rcrd.Hayyak_target,
+			&rcrd.Hayyak_achieved_percentage,
+			&rcrd.Hayyak_payout,
+			&rcrd.Hayyak_extra_payout,
+			&rcrd.Hbb_sales_count,
+			&rcrd.Hbb_target,
+			&rcrd.Hbb_achieved_percentage,
+			&rcrd.Hbb_payout,
+			&rcrd.Hbb_extra_payout,
+			&rcrd.Baqati_sales_count,
+			&rcrd.Baqati_target,
+			&rcrd.Baqati_achieved_percentage,
+			&rcrd.Baqati_payout,
+			&rcrd.Baqati_extra_payout,
+			&rcrd.Upgrade_sales_count,
+			&rcrd.Upgrade_target,
+			&rcrd.Uprade_achieved_percentage,
+			&rcrd.Upgrade_payout,
+			&rcrd.Upgrade_extra_payout,
+			&rcrd.Total_payout,
+			&rcrd.HayyakSaleCountPerPlanArray,
+			&rcrd.HBBSaleCountPerPlanArray,
+			&rcrd.BaqatiSaleCountPerPlanArray,
+			&rcrd.UpgradeSaleCountPerPlanArray,
+			&rcrd.CreateAt,
+		)
+
+		if err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserReport: scan failed",
+				Details:    "FetchUserReport scan failed: " + err.Error(),
+			}
+		}
+	}
+
+	return rcrd, nil
+}
+
+// FetchManagerReport - pre-computed manager report
+func (dbConn *DBImplementation) FetchManagerReport(mgrId, position string, isQuarterReport bool, quarter, month, year int) (*models.ManagerReportDB, *errors.Error) {
+
+	_, ok := constant.ManagerMap[position]
+	if !ok {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    "incorrect position",
+			Details:    "incorrect position",
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if isQuarterReport {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select mngr_id, position, reporting_manager, region, outlet, latitude, longitude, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created from reports_table where mngr_id=$1 AND isquarterly=true AND quarter=$2 AND year=$3", mgrId, quarter, year)
+	} else {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select mngr_id, position, reporting_manager, region, outlet, latitude, longitude, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created from reports_table where mngr_id=$1 AND isquarterly=false AND month=$2 AND year=$3", mgrId, month, year)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchManagerReport: query failed",
+			Details:    "FetchManagerReport query failed: " + err.Error(),
+		}
+	}
+
+	rcrd := &models.ManagerReportDB{}
+
+	for rows.Next() {
+
+		err = rows.Scan(
+			&rcrd.UserId,
+			&rcrd.Position,
+			&rcrd.ManagerId,
+			&rcrd.Region,
+			&rcrd.Outlet,
+			&rcrd.Latitude,
+			&rcrd.Longitude,
+			&rcrd.HBBSalesCount,
+			&rcrd.HBBTargetCount,
+			&rcrd.HayyakSalesCount,
+			&rcrd.HayyakTargetCount,
+			&rcrd.BaqatiSalesCount,
+			&rcrd.BaqatiTargetCount,
+			&rcrd.UpgradeSalesCount,
+			&rcrd.UpgradeTargetCount,
+			&rcrd.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchManagerReport: scan failed",
+				Details:    "FetchManagerReport scan failed: " + err.Error(),
+			}
+		}
+	}
+
+	return rcrd, nil
+}
+
+// FetchOutletReport - pre-computed outlet report
+func (dbConn *DBImplementation) FetchOutletReport(outlet, userPosition string, isQuarterReport bool, quarter, month, year int) (*models.OutletReportDB, *errors.Error) {
+
+	_, ok := constant.ManagerMap[userPosition]
+	if !ok {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    "incorrect position",
+			Details:    "incorrect position",
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if isQuarterReport {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select outlet, region, latitude, longitude, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created from outlet_reports_table where outlet=$1 AND isquarterly=true AND quarter=$2 AND year=$3", outlet, quarter, year)
+	} else {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select outlet, region, latitude, longitude, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created from outlet_reports_table where outlet=$1 AND isquarterly=false AND month=$2 AND year=$3", outlet, month, year)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchOutletReport: query failed",
+			Details:    "FetchOutletReport query failed: " + err.Error(),
+		}
+	}
+
+	rcrd := &models.OutletReportDB{}
+
+	for rows.Next() {
+
+		err = rows.Scan(
+			&rcrd.Outlet,
+			&rcrd.Region,
+			&rcrd.Latitude,
+			&rcrd.Longitude,
+			&rcrd.HBBSalesCount,
+			&rcrd.HBBTargetCount,
+			&rcrd.HayyakSalesCount,
+			&rcrd.HayyakTargetCount,
+			&rcrd.BaqatiSalesCount,
+			&rcrd.BaqatiTargetCount,
+			&rcrd.UpgradeSalesCount,
+			&rcrd.UpgradeTargetCount,
+			&rcrd.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchOutletReport: scan failed",
+				Details:    "FetchOutletReport scan failed: " + err.Error(),
+			}
+		}
+	}
+
+	return rcrd, nil
+}
+
+// FetchRegionReport - pre-computed region report
+func (dbConn *DBImplementation) FetchRegionReport(region, userPosition string, isQuarterReport bool, quarter, month, year int) (*models.RegionReportDB, *errors.Error) {
+
+	_, ok := constant.ManagerMap[userPosition]
+	if !ok {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    "incorrect position",
+			Details:    "incorrect position",
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if isQuarterReport {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select region, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created from region_reports_table where region=$1 AND isquarterly=true AND quarter=$2 AND year=$3", region, quarter, year)
+	} else {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select region, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created from region_reports_table where region=$1 AND isquarterly=false AND month=$2 AND year=$3", region, month, year)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchRegionReport: query failed",
+			Details:    "FetchRegionReport query failed: " + err.Error(),
+		}
+	}
+
+	rcrd := &models.RegionReportDB{}
+
+	for rows.Next() {
+
+		err = rows.Scan(
+			&rcrd.Region,
+			&rcrd.HBBSalesCount,
+			&rcrd.HBBTargetCount,
+			&rcrd.HayyakSalesCount,
+			&rcrd.HayyakTargetCount,
+			&rcrd.BaqatiSalesCount,
+			&rcrd.BaqatiTargetCount,
+			&rcrd.UpgradeSalesCount,
+			&rcrd.UpgradeTargetCount,
+			&rcrd.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchRegionReport: scan failed",
+				Details:    "FetchRegionReport scan failed: " + err.Error(),
+			}
+		}
+	}
+
+	return rcrd, nil
+}
+
+////////////////
+
+// FetchUserSales - all sale transaction of a given user and time period
 func (dbConn *DBImplementation) FetchUserSales(clientID string, month, year, quarter int, isQuarterReport bool) (*models.SaleTransaction, *errors.Error) {
 
 	logger.FileLogger.Info().Str("clientID", clientID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSales start")
@@ -1432,6 +2066,8 @@ func (dbConn *DBImplementation) FetchUserSales(clientID string, month, year, qua
 			product_group = "HAYYAK"
 		case strings.Contains(product_group, "POSTPAID"):
 			product_group = "BAQATI"
+		case product_group == "HBB" || product_group == "HAYYAK" || product_group == "BAQATI":
+
 		default:
 			return trx, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
@@ -1467,17 +2103,276 @@ func (dbConn *DBImplementation) FetchUserSales(clientID string, month, year, qua
 	return trx, nil
 }
 
-// FetchTotalNonManagerialEmployees returns all non-managerial employees count of a given region and outlet
-func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, *errors.Error) {
-
-	logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
-	defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
+// FetchUserSalesPerProduct - all sale transaction of a given user, product and time period
+func (dbConn *DBImplementation) FetchUserSalesCountPerPlan(clientID, product string, month, year, quarter int, isQuarterReport bool) ([]*models.SaleCountPerPlan, *errors.Error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	// rows, err := dbConn.Operation.Query("select count(*) from User_Master_Table where region= $1 and outlet= $2 and position!= $3", region, outlet, commons.OutletManager)
-	rows, err := dbConn.Operation.QueryContext(ctx, "select count(*) from User_Master_Table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'", region, outlet)
+	var (
+		rows *sql.Rows
+		err  error
+	)
+
+	response := make([]*models.SaleCountPerPlan, 0)
+
+	if product == constant.UpgradeCategory {
+
+		var (
+			quantity     int
+			curr_product string
+			subcategory  interface{}
+			salesDate    time.Time
+			inactiveDate time.Time
+		)
+
+		if isQuarterReport {
+			rows, err = dbConn.Operation.QueryContext(ctx, "select quantity, curr_product, subcategory, sales_date, inactive_date from sale_transaction_table where emp_id=$1 and category_type='UPGRADE' and quarter= $2 and EXTRACT('year' from sales_date)= $3", clientID, quarter, year)
+		} else {
+			rows, err = dbConn.Operation.QueryContext(ctx, "select quantity, curr_product, subcategory, sales_date, inactive_date from sale_transaction_table where emp_id=$1 and category_type='UPGRADE' and EXTRACT('month' from b.sales_date)= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, month, year)
+		}
+
+		if err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserSalesCountPerPlan Query: failed",
+				Details:    "FetchUserSalesCountPerPlan Query: " + err.Error(),
+			}
+		}
+
+		for rows.Next() {
+			if err := rows.Scan(&quantity, &curr_product, &subcategory, &salesDate, &inactiveDate); err != nil {
+				return nil, &errors.Error{
+					StatusCode: http.StatusInternalServerError,
+					Code:       errors.InternalServerError,
+					Message:    "FetchUserSalesCountPerPlan Scan: failed",
+					Details:    "FetchUserSalesCountPerPlan Scan: " + err.Error(),
+				}
+			}
+
+			lapsedSecs := salesDate.Sub(inactiveDate).Seconds()
+
+			if objecthelper.RoundTime(lapsedSecs/2600640) < 3 { //Months<3
+				if !strings.Contains(subcategory.(string), "INVOLUNTARY DEACTIVATION") {
+					//terminated logs
+					continue
+				}
+			}
+
+			response = append(response, &models.SaleCountPerPlan{
+				CurrentPlan: curr_product,
+				Quantity:    quantity,
+			})
+		}
+
+		return response, nil
+	}
+
+	//for non-upgrade sales
+
+	if isQuarterReport {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select quantity, curr_product, product_group, subcategory, sales_date, inactive_date from sale_transaction_table where emp_id=$1 and category_type='NEW' and quarter= $2 and EXTRACT('year' from sales_date)= $3", clientID, quarter, year)
+	} else {
+		rows, err = dbConn.Operation.QueryContext(ctx, "select quantity, curr_product, product_group, subcategory, sales_date, inactive_date from sale_transaction_table where emp_id=$1 and category_type='NEW' and EXTRACT('month' from b.sales_date)= $2 and EXTRACT('year' from b.sales_date)= $3", clientID, month, year)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchUserSalesCountPerPlan Query: failed",
+			Details:    "FetchUserSalesCountPerPlan Query: " + err.Error(),
+		}
+	}
+
+	var (
+		quantity      int
+		curr_product  string
+		product_group string
+		subcategory   interface{}
+		salesDate     time.Time
+		inactiveDate  time.Time
+	)
+
+	for rows.Next() {
+		if err := rows.Scan(&quantity, &curr_product, &product_group, &subcategory, &salesDate, &inactiveDate); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserSalesCountPerPlan Scan: failed",
+				Details:    "FetchUserSalesCountPerPlan Scan: " + err.Error(),
+			}
+		}
+
+		switch {
+		case strings.Contains(product_group, "FIXED"):
+			product_group = "HBB"
+		case strings.Contains(product_group, "PREPAID"):
+			product_group = "HAYYAK"
+		case strings.Contains(product_group, "POSTPAID"):
+			product_group = "BAQATI"
+		default:
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "Product Group Not Found",
+				Details:    "FetchUserSales: invalid productGrp-" + product_group,
+			}
+		}
+
+		lapsedSecs := salesDate.Sub(inactiveDate).Seconds()
+
+		if objecthelper.RoundTime(lapsedSecs/2600640) < 3 { //Months<3
+			if !strings.Contains(subcategory.(string), "INVOLUNTARY DEACTIVATION") {
+				//terminated logs
+				continue
+			}
+		}
+
+		if product_group == product {
+			response = append(response, &models.SaleCountPerPlan{
+				CurrentPlan: curr_product,
+				Quantity:    quantity,
+			})
+		}
+	}
+
+	return response, nil
+}
+
+// FetchUserPosition - user position from user master
+func (dbConn *DBImplementation) FetchUserPosition(id string) (string, *errors.Error) {
+
+	logger.FileLogger.Info().Str("clientID", id).Time("start", time.Now()).Msg("FetchUserPosition start")
+	defer logger.FileLogger.Info().Str("clientID", id).Time("end", time.Now()).Msg("FetchUserPosition done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select usr_position from user_master_table where emp_id=$1", id)
+	if err != nil {
+		return "", &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchUserPosition: query failed",
+			Details:    "FetchUserPosition query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		count    int
+		position string
+	)
+
+	for rows.Next() {
+		count++
+
+		if err := rows.Scan(&position); err != nil {
+			return "", &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserPosition: scan failed",
+				Details:    "FetchUserPosition scan failed: " + err.Error(),
+			}
+		}
+
+		if count > 1 {
+			return "", &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchUserPosition: more than one record found",
+				Details:    "FetchUserPosition: more than one record found",
+			}
+		}
+	}
+
+	return position, nil
+}
+
+func (dbConn *DBImplementation) FetchOutletDetailsViaName(regionName, outletName string) (*models.GetOutletResponse, *errors.Error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	outletResponse := &models.GetOutletResponse{}
+
+	err := dbConn.Operation.QueryRowContext(ctx,
+		"SELECT outlet_code, outlet_name, region_code, region_name, latitude, longitude FROM outlets_table where region_name=$1 and outlet_name=$2", regionName, outletName).
+		Scan(&outletResponse.OutletCode, &outletResponse.OutletName, &outletResponse.RegionCode, &outletResponse.RegionName, &outletResponse.Lat, &outletResponse.Lang)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchOutletDetails: query failed",
+			Details:    "FetchOutletDetails query failed: " + err.Error(),
+		}
+	}
+
+	if outletResponse.OutletCode == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidReqParameters,
+			Message:    "OUTLATE NAME NOT FOUND",
+			Details:    "FetchOutletDetails value not found, " + fmt.Sprintf("region:%v, outlet:%v", regionName, outletName),
+		}
+	}
+
+	return outletResponse, nil
+}
+
+func (dbConn *DBImplementation) FetchAllOutletNames(regionName string) ([]string, *errors.Error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	outlets := make([]string, 0)
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "SELECT outlet_name FROM outlets_table where region_name=$1", regionName)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchAllOutletNames: query failed",
+			Details:    "FetchAllOutletNames query failed: " + err.Error(),
+		}
+	}
+
+	var outlentName string
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&outlentName); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchAllOutletNames: scan failed",
+				Details:    "FetchAllOutletNames scan failed: " + err.Error(),
+			}
+		}
+
+		outlets = append(outlets, outlentName)
+	}
+
+	return outlets, nil
+}
+
+////////////////
+
+// FetchTotalNonManagerialEmployees - all non-managerial employees count of a given region and outlet
+func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, *errors.Error) {
+
+	// logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
+	// defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var count int
+
+	err := dbConn.Operation.QueryRowContext(ctx, "select count(*) from user_master_table where region= $1 and outlet= $2 and usr_position!='BACK OFFICE'",
+		region, outlet).Scan(&count)
 	if err != nil {
 		return -1, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -1487,23 +2382,8 @@ func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet 
 		}
 	}
 
-	var count int
-
-	for rows.Next() {
-		if err := rows.Scan(&count); err != nil {
-			return -1, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerError,
-				Message:    "FetchTotalNonManagerialEmployees Scan: failed",
-				Details:    "FetchTotalNonManagerialEmployees Scan: " + err.Error(),
-			}
-		}
-	}
-
 	return count, nil
 }
-
-///////////////
 
 // InsertUserMasterRecord reads data from user master input file and inserts into table
 func (dbConn *DBImplementation) InsertUserMasterRecord(emp *models.Employee) *errors.Error {
@@ -2072,15 +2952,15 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 
 	switch managerPosition {
 	case "vice_president":
-		query = "select distinct a.general_manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.general_manager=b.emp_id where a.vice_president= $1"
+		query = "select distinct a.general_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.general_manager=b.emp_id where a.vice_president= $1"
 	case "general_manager":
-		query = "select distinct a.senior_manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.senior_manager=b.emp_id where a.general_manager= $1"
+		query = "select distinct a.senior_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.senior_manager=b.emp_id where a.general_manager= $1"
 	case "senior_manager":
-		query = "select distinct a.manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.manager=b.emp_id where a.senior_manager= $1"
+		query = "select distinct a.manager,  b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.manager=b.emp_id where a.senior_manager= $1"
 	case "manager":
-		query = "select distinct a.outlet_manager, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager= $1"
+		query = "select distinct a.outlet_manager,  b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager= $1"
 	case "outlet_manager":
-		query = "select distinct a.emp_id, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.outlet_manager= $1"
+		query = "select distinct a.emp_id, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.outlet_manager= $1"
 	}
 
 	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID)
@@ -2101,7 +2981,7 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 
 		usr := &models.ReportingStaffIDAndName{}
 
-		if err := rows.Scan(&usr.ID, &usr.Name); err != nil {
+		if err := rows.Scan(&usr.ID, &usr.Position, &usr.Name); err != nil {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerError,
@@ -2118,8 +2998,8 @@ func (dbConn *DBImplementation) FetchAllEmployeesReportingToGivenManagerRole(man
 
 func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRole(managerPosition string, managerID string) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
-	logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole start")
-	defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole done")
+	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole start")
+	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllOutletManagersReportingToGivenManagerRole done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -2181,61 +3061,6 @@ func (dbConn *DBImplementation) FetchAllOutletManagersReportingToGivenManagerRol
 	return array, nil
 }
 
-// InsertEmployeeRecord inserts each users statistical daily in db, and is updated everyday once
-func (dbConn *DBImplementation) InsertEmployeeRecord(usr *models.UserRecord) *errors.Error {
-
-	logger.FileLogger.Info().Interface("record", usr).Time("start", time.Now()).Msg("InsertEmployeeRecord start")
-	defer logger.FileLogger.Info().Interface("record", usr).Time("end", time.Now()).Msg("InsertEmployeeRecord done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	_, err := dbConn.Operation.QueryContext(ctx, "INSERT INTO reports_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31);",
-		usr.EmpId,
-		usr.Created,
-		usr.ReportingManager,
-		usr.Isquarterly,
-		usr.Month,
-		usr.Quarter,
-		usr.Hayyak_sales_count,
-		usr.Hayyak_target,
-		usr.Hayyak_achieved_percentage,
-		usr.Hayyak_payout,
-		usr.Hayyak_extra_payout,
-		usr.Hbb_sales_count,
-		usr.Hbb_target,
-		usr.Hbb_achieved_percentage,
-		usr.Hbb_payout,
-		usr.Hbb_extra_payout,
-		usr.Baqati_sales_count,
-		usr.Baqati_target,
-		usr.Baqati_achieved_percentage,
-		usr.Baqati_payout,
-		usr.Baqati_extra_payout,
-		usr.Upgrade_sales_count,
-		usr.Upgrade_target,
-		usr.Uprade_achieved_percentage,
-		usr.Upgrade_payout,
-		usr.Upgrade_extra_payout,
-		usr.Total_payout,
-		usr.HayyakSaleCountPerPlanArray,
-		usr.HBBSaleCountPerPlanArray,
-		usr.BaqatiSaleCountPerPlanArray,
-		usr.UpgradeSaleCountPerPlanArray,
-	)
-
-	if err != nil {
-		return &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "InsertEmployeeRecord: failed",
-			Details:    "InsertEmployeeRecord failed: " + err.Error(),
-		}
-	}
-
-	return nil
-}
-
 // InsertEmployeeMultipleRecords inserts each users multiple statistical data daily in db, and is updated everyday once
 func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*models.UserRecord) *errors.Error {
 
@@ -2254,7 +3079,7 @@ func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*models.User
 		valueStrings = append(valueStrings, fmt.Sprintf("($%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v, $%v)", count+1, count+2, count+3, count+4, count+5, count+6, count+7, count+8, count+9, count+10, count+11, count+12, count+13, count+14, count+15, count+16, count+17, count+18, count+19, count+20, count+21, count+22, count+23, count+24, count+25, count+26, count+27, count+28, count+29, count+30, count+31))
 
 		valueArgs = append(valueArgs, w.EmpId)
-		valueArgs = append(valueArgs, w.Created)
+		valueArgs = append(valueArgs, w.CreateAt)
 		valueArgs = append(valueArgs, w.ReportingManager)
 		valueArgs = append(valueArgs, w.Isquarterly)
 		valueArgs = append(valueArgs, w.Month)
@@ -2288,7 +3113,7 @@ func (dbConn *DBImplementation) InsertEmployeeMultipleRecords(usr []*models.User
 		count += 31
 	}
 
-	smt := `INSERT INTO reports_table(emp_id, created, reporting_manager, isquarterly, months, quarter, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan)
+	smt := `INSERT INTO reports_table(emp_id, created, reporting_manager, isquarterly, month, quarter, year, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan)
     VALUES %s ON CONFLICT (emp_id, months, quarter) DO NOTHING`
 	smt = fmt.Sprintf(smt, strings.Join(valueStrings, ","))
 
@@ -3082,54 +3907,6 @@ func (dbConn *DBImplementation) FetchProductSalesPerOutletManager(id string, mon
 	return rcrds, nil
 }
 
-func (dbConn *DBImplementation) FetchUserPosition(id string) (string, *errors.Error) {
-
-	logger.FileLogger.Info().Str("clientID", id).Time("start", time.Now()).Msg("FetchUserPosition start")
-	defer logger.FileLogger.Info().Str("clientID", id).Time("end", time.Now()).Msg("FetchUserPosition done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	rows, err := dbConn.Operation.QueryContext(ctx, "select usr_position from user_master_table where emp_id=$1", id)
-	if err != nil {
-		return "", &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "FetchUserPosition: query failed",
-			Details:    "FetchUserPosition query failed: " + err.Error(),
-		}
-	}
-
-	var (
-		count    int
-		position string
-	)
-
-	for rows.Next() {
-		count++
-
-		if err := rows.Scan(&position); err != nil {
-			return "", &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerError,
-				Message:    "FetchUserPosition: scan failed",
-				Details:    "FetchUserPosition scan failed: " + err.Error(),
-			}
-		}
-
-		if count > 1 {
-			return "", &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerError,
-				Message:    "FetchUserPosition: more than one record found",
-				Details:    "FetchUserPosition: more than one record found",
-			}
-		}
-	}
-
-	return position, nil
-}
-
 func (dbConn *DBImplementation) FetchUserName(id string) (string, string, *errors.Error) {
 
 	logger.FileLogger.Info().Str("clientID", id).Time("start", time.Now()).Msg("FetchUserName start")
@@ -3241,4 +4018,172 @@ func getQuarterFromMonth(month int) int {
 	}
 
 	return -1
+}
+
+func (dbConn *DBImplementation) FetchUserBasicDetails(userID string) (*models.UserBasicDetailsDB, *errors.Error) {
+
+	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserBasicDetails start")
+	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserBasicDetails done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	user := &models.UserBasicDetailsDB{}
+
+	err := dbConn.Operation.QueryRowContext(ctx,
+		"select a.emp_id, a.name, a.usr_position, a.mobile_number, b.region_name, b.outlet_name, c.outlet_manager from user_master_table a INNER JOIN outlets_table b on a.emp_id=$1 and a.outlet=b.outlet_name INNER JOIN user_hierarchy_table c on a.emp_id=c.emp_id",
+		userID).Scan(&user.UserId, &user.Name, &user.Position, &user.MobileNumber, &user.Region, &user.Outlet, &user.OutletManageId)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    errors.InternalServerError,
+			Details:    "FetchUserBasicDetails query failed: " + err.Error(),
+		}
+	}
+
+	if user.UserId == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidReqParameterCode,
+			Message:    "User Not Found",
+			Details:    "FetchUserBasicDetails user not found:" + userID,
+		}
+	}
+
+	return user, nil
+}
+
+func (dbConn *DBImplementation) FetchManagerBasicDetails(userID string) (*models.ManagerBasicDetailsDB, *errors.Error) {
+
+	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchManagerBasicDetails start")
+	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchManagerBasicDetails done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	manager := &models.ManagerBasicDetailsDB{}
+
+	err := dbConn.Operation.QueryRowContext(ctx,
+		"select emp_id, name, usr_position, mobile_number, region, outlet from user_master_table where emp_id=$1",
+		userID).Scan(&manager.UserId, &manager.Name, &manager.Position, &manager.MobileNumber, &manager.Region, &manager.Outlet)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    errors.InternalServerError,
+			Details:    "FetchManagerBasicDetails query failed: " + err.Error(),
+		}
+	}
+
+	if manager.UserId == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidReqParameterCode,
+			Message:    "User Not Found",
+			Details:    "FetchManagerBasicDetails user not found:" + userID,
+		}
+	}
+
+	mangerPosition, ok := constant.ManagerMap[manager.Position]
+	if !ok {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    "incorrect position",
+			Details:    "incorrect position",
+		}
+	}
+
+	var query string
+
+	switch mangerPosition {
+	case "vice_president":
+		return manager, nil
+	case "general_manager":
+		query = "select vice_president from user_hierarchy_table where general_manager= $1"
+		manager.ManagerPosition = constant.VicePresident
+	case "senior_manager":
+		query = "select general_manager from user_hierarchy_table where senior_manager= $1"
+		manager.ManagerPosition = constant.GeneralManager
+	case "manager":
+		query = "select senior_manager from user_hierarchy_table where manager= $1"
+		manager.ManagerPosition = constant.SeniorManager
+	case "outlet_manager":
+		query = "select manager from user_hierarchy_table where outlet_manager= $1"
+		manager.ManagerPosition = constant.Manager
+	}
+
+	err = dbConn.Operation.QueryRowContext(ctx, query, userID).Scan(&manager.ManagerId)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    errors.InternalServerError,
+			Details:    "FetchManagerBasicDetails manager query failed: " + err.Error(),
+		}
+	}
+
+	return manager, nil
+}
+
+func (dbConn *DBImplementation) FetchOutletSalesCount(region, outlet string, month, year, quarter int, isQuarterReport bool) (hbbSales, hayyakSales, baqatiSales, upgradeSales int, err *errors.Error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var (
+		rows   *sql.Rows
+		sqlErr error
+	)
+
+	if isQuarterReport {
+		rows, sqlErr = dbConn.Operation.QueryContext(ctx,
+			"select product_group, SUM(quantity) AS total from sale_transaction_table  where region=$1 and outlet=$2 and quarter=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY product_group",
+			region, outlet, quarter, year)
+	} else {
+		rows, sqlErr = dbConn.Operation.QueryContext(ctx,
+			"select product_group, SUM(quantity) AS total from sale_transaction_table  where region=$1 and outlet=$2 and EXTRACT('month' from b.sales_date)=$3 and EXTRACT('year' from b.sales_date)=$4 GROUP BY product_group",
+			region, outlet, month, year)
+	}
+
+	if sqlErr != nil {
+		err = &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchOutletSalesCount: query failed",
+			Details:    "FetchOutletSalesCount query failed: " + sqlErr.Error(),
+		}
+		return
+	}
+
+	var (
+		productGroup  string
+		quantityTotal int
+	)
+
+	for rows.Next() {
+
+		if scanErr := rows.Scan(&productGroup, &quantityTotal); scanErr != nil {
+			err = &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchOutletSalesCount: scan failed",
+				Details:    "FetchOutletSalesCount scan failed: " + err.Error(),
+			}
+			return
+		}
+
+		switch productGroup {
+		case constant.HBBCategory:
+			hbbSales = quantityTotal
+		case constant.HayyakCategory:
+			hayyakSales = quantityTotal
+		case constant.BaqatiCategory:
+			baqatiSales = quantityTotal
+		case constant.UpgradeCategory:
+			upgradeSales = quantityTotal
+		}
+	}
+
+	return
 }

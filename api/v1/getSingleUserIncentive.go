@@ -15,23 +15,6 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-// GetFeeds godoc
-// @Summary Fetches User Feeds
-// @Description Fetches Feeds based on users interests
-// @ID getFeedsV1
-// @Tags Feed V1
-// @Produce json
-// @Param X-UserType header string true "X-UserType Header"
-// @Param X-User-Id header string true "X-User-Id Header"
-// @Param X-SourceID header string true "X-SourceID Header"
-// @Param X-DeviceID header string true "X-DeviceID Header"
-// @Param X-OperatingSystem header string false "X-OperatingSystem Header"
-// @Param X-Request-Id header string false "X-Request-Id Header"
-// @Success 200 {object} models.APIResponse{data=[]models.GetFeedResponse}
-// @Failure 400 {object} models.APIResponse
-// @Failure 500 {object} models.APIResponse
-// @Security AuthorizationBearerToken
-// @Router /feed/v1/getFeeds [get]
 func getSingleUserIncentive(ctx *gin.Context) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)

@@ -41,7 +41,7 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 		isQuarterReport = true
 	}
 
-	response, errs := theProvider.GetUserReport(ctx, req.ClientId, req.Month, req.Quarter, isQuarterReport)
+	response, errs := theProvider.GetUserReport(ctx, req.ClientId, isQuarterReport, req.Quarter, req.Month, time.Now().Year())
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetUserReport : provider failed")
 		logger.LogChan <- &logger.Logging{

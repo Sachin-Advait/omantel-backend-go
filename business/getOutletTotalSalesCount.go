@@ -2,7 +2,6 @@ package business
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
@@ -10,9 +9,9 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, clientID string, quarter int, isQuarterReport bool, t time.Time) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
+func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
 
-	position, err := impl.PsqlDb.FetchUserPosition(clientID)
+	position, err := impl.PsqlDb.FetchUserPosition(userId)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +25,7 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, clientID s
 		}
 	}
 
-	allDistinctOM, err := impl.PsqlDb.FetchAllOutletManagersReportingToGivenManagerRole(manger, clientID)
+	allDistinctOM, err := impl.PsqlDb.FetchAllOutletManagersReportingToGivenManagerRole(manger, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -35,22 +34,27 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, clientID s
 
 	for _, v := range allDistinctOM {
 
-		// lat, lng, err := impl.PsqlDb.FetchOutletDetails(v.Outlet, v.Region)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		trx, err := impl.PsqlDb.FetchProductSalesPerOutletManager(v.ID, int(t.Month()), t.Year(), quarter, isQuarterReport)
+		outletReport, err := impl.PsqlDb.FetchOutletReport(v.Outlet, v.Position, isQuarterReport, quarter, month, year)
 		if err != nil {
+			outletReport, err = impl.updateOutletReport(ctx, v.Region, v.Outlet, isQuarterReport, quarter, month, year)
+		}
+
+		if err != nil || outletReport == nil {
 			return nil, err
 		}
 
-		trx.Latitude = 24.2815  //lat
-		trx.Longitude = 55.8246 //lng
-		trx.Region = v.Region
-		trx.OutletName = v.Outlet
+		eachOutletResponse := &models.ProductWiseSalesCountPerOutlet{
+			OutletName: v.Outlet,
+			Region:     v.Region,
+			Latitude:   outletReport.Latitude,
+			Longitude:  outletReport.Longitude,
+			HBB:        outletReport.HBBSalesCount,
+			Hayyak:     outletReport.HayyakSalesCount,
+			Baqati:     outletReport.BaqatiSalesCount,
+			Upgrade:    outletReport.UpgradeSalesCount,
+		}
 
-		resp = append(resp, trx)
+		resp = append(resp, eachOutletResponse)
 	}
 
 	return resp, nil

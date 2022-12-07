@@ -89,6 +89,7 @@ type GetOutletResponse struct {
 	OutletCode string  `json:"outlet_code"`
 	OutletName string  `json:"outlet_name"`
 	RegionCode string  `json:"region_code"`
+	RegionName string  `json:"region_name"`
 	Lat        float64 `json:"lat"`
 	Lang       float64 `json:"lang"`
 }
@@ -203,11 +204,11 @@ type DbClientConfig struct {
 
 type UserRecord struct {
 	EmpId                        string
-	Created                      time.Time
-	ReportingManager             int
+	ReportingManager             string
 	Isquarterly                  bool
 	Month                        int
 	Quarter                      int
+	Year                         int
 	Hayyak_sales_count           int
 	Hayyak_target                float64
 	Hayyak_payout                float64
@@ -233,6 +234,7 @@ type UserRecord struct {
 	HayyakSaleCountPerPlanArray  string
 	BaqatiSaleCountPerPlanArray  string
 	UpgradeSaleCountPerPlanArray string
+	CreateAt                     time.Time
 }
 
 type Transaction struct {
@@ -458,10 +460,11 @@ type UserLead struct {
 }
 
 type ReportingStaffIDAndName struct {
-	ID     string
-	Name   string
-	Outlet string
-	Region string
+	ID       string
+	Position string
+	Name     string
+	Outlet   string
+	Region   string
 }
 
 // CaptchRequest is struct for requests of /verifyCaptcha API

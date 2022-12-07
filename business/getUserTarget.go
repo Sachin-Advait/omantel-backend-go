@@ -8,35 +8,65 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, id string, quarter int, isQuarterly bool, t time.Time) (*models.ChartDataResponse, *errors.Error) {
+func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error) {
 
-	usrRcrd, err := impl.PsqlDb.FetchIndividualUserTargetReport(id, int(t.Month()), quarter, isQuarterly)
+	userReport, err := impl.PsqlDb.FetchUserReport(userId, isQuarterReport, quarter, month, year)
+	if err == nil && userReport != nil {
+
+		currTime := time.Now()
+		currYear, currMonth, currDay := currTime.Date()
+
+		if userReport.UserId != "" && !userReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())) { //entry exists and created time is today
+			return &models.ChartDataResponse{
+				HBB: &models.TargetAchievementData{
+					SalesCount:         userReport.Hbb_sales_count,
+					Target:             userReport.Hbb_target,
+					AchievedPercentage: userReport.Hbb_achieved_percentage,
+				},
+				Hayyak: &models.TargetAchievementData{
+					SalesCount:         userReport.Hayyak_sales_count,
+					Target:             userReport.Hayyak_target,
+					AchievedPercentage: userReport.Hayyak_achieved_percentage,
+				},
+				Baqati: &models.TargetAchievementData{
+					SalesCount:         userReport.Baqati_sales_count,
+					Target:             userReport.Baqati_target,
+					AchievedPercentage: userReport.Baqati_achieved_percentage,
+				},
+				Upgrade: &models.TargetAchievementData{
+					SalesCount:         userReport.Upgrade_sales_count,
+					Target:             userReport.Upgrade_target,
+					AchievedPercentage: userReport.Uprade_achieved_percentage,
+				},
+			}, nil
+		}
+	}
+
+	_, userReport, err = impl.updateUserReport(ctx, userId, isQuarterReport, quarter, month, year)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &models.ChartDataResponse{
+	return &models.ChartDataResponse{
 		HBB: &models.TargetAchievementData{
-			SalesCount:         usrRcrd.Hbb_sales_count,
-			Target:             usrRcrd.Hbb_target,
-			AchievedPercentage: usrRcrd.Hbb_achieved_percentage,
+			SalesCount:         userReport.Hbb_sales_count,
+			Target:             userReport.Hbb_target,
+			AchievedPercentage: userReport.Hbb_achieved_percentage,
 		},
 		Hayyak: &models.TargetAchievementData{
-			SalesCount:         usrRcrd.Hayyak_sales_count,
-			Target:             usrRcrd.Hayyak_target,
-			AchievedPercentage: usrRcrd.Hayyak_achieved_percentage,
+			SalesCount:         userReport.Hayyak_sales_count,
+			Target:             userReport.Hayyak_target,
+			AchievedPercentage: userReport.Hayyak_achieved_percentage,
 		},
 		Baqati: &models.TargetAchievementData{
-			SalesCount:         usrRcrd.Baqati_sales_count,
-			Target:             usrRcrd.Baqati_target,
-			AchievedPercentage: usrRcrd.Baqati_achieved_percentage,
+			SalesCount:         userReport.Baqati_sales_count,
+			Target:             userReport.Baqati_target,
+			AchievedPercentage: userReport.Baqati_achieved_percentage,
 		},
 		Upgrade: &models.TargetAchievementData{
-			SalesCount:         usrRcrd.Upgrade_sales_count,
-			Target:             usrRcrd.Upgrade_target,
-			AchievedPercentage: usrRcrd.Uprade_achieved_percentage,
+			SalesCount:         userReport.Upgrade_sales_count,
+			Target:             userReport.Upgrade_target,
+			AchievedPercentage: userReport.Uprade_achieved_percentage,
 		},
-	}
-
-	return resp, nil
+	}, nil
 }

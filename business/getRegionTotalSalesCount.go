@@ -2,7 +2,6 @@ package business
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
@@ -10,9 +9,9 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, clientID string, quarter int, isQuarterReport bool, t time.Time) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
+func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
 
-	position, err := impl.PsqlDb.FetchUserPosition(clientID)
+	position, err := impl.PsqlDb.FetchUserPosition(userId)
 	if err != nil {
 		return nil, err
 	}
@@ -26,39 +25,34 @@ func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, clientID s
 		}
 	}
 
-	allDistinctOM, err := impl.PsqlDb.FetchAllOutletManagersReportingToGivenManagerRole(manger, clientID)
+	allDistinctOM, err := impl.PsqlDb.FetchAllOutletManagersReportingToGivenManagerRole(manger, userId)
 	if err != nil {
 		return nil, err
 	}
 
-	temp := make(map[string]*models.ProductWiseSalesCountPerOutlet)
+	resp := make([]*models.ProductWiseSalesCountPerOutlet, 0)
 
 	for _, v := range allDistinctOM {
 
-		trx, err := impl.PsqlDb.FetchProductSalesPerOutletManager(v.ID, int(t.Month()), t.Year(), quarter, isQuarterReport)
+		regionReport, err := impl.PsqlDb.FetchRegionReport(v.Region, v.Position, isQuarterReport, quarter, month, year)
 		if err != nil {
+			regionReport, err = impl.updateRegionReport(ctx, v.Region, isQuarterReport, quarter, month, year)
+		}
+
+		if err != nil || regionReport == nil {
 			return nil, err
 		}
 
-		eachRegionRcrd, ok := temp[v.Region]
-		if !ok {
-			trx.Region = v.Region
-			temp[v.Region] = trx
-			continue
+		eachOutletResponse := &models.ProductWiseSalesCountPerOutlet{
+			OutletName: v.Outlet,
+			Region:     v.Region,
+			HBB:        regionReport.HBBSalesCount,
+			Hayyak:     regionReport.HayyakSalesCount,
+			Baqati:     regionReport.BaqatiSalesCount,
+			Upgrade:    regionReport.UpgradeSalesCount,
 		}
 
-		eachRegionRcrd.HBB += trx.HBB
-		eachRegionRcrd.Hayyak += trx.Hayyak
-		eachRegionRcrd.Baqati += trx.Baqati
-		eachRegionRcrd.Upgrade += trx.Upgrade
-		eachRegionRcrd.Total += trx.Total
-	}
-
-	resp := make([]*models.ProductWiseSalesCountPerOutlet, 0)
-
-	for _, m := range temp {
-
-		resp = append(resp, m)
+		resp = append(resp, eachOutletResponse)
 	}
 
 	return resp, nil

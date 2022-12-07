@@ -3,7 +3,6 @@ package business
 import (
 	"net/http"
 	"sort"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
@@ -11,9 +10,9 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, clientID string, quarter int, isQuarterReport bool, t time.Time) ([]*models.ProductWiseSalesCountPerStaff, *errors.Error) {
+func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerStaff, *errors.Error) {
 
-	position, err := impl.PsqlDb.FetchUserPosition(clientID)
+	position, err := impl.PsqlDb.FetchUserPosition(userId)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +26,7 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, clien
 		}
 	}
 
-	empList, err := impl.PsqlDb.FetchAllEmployeesReportingToGivenManagerRole(manger, clientID)
+	empList, err := impl.PsqlDb.FetchAllEmployeesReportingToGivenManagerRole(manger, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -36,23 +35,22 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, clien
 
 	for _, v := range empList {
 
-		trx, err := impl.PsqlDb.FetchIndividualUserTargetReport(v.ID, int(t.Month()), quarter, isQuarterReport)
+		mngrReport, err := impl.PsqlDb.FetchManagerReport(v.ID, v.Position, isQuarterReport, quarter, month, year)
 		if err != nil {
-			return nil, err
+			mngrReport, err = impl.updateManagerReport(ctx, userId, isQuarterReport, quarter, month, year)
 		}
 
-		name, _, err := impl.PsqlDb.FetchUserName(trx.EmpId)
-		if err != nil {
+		if err != nil || mngrReport == nil {
 			return nil, err
 		}
 
 		eachUser := &models.ProductWiseSalesCountPerStaff{
-			Name:    name,
-			HBB:     trx.Hbb_sales_count,
-			Hayyak:  trx.Hayyak_sales_count,
-			Baqati:  trx.Baqati_sales_count,
-			Upgrade: trx.Upgrade_sales_count,
-			Total:   trx.Hbb_sales_count + trx.Hayyak_sales_count + trx.Baqati_sales_count + trx.Upgrade_sales_count,
+			Name:    v.Name,
+			HBB:     mngrReport.HBBSalesCount,
+			Hayyak:  mngrReport.HayyakSalesCount,
+			Baqati:  mngrReport.BaqatiSalesCount,
+			Upgrade: mngrReport.UpgradeSalesCount,
+			Total:   mngrReport.HBBSalesCount + mngrReport.HayyakSalesCount + mngrReport.BaqatiSalesCount + mngrReport.UpgradeSalesCount,
 		}
 
 		resp = append(resp, eachUser)

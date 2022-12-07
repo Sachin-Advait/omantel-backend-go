@@ -4,7 +4,6 @@ import (
 	"math"
 	"net/http"
 	"sort"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
@@ -12,9 +11,9 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID string, quarter int, isQuarterReport bool, t time.Time) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error) {
+func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error) {
 
-	position, err := impl.PsqlDb.FetchUserPosition(clientID)
+	position, err := impl.PsqlDb.FetchUserPosition(userId)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +27,7 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID
 		}
 	}
 
-	empList, err := impl.PsqlDb.FetchAllEmployeesReportingToGivenManagerRole(manger, clientID)
+	empList, err := impl.PsqlDb.FetchAllEmployeesReportingToGivenManagerRole(manger, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -37,33 +36,47 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, clientID
 
 	for _, v := range empList {
 
-		trx, err := impl.PsqlDb.FetchIndividualUserTargetReport(v.ID, int(t.Month()), quarter, isQuarterReport)
+		mngrReport, err := impl.PsqlDb.FetchManagerReport(v.ID, v.Position, isQuarterReport, quarter, month, year)
 		if err != nil {
-			return nil, err
+			mngrReport, err = impl.updateManagerReport(ctx, userId, isQuarterReport, quarter, month, year)
 		}
 
-		name, _, err := impl.PsqlDb.FetchUserName(trx.EmpId)
-		if err != nil {
+		if err != nil || mngrReport == nil {
 			return nil, err
 		}
 
 		eachUser := &models.ProductWiseSalesTargetPerStaff{
-			Name:                    name,
-			HBBSales:                trx.Hbb_sales_count,
-			HBBTarget:               math.Round(trx.Hbb_target*100) / 100,
-			HBBAchievedPercent:      math.Round(trx.Hbb_achieved_percentage*100) / 100,
-			HayyakSales:             trx.Hayyak_sales_count,
-			HayyakTarget:            math.Round(trx.Hayyak_target*100) / 100,
-			HayyakAchievedPercent:   math.Round(trx.Hayyak_achieved_percentage*100) / 100,
-			BaqatiSales:             trx.Baqati_sales_count,
-			BaqatiTarget:            math.Round(trx.Baqati_target*100) / 100,
-			BaqatiAchievedPercent:   math.Round(trx.Baqati_achieved_percentage*100) / 100,
-			UpgradeSales:            trx.Upgrade_sales_count,
-			UpgradeTarget:           math.Round(trx.Upgrade_target*100) / 100,
-			UpgradeAchievedPercent:  math.Round(trx.Uprade_achieved_percentage*100) / 100,
-			TotalSales:              trx.Hbb_sales_count + trx.Hayyak_sales_count + trx.Baqati_sales_count + trx.Upgrade_sales_count,
-			TotalTarget:             math.Round((trx.Hbb_target+trx.Hayyak_target+trx.Baqati_target+trx.Upgrade_target)*100) / 100,
-			TotalAchievedPercentage: math.Round(((trx.Hbb_achieved_percentage+trx.Hayyak_achieved_percentage+trx.Baqati_achieved_percentage+trx.Uprade_achieved_percentage)/4)*100) / 100,
+			Name:          v.Name,
+			HBBSales:      mngrReport.HBBSalesCount,
+			HBBTarget:     float64(mngrReport.HBBTargetCount),
+			HayyakSales:   mngrReport.HayyakSalesCount,
+			HayyakTarget:  float64(mngrReport.HayyakTargetCount),
+			BaqatiSales:   mngrReport.BaqatiSalesCount,
+			BaqatiTarget:  float64(mngrReport.BaqatiTargetCount),
+			UpgradeSales:  mngrReport.UpgradeSalesCount,
+			UpgradeTarget: float64(mngrReport.UpgradeTargetCount),
+			TotalSales:    mngrReport.HBBSalesCount + mngrReport.HayyakSalesCount + mngrReport.BaqatiSalesCount + mngrReport.UpgradeSalesCount,
+			TotalTarget:   float64(mngrReport.HBBTargetCount + mngrReport.HayyakTargetCount + mngrReport.BaqatiTargetCount + mngrReport.UpgradeTargetCount),
+		}
+
+		if mngrReport.HBBTargetCount != 0 {
+			eachUser.HBBAchievedPercent = math.Round(float64(mngrReport.HBBSalesCount)*100/float64(mngrReport.HBBTargetCount)) / 100
+		}
+
+		if mngrReport.HayyakTargetCount != 0 {
+			eachUser.HayyakAchievedPercent = math.Round(float64(mngrReport.HayyakSalesCount)*100/float64(mngrReport.HayyakTargetCount)) / 100
+		}
+
+		if mngrReport.BaqatiTargetCount != 0 {
+			eachUser.BaqatiAchievedPercent = math.Round(float64(mngrReport.BaqatiSalesCount)*100/float64(mngrReport.BaqatiTargetCount)) / 100
+		}
+
+		if mngrReport.UpgradeTargetCount != 0 {
+			eachUser.UpgradeAchievedPercent = math.Round(float64(mngrReport.UpgradeSalesCount)*100/float64(mngrReport.UpgradeTargetCount)) / 100
+		}
+
+		if eachUser.TotalTarget != 0 {
+			eachUser.TotalAchievedPercentage = math.Round(float64(eachUser.TotalSales)*100/float64(eachUser.TotalTarget)) / 100
 		}
 
 		resp = append(resp, eachUser)

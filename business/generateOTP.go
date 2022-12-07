@@ -2,13 +2,12 @@ package business
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"html/template"
-	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -200,19 +199,11 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[s
 }
 
 func generateOTP(max int) int {
-	var table = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
-	b := make([]byte, max)
-	n, err := io.ReadAtLeast(rand.Reader, b, max)
-	if n != max {
-		panic(err)
-	}
-	for i := 0; i < len(b); i++ {
-		b[i] = table[int(b[i])%len(table)]
-	}
 
-	otp, _ := strconv.Atoi(string(b))
+	low := 100000
+	high := 999999
 
-	return otp
+	return low + rand.Intn(high-low)
 }
 
 func (impl *IncentiveImpl) callSOAPClientSteps(userID, mobile string, otp int) error {

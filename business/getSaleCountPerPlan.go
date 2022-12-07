@@ -1,8 +1,8 @@
 package business
 
 import (
+	"net/http"
 	"sort"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
@@ -10,45 +10,21 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, clientID string, quarter int, product string, isQuarterReport bool, t time.Time) ([]*models.SaleCountPerPlan, *errors.Error) {
+func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userId, product string, isQuarterReport bool, quarter, month, year int) ([]*models.SaleCountPerPlan, *errors.Error) {
 
-	trx, err := impl.PsqlDb.FetchUserSales(clientID, int(t.Month()), t.Year(), quarter, isQuarterReport)
+	_, ok := constant.ProductGroupMap[product]
+	if !ok {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidReqParameters,
+			Message:    "Invalid product",
+			Details:    "Invalid product",
+		}
+	}
+
+	resp, err := impl.PsqlDb.FetchUserSalesCountPerPlan(userId, product, month, year, quarter, isQuarterReport)
 	if err != nil {
 		return nil, err
-	}
-
-	m := make(map[string]int)
-
-	for grp, rcds := range trx.SaleRecords {
-
-		if product != constant.UpgradeCategory && grp != product {
-			continue
-		}
-
-		for _, each := range rcds {
-
-			v, ok := m[each.CurrentProduct]
-			if !ok {
-				m[each.CurrentProduct] = each.Quantity
-			}
-
-			if grp == constant.UpgradeCategory && each.PreviousProduct != "" {
-				m[each.CurrentProduct] = v + each.Quantity
-			}
-
-			if grp != constant.UpgradeCategory && each.PreviousProduct == "" {
-				m[each.CurrentProduct] = v + each.Quantity
-			}
-		}
-	}
-
-	resp := make([]*models.SaleCountPerPlan, 0)
-
-	for k, v := range m {
-		resp = append(resp, &models.SaleCountPerPlan{
-			CurrentPlan: k,
-			Quantity:    v,
-		})
 	}
 
 	sort.Slice(resp, func(i, j int) bool {

@@ -20,146 +20,27 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.SalesCountRequest) (int, 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
+	isQuarterReport, quarter, month, year, err := validateSaleCountRequest(req)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetSaleCountPerPlan : validation failed")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "invalid req params",
+			Text:       err.Error(),
+			CreateTime: time.Now().Local(),
+		}
+
+		return http.StatusBadRequest, &models.APIFailureResponse{
+			Error:   errors.InvalidReqParameters,
+			Message: err.Error(),
+		}
+	}
+
 	product := strings.ToUpper(req.Product)
-	if !(product == constant.HBBCategory || product == constant.BaqatiCategory || product == constant.HayyakCategory || product == constant.UpgradeCategory) {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("incorrect product type-" + product)).Stack().Msg("GetSaleCountPerPlan : incorrect product type")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "incorrect product type-" + product,
-			CreateTime: time.Now().Local(),
-		}
 
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "incorrect product type",
-		}
-	}
-
-	var (
-		isQuarterReport = true
-		date            time.Time
-		quarter         int
-		err             error
-	)
-
-	if req.Monthly == "" && req.Quarterly == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("monthy and quartlerly type is blank")).Stack().Msg("GetSaleCountPerPlan : incorrect type")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "monthy and quartlerly type is blank",
-			CreateTime: time.Now().Local(),
-		}
-
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "monthy and quartlerly type is blank",
-		}
-	}
-
-	if req.Monthly != "" {
-		date, err = time.Parse("01-2006", strings.TrimSpace(req.Monthly))
-		if err != nil {
-			logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetSaleCountPerPlan : incorrect monthly time")
-			logger.LogChan <- &logger.Logging{
-				UserID:     ctxHeader.XUserId,
-				URL:        ctx.Request.URL.String(),
-				Type:       "error",
-				Msg:        "invalid req params",
-				Text:       "incorrect monthly time: " + err.Error(),
-				CreateTime: time.Now().Local(),
-			}
-
-			return http.StatusBadRequest, &models.APIFailureResponse{
-				Error:   errors.InvalidReqParameters,
-				Message: "monthy type is incorrect, use '06-2006' format",
-			}
-		}
-
-		isQuarterReport = false
-	}
-
-	if isQuarterReport && req.Quarterly != "" {
-
-		req := strings.Split(strings.TrimSpace(req.Quarterly), "-")
-		if len(req) < 2 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("quarterly type is incorrect, avoid spaces")).Stack().
-				Msg("GetSaleCountPerPlan : incorrect quarterly type")
-			logger.LogChan <- &logger.Logging{
-				UserID:     ctxHeader.XUserId,
-				URL:        ctx.Request.URL.String(),
-				Type:       "error",
-				Msg:        "invalid req params",
-				Text:       "quarterly type is incorrect, avoid spaces",
-				CreateTime: time.Now().Local(),
-			}
-
-			return http.StatusBadRequest, &models.APIFailureResponse{
-				Error:   errors.InvalidReqParameters,
-				Message: "quarterly type is incorrect, avoid spaces",
-			}
-		}
-
-		quarter, err = strconv.Atoi(strings.TrimSpace(req[0]))
-		if err != nil {
-			logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetSaleCountPerPlan : incorrect quarterly parsing")
-			logger.LogChan <- &logger.Logging{
-				UserID:     ctxHeader.XUserId,
-				URL:        ctx.Request.URL.String(),
-				Type:       "error",
-				Msg:        "invalid req params",
-				Text:       "incorrect quarterly parsing: " + err.Error(),
-				CreateTime: time.Now().Local(),
-			}
-
-			return http.StatusBadRequest, &models.APIFailureResponse{
-				Error:   errors.InvalidReqParameters,
-				Message: "quarter value not found",
-			}
-
-		} else if quarter < 1 || quarter > 4 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("incorrect quarter value - should be between 1 and 4")).Stack().
-				Msg("GetSaleCountPerPlan : incorrect quarterly value")
-			logger.LogChan <- &logger.Logging{
-				UserID:     ctxHeader.XUserId,
-				URL:        ctx.Request.URL.String(),
-				Type:       "error",
-				Msg:        "invalid req params",
-				Text:       "incorrect quarter value - should be between 1 and 4",
-				CreateTime: time.Now().Local(),
-			}
-
-			return http.StatusBadRequest, &models.APIFailureResponse{
-				Error:   errors.InvalidReqParameters,
-				Message: "incorrect quarter value - should be between 1 and 4",
-			}
-		}
-
-		date, err = time.Parse("2006", strings.TrimSpace(req[1]))
-		if err != nil {
-			logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetSaleCountPerPlan : incorrect year time")
-			logger.LogChan <- &logger.Logging{
-				UserID:     ctxHeader.XUserId,
-				URL:        ctx.Request.URL.String(),
-				Type:       "error",
-				Msg:        "invalid req params",
-				Text:       "incorrect year time: " + err.Error(),
-				CreateTime: time.Now().Local(),
-			}
-
-			return http.StatusBadRequest, &models.APIFailureResponse{
-				Error:   errors.InvalidReqParameters,
-				Message: "year type is incorrect, use '2006' format",
-			}
-		}
-	}
-
-	response, errs := theProvider.GetSaleCountPerPlan(ctx, req.ClientId, quarter, product, isQuarterReport, date)
+	response, errs := theProvider.GetSaleCountPerPlan(ctx, req.ClientId, product, isQuarterReport, quarter, month, year)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetSaleCountPerPlan : provider failed")
 		logger.LogChan <- &logger.Logging{
@@ -187,4 +68,66 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.SalesCountRequest) (int, 
 	}
 
 	return http.StatusOK, response
+}
+
+func validateSaleCountRequest(req *models.SalesCountRequest) (isQuarterReport bool, quarter, month, year int, err error) {
+
+	product := strings.ToUpper(req.Product)
+
+	if !(product == constant.HBBCategory || product == constant.BaqatiCategory || product == constant.HayyakCategory || product == constant.UpgradeCategory) {
+		err = errors.New("incorrect product type")
+		return
+	}
+
+	var date time.Time
+
+	isQuarterReport = true
+
+	if req.Monthly == "" && req.Quarterly == "" {
+		err = errors.New("monthy and quartlerly type is blank")
+		return
+	}
+
+	if req.Monthly != "" {
+		date, err = time.Parse("01-2006", strings.TrimSpace(req.Monthly))
+		if err != nil {
+			err = errors.New("monthly parsing: " + err.Error())
+			return
+		}
+
+		isQuarterReport = false
+		month = int(date.Month())
+		year = date.Year()
+	}
+
+	if isQuarterReport && req.Quarterly != "" {
+
+		req := strings.Split(strings.TrimSpace(req.Quarterly), "-")
+		if len(req) < 2 {
+			err = errors.New("quarterly type is incorrect, avoid spaces")
+			return
+		}
+
+		quarter, err = strconv.Atoi(strings.TrimSpace(req[0]))
+		if err != nil {
+			err = errors.New("quarter conversion: " + err.Error())
+			return
+
+		}
+
+		if quarter < 1 || quarter > 4 {
+			err = errors.New("incorrect quarter value - should be between 1 and 4")
+			return
+		}
+
+		date, err = time.Parse("2006", strings.TrimSpace(req[1]))
+		if err != nil {
+			err = errors.New("quarter year parsing: " + err.Error())
+			return
+		}
+
+		year = date.Year()
+	}
+
+	return
 }
