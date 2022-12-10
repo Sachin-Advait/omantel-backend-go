@@ -20,7 +20,7 @@ func DeleteProducts(ctx *gin.Context, req *models.DeleteProductRequest) (int, in
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if req == nil || len(req.ProductCodes) == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Stack().Msg("DeleteProducts : invalid req params")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Msg("DeleteProducts : invalid req params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -39,7 +39,7 @@ func DeleteProducts(ctx *gin.Context, req *models.DeleteProductRequest) (int, in
 	for i, v := range req.ProductCodes {
 
 		if v == "" {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Stack().Msg("DeleteProducts : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Msg("DeleteProducts : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -60,7 +60,7 @@ func DeleteProducts(ctx *gin.Context, req *models.DeleteProductRequest) (int, in
 
 	errs := theProvider.DeleteProducts(ctx, req)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("DeleteProducts : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("DeleteProducts : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -80,7 +80,7 @@ func DeleteProducts(ctx *gin.Context, req *models.DeleteProductRequest) (int, in
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteProducts : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteProducts : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

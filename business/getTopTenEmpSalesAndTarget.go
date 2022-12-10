@@ -4,90 +4,167 @@ import (
 	"math"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error) {
+func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error) {
 
-	position, err := impl.PsqlDb.FetchUserPosition(userId)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	manger, ok := constant.ManagerMap[position]
+	_, ok := constant.ManagerMap[user.Position]
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
-			Message:    "incorrect position",
+			Message:    "INCORRECT USER POSITION",
 			Details:    "incorrect position",
 		}
 	}
 
-	empList, err := impl.PsqlDb.FetchAllEmployeesReportingToGivenManagerRole(manger, userId)
-	if err != nil {
-		return nil, err
+	var needUpdate bool
+
+	currTime := time.Now()
+	currYear, currMonth, currDay := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	if isQuarterReport && year == currYear && quarter <= currQuarter {
+		needUpdate = true
+	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
+		needUpdate = true
 	}
 
 	resp := make([]*models.ProductWiseSalesTargetPerStaff, 0)
 
-	for _, v := range empList {
+	// for oulletManager and teamLeader
+	if user.Position == constant.OutletManager || user.Position == constant.TeamLeader {
 
-		mngrReport, err := impl.PsqlDb.FetchManagerReport(v.ID, v.Position, isQuarterReport, quarter, month, year)
+		agentList, err := impl.PsqlDb.FetchAllAgentsUserOfOM(userID)
 		if err != nil {
-			mngrReport, err = impl.updateManagerReport(ctx, userId, isQuarterReport, quarter, month, year)
-		}
-
-		if err != nil || mngrReport == nil {
 			return nil, err
 		}
 
-		eachUser := &models.ProductWiseSalesTargetPerStaff{
-			Name:          v.Name,
-			HBBSales:      mngrReport.HBBSalesCount,
-			HBBTarget:     float64(mngrReport.HBBTargetCount),
-			HayyakSales:   mngrReport.HayyakSalesCount,
-			HayyakTarget:  float64(mngrReport.HayyakTargetCount),
-			BaqatiSales:   mngrReport.BaqatiSalesCount,
-			BaqatiTarget:  float64(mngrReport.BaqatiTargetCount),
-			UpgradeSales:  mngrReport.UpgradeSalesCount,
-			UpgradeTarget: float64(mngrReport.UpgradeTargetCount),
-			TotalSales:    mngrReport.HBBSalesCount + mngrReport.HayyakSalesCount + mngrReport.BaqatiSalesCount + mngrReport.UpgradeSalesCount,
-			TotalTarget:   float64(mngrReport.HBBTargetCount + mngrReport.HayyakTargetCount + mngrReport.BaqatiTargetCount + mngrReport.UpgradeTargetCount),
+		if len(agentList) == 0 {
+			return resp, nil
 		}
 
-		if mngrReport.HBBTargetCount != 0 {
-			eachUser.HBBAchievedPercent = math.Round(float64(mngrReport.HBBSalesCount)*100/float64(mngrReport.HBBTargetCount)) / 100
+		for _, agent := range agentList {
+
+			agentReport, err := impl.PsqlDb.FetchAgentUserReport(agent.UserId, isQuarterReport, quarter, month, year)
+			if needUpdate && (err != nil || (err == nil && agentReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
+				_, agentReport, err = impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
+			agentName, err := impl.PsqlDb.FetchUserName(agentReport.UserId)
+			if err != nil {
+				return nil, err
+			}
+
+			agentProductWiseRprt := &models.ProductWiseSalesTargetPerStaff{
+				Name:                   agentName,
+				HBBSales:               agentReport.HBBSalesCount,
+				HBBTarget:              agentReport.HBBTargetCount,
+				HBBAchievedPercent:     agentReport.HBBAchievedPercentage,
+				HayyakSales:            agentReport.HayyakSalesCount,
+				HayyakTarget:           agentReport.HayyakTargetCount,
+				HayyakAchievedPercent:  agentReport.HayyakAchievedPercentage,
+				BaqatiSales:            agentReport.BaqatiSalesCount,
+				BaqatiTarget:           agentReport.BaqatiTargetCount,
+				BaqatiAchievedPercent:  agentReport.BaqatiAchievedPercentage,
+				UpgradeSales:           agentReport.UpgradeSalesCount,
+				UpgradeTarget:          agentReport.UpgradeTargetCount,
+				UpgradeAchievedPercent: agentReport.UpradeAchievedPercentage,
+			}
+
+			agentProductWiseRprt.TotalSales = agentProductWiseRprt.HBBSales + agentProductWiseRprt.HayyakSales + agentProductWiseRprt.BaqatiSales + agentProductWiseRprt.UpgradeSales
+			agentProductWiseRprt.TotalTarget = agentProductWiseRprt.HBBTarget + agentProductWiseRprt.HayyakTarget + agentProductWiseRprt.BaqatiTarget + agentProductWiseRprt.UpgradeTarget
+			agentProductWiseRprt.TotalAchievedPercentage = math.Round(float64(agentProductWiseRprt.TotalSales*100/int(agentProductWiseRprt.TotalTarget))*100) / 100
+
+			resp = append(resp, agentProductWiseRprt)
+
+			sort.Slice(resp, func(i, j int) bool {
+				return resp[i].TotalAchievedPercentage > resp[j].TotalAchievedPercentage
+			})
+
+			if len(resp) > 10 {
+				resp = resp[:10]
+			}
 		}
 
-		if mngrReport.HayyakTargetCount != 0 {
-			eachUser.HayyakAchievedPercent = math.Round(float64(mngrReport.HayyakSalesCount)*100/float64(mngrReport.HayyakTargetCount)) / 100
-		}
-
-		if mngrReport.BaqatiTargetCount != 0 {
-			eachUser.BaqatiAchievedPercent = math.Round(float64(mngrReport.BaqatiSalesCount)*100/float64(mngrReport.BaqatiTargetCount)) / 100
-		}
-
-		if mngrReport.UpgradeTargetCount != 0 {
-			eachUser.UpgradeAchievedPercent = math.Round(float64(mngrReport.UpgradeSalesCount)*100/float64(mngrReport.UpgradeTargetCount)) / 100
-		}
-
-		if eachUser.TotalTarget != 0 {
-			eachUser.TotalAchievedPercentage = math.Round(float64(eachUser.TotalSales)*100/float64(eachUser.TotalTarget)) / 100
-		}
-
-		resp = append(resp, eachUser)
+		return resp, nil
 	}
 
-	sort.Slice(resp, func(i, j int) bool {
-		return resp[i].TotalAchievedPercentage > resp[j].TotalAchievedPercentage
-	})
+	// for all other non-outlet managers
+	allDistinctMngr, err := impl.PsqlDb.FetchAllMngrReportingToManagerRole(user.Position, userID)
+	if err != nil {
+		return nil, err
+	}
 
-	if len(resp) > 10 {
-		resp = resp[:10]
+	if len(allDistinctMngr) == 0 {
+		logger.FileLogger.CtxError(ctx).Str("position", user.Position).Msg("GetTopTenEmpSalesAndTarget : no Mngr found")
+		return resp, nil
+	}
+
+	for _, eachMngr := range allDistinctMngr {
+
+		mngrReport, err := impl.PsqlDb.FetchManagerReport(eachMngr.UserId, isQuarterReport, quarter, month, year)
+		if needUpdate && (err != nil || (err == nil && mngrReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
+			mngrReport, err = impl.updateManagerReport(ctx, eachMngr, isQuarterReport, quarter, month, year)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		mngrName, err := impl.PsqlDb.FetchUserName(mngrReport.UserId)
+		if err != nil {
+			return nil, err
+		}
+
+		mngrProductWiseRprt := &models.ProductWiseSalesTargetPerStaff{
+			Name:                   mngrName,
+			HBBSales:               mngrReport.HBBSalesCount,
+			HBBTarget:              mngrReport.HBBTargetCount,
+			HBBAchievedPercent:     mngrReport.HBBAchievedPercentage,
+			HayyakSales:            mngrReport.HayyakSalesCount,
+			HayyakTarget:           mngrReport.HayyakTargetCount,
+			HayyakAchievedPercent:  mngrReport.HayyakAchievedPercentage,
+			BaqatiSales:            mngrReport.BaqatiSalesCount,
+			BaqatiTarget:           mngrReport.BaqatiTargetCount,
+			BaqatiAchievedPercent:  mngrReport.BaqatiAchievedPercentage,
+			UpgradeSales:           mngrReport.UpgradeSalesCount,
+			UpgradeTarget:          mngrReport.UpgradeTargetCount,
+			UpgradeAchievedPercent: mngrReport.UpradeAchievedPercentage,
+		}
+
+		mngrProductWiseRprt.TotalSales = mngrProductWiseRprt.HBBSales + mngrProductWiseRprt.HayyakSales + mngrProductWiseRprt.BaqatiSales + mngrProductWiseRprt.UpgradeSales
+		mngrProductWiseRprt.TotalTarget = mngrProductWiseRprt.HBBTarget + mngrProductWiseRprt.HayyakTarget + mngrProductWiseRprt.BaqatiTarget + mngrProductWiseRprt.UpgradeTarget
+		mngrProductWiseRprt.TotalAchievedPercentage = math.Round(float64(mngrProductWiseRprt.TotalSales*100/int(mngrProductWiseRprt.TotalTarget))*100) / 100
+
+		resp = append(resp, mngrProductWiseRprt)
+
+		sort.Slice(resp, func(i, j int) bool {
+			return resp[i].TotalAchievedPercentage > resp[j].TotalAchievedPercentage
+		})
+
+		if len(resp) > 10 {
+			resp = resp[:10]
+		}
 	}
 
 	return resp, nil

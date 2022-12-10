@@ -20,7 +20,7 @@ func DeletePlans(ctx *gin.Context, req *models.DeletePlanRequest) (int, interfac
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if req == nil || len(req.PlanCodes) == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Stack().Msg("DeletePlans : invalid req params")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Msg("DeletePlans : invalid req params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -39,7 +39,7 @@ func DeletePlans(ctx *gin.Context, req *models.DeletePlanRequest) (int, interfac
 	for i, v := range req.PlanCodes {
 
 		if v == "" {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Stack().Msg("DeletePlans : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Msg("DeletePlans : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -60,7 +60,7 @@ func DeletePlans(ctx *gin.Context, req *models.DeletePlanRequest) (int, interfac
 
 	errs := theProvider.DeletePlans(ctx, req)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("DeletePlans : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("DeletePlans : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -80,7 +80,7 @@ func DeletePlans(ctx *gin.Context, req *models.DeletePlanRequest) (int, interfac
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeletePlans : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeletePlans : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

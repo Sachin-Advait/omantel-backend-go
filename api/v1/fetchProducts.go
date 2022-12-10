@@ -20,7 +20,7 @@ func fetchProducts(ctx *gin.Context) {
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if ctxHeader.Authorization == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("fetchProducts : unauthorized request")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("fetchProducts : unauthorized request")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -37,7 +37,7 @@ func fetchProducts(ctx *gin.Context) {
 		return
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", ctx.Request.URL.Query())).Msg("fetchProducts : req body")
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", ctx.Request.URL.Query())).Msg("fetchProducts : req body")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

@@ -20,7 +20,7 @@ func GetUsersReportingToManager(ctx *gin.Context, req *models.UserReporting) (in
 
 	response, errs := theProvider.GetUsersReportingToManager(ctx, req.ClientId)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetUsersReportingToManager : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUsersReportingToManager : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -35,7 +35,7 @@ func GetUsersReportingToManager(ctx *gin.Context, req *models.UserReporting) (in
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUsersReportingToManager : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUsersReportingToManager : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

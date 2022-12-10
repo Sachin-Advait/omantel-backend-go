@@ -24,7 +24,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if ctxHeader.Authorization == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("createNewRegionViaFile : unauthorized request")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("createNewRegionViaFile : unauthorized request")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -41,12 +41,31 @@ func createNewRegionViaFile(ctx *gin.Context) {
 		return
 	}
 
+	if !ctxHeader.IsAdmin {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("createNewRegionViaFile : not an admin")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "not admin",
+			Code:       http.StatusForbidden,
+			Text:       "not an admin",
+			CreateTime: time.Now().Local(),
+		}
+
+		ctx.JSON(http.StatusForbidden, models.APIFailureResponse{
+			Error:   errors.UnauthorizedUserCode,
+			Message: errors.UnauthorizedUser,
+		})
+		return
+	}
+
 	//  Ensure our file does not exceed 5MB
 	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, 5*1024*1024)
 
 	formFile, err := ctx.FormFile("region")
 	if err != nil { // The file cannot be received.
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewRegionViaFile : invalid file request")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewRegionViaFile : invalid file request")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -65,7 +84,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 
 	openedFile, err := formFile.Open()
 	if err != nil { // The file cannot be received.
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewRegionViaFile : open file request failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewRegionViaFile : open file request failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -86,7 +105,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 
 	excelFile, err := excelize.OpenReader(openedFile)
 	if err != nil { // The file cannot be received.
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewRegionViaFile : excelize reader failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewRegionViaFile : excelize reader failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -105,7 +124,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 
 	rows, err := excelFile.Rows("Sheet1")
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewRegionViaFile : sheet1 not found")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewRegionViaFile : sheet1 not found")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -131,7 +150,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 		if isFirstRow {
 			firstRow, err := rows.Columns()
 			if err != nil {
-				logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewRegionViaFile : first row error")
+				logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewRegionViaFile : first row error")
 				logger.LogChan <- &logger.Logging{
 					UserID:     ctxHeader.XUserId,
 					URL:        ctx.Request.URL.String(),
@@ -158,7 +177,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 				case i == 2 && coulmn == "isUpdate":
 					break
 				default:
-					logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewRegionViaFile :  invalid column format")
+					logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewRegionViaFile :  invalid column format")
 					logger.LogChan <- &logger.Logging{
 						UserID:     ctxHeader.XUserId,
 						URL:        ctx.Request.URL.String(),
@@ -182,7 +201,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 
 		row, err := rows.Columns()
 		if err != nil {
-			logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewRegionViaFile : other rows error")
+			logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewRegionViaFile : other rows error")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -221,7 +240,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 	}
 
 	req, _ := objecthelper.MarshalJSON(userRequests)
-	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("createNewRegionViaFile : req body")
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("createNewRegionViaFile : req body")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

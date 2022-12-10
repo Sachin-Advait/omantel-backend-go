@@ -23,7 +23,7 @@ func CreateNewPlan(ctx *gin.Context, req []*models.NewPlanRequest) (int, interfa
 	for _, eachRecord := range req {
 
 		if eachRecord.PlanCode == "" || eachRecord.PlanName == "" || eachRecord.ProductCode == "" || eachRecord.PlanPrice == 0 || eachRecord.SIPPlanRate == 0 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid plan param")).Stack().Msg("CreateNewPlan : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid plan param")).Msg("CreateNewPlan : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -52,7 +52,7 @@ func CreateNewPlan(ctx *gin.Context, req []*models.NewPlanRequest) (int, interfa
 	case "2":
 		if failedResp != nil {
 			resp, _ := json.Marshal(failedResp)
-			logger.FileLogger.CtxError(ctx).Str(constant.ResponseParam, string(resp)).Stack().Msg("CreateNewPlan V2: provider failed")
+			logger.FileLogger.CtxError(ctx).Str(logger.ResponseParam, string(resp)).Msg("CreateNewPlan V2: provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -66,7 +66,7 @@ func CreateNewPlan(ctx *gin.Context, req []*models.NewPlanRequest) (int, interfa
 		}
 	default:
 		if errs != nil {
-			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewPlan : provider failed")
+			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("CreateNewPlan : provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -87,7 +87,7 @@ func CreateNewPlan(ctx *gin.Context, req []*models.NewPlanRequest) (int, interfa
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewPlan : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewPlan : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

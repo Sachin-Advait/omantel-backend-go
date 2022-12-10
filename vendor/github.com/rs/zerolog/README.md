@@ -250,7 +250,7 @@ func main() {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
 	err := outer()
-	log.Error().Stack().Err(err).Msg("")
+	log.Error().Err(err).Msg("")
 }
 
 func inner() error {

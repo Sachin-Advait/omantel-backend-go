@@ -11,7 +11,6 @@ import (
 func ApiVersionHandler(version string) gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
-
 		cRH, _ := ctx.Get(constant.HeaderInContext)
 		ctxHeader, _ := (cRH).(context.ContextHeader)
 

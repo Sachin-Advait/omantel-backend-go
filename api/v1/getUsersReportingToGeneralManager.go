@@ -21,7 +21,7 @@ func getUsersReportingToGeneralManager(ctx *gin.Context) {
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if ctxHeader.Authorization == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("getUsersReportingToGeneralManager : unauthorized request")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("getUsersReportingToGeneralManager : unauthorized request")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -41,7 +41,7 @@ func getUsersReportingToGeneralManager(ctx *gin.Context) {
 	userReq := &models.UserReporting{}
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("getUsersReportingToGeneralManager : error binding request body")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("getUsersReportingToGeneralManager : error binding request body")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -58,7 +58,7 @@ func getUsersReportingToGeneralManager(ctx *gin.Context) {
 	}
 
 	req, _ := objecthelper.MarshalJSON(userReq)
-	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUsersReportingToGeneralManager : req body")
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUsersReportingToGeneralManager : req body")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

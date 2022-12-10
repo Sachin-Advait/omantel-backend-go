@@ -14,6 +14,7 @@ type Logging struct {
 	URL        string
 	Type       string
 	Msg        string
+	Code       int
 	Text       string
 	CreateTime time.Time
 }
@@ -22,7 +23,7 @@ var LogChan chan *Logging
 
 func InitDBLogger(conf *models.DbClientConfig) {
 
-	LogChan = make(chan *Logging, 10)
+	LogChan = make(chan *Logging, 100)
 
 	FileLogger.Info().Interface("config", conf).Msg("LogDatabaseService - config")
 
@@ -60,17 +61,18 @@ func insertLogs(dbConn *sql.DB) {
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 
-			_, err := dbConn.QueryContext(ctx, "INSERT INTO logs_table(emp_id, url, type, msg, text, created) VALUES ($1,$2,$3,$4,$5,$6);",
+			_, err := dbConn.ExecContext(ctx, "INSERT INTO logs_table(emp_id, url, type, msg, code, text, created) VALUES ($1,$2,$3,$4,$5,$6,$7);",
 				val.UserID,
 				val.URL,
 				val.Type,
 				val.Msg,
+				val.Code,
 				val.Text,
 				val.CreateTime,
 			)
 
 			if err != nil {
-				FileLogger.Error().Interface("msg", val).Err(err).Msg("LogDatabaseService - insert failed")
+				FileLogger.Error().Str(RequestIDLogParam, val.UserID).Interface("msg", val).Err(err).Msg("LogDatabaseService - insert failed")
 			}
 		}(val)
 	}

@@ -39,7 +39,7 @@ func initLogger() {
 
 	loggerConfig, err := configs.Get(constant.LoggerConfigFile)
 	if err != nil {
-		logger.Fatal(context.TODO()).Stack().Err(err).Msg("error loading logger config file, env - " + flags.Env())
+		logger.Fatal(context.TODO()).Err(err).Msg("error loading logger config file, env - " + flags.Env())
 	}
 
 	logger.InitLogger(logger.Level(loggerConfig.GetString(constant.LogLevelKey)))
@@ -49,7 +49,7 @@ func initFileLogger() {
 
 	applicationConfig, err := configs.Get(constant.LoggerConfigFile)
 	if err != nil {
-		logger.Fatal(context.TODO()).Stack().Err(err).Msg("error loading application config file, env - " + flags.Env())
+		logger.Fatal(context.TODO()).Err(err).Msg("error loading application config file, env - " + flags.Env())
 	}
 
 	err = logger.InitFileLogger(logger.FileConfig{
@@ -87,7 +87,7 @@ func initHTTPClient() {
 
 	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
 	if err != nil {
-		logger.FileLogger.Fatal().Stack().Err(err).Msg("initHTTPClient: error loading application config file, env - " + flags.Env())
+		logger.FileLogger.Fatal().Err(err).Msg("initHTTPClient: error loading application config file, env - " + flags.Env())
 	}
 
 	connectTimeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPConnectTimeoutInMillisKey)

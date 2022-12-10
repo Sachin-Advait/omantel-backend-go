@@ -34,52 +34,12 @@ func init() {
 
 func main() {
 
-	//cronService := crons.NewCronServices(&config.GetInstance().Database)
-	//cronContext := crons.NewCronContext(cronService)
-	//
-	//go cronContext.StartCrons()
-
 	incentiveProvider := buildIncentiveProvider()
 	adapters.InitIncentive(incentiveProvider)
 
 	go adapters.InitIncentiveCron()
 
 	startRouter()
-
-	//cronService := crons.NewCronServices(&config.GetInstance().Database)
-	//cronContext := crons.NewCronContext(cronService)
-	//
-	//go cronContext.StartCrons()
-	//
-	//serverContext := infra.NewServerContext(&config.GetInstance().Server)
-	//
-	//trxService := handler.NewSalesIncentiveService(&config.GetInstance().Database)
-	//trxContext := handler.NewSalesIncentiveContext(trxService)
-	//
-	////err := trxService.UpdateEachPromoterData()
-	////if err != nil {
-	////	fmt.Println("promoter error:", err)
-	////	return
-	////}
-	////
-	////fmt.Println("UpdateEachPromoterData success")
-	////
-	////err = trxService.UpdateOtherManagersData()
-	////if err != nil {
-	////	fmt.Println("manager error:", err)
-	////	return
-	////}
-	////
-	////fmt.Println("UpdateOtherManagersData success")
-	//
-	//defer trxContext.SafeClose()
-	//
-	//serverContext.Mount(baseURL, trxContext.NewSalesIncentiveRouter())
-	//serverContext.Mount(health, handler.NewHealthCheckRouter())
-	//
-	//// Start server
-	//address := config.GetInstance().Server.GetAddressString()
-	//serverContext.StartServer(address)
 }
 
 func initEnvConfigs() {
@@ -91,7 +51,7 @@ func initLogger() {
 
 	loggerConfig, err := configs.Get(constant.LoggerConfigFile)
 	if err != nil {
-		logger.Fatal(context.TODO()).Stack().Err(err).Msg("error loading logger config file, env - " + flags.Env())
+		logger.Fatal(context.TODO()).Err(err).Msg("error loading logger config file, env - " + flags.Env())
 	}
 
 	logger.InitLogger(logger.Level(loggerConfig.GetString(constant.LogLevelKey)))
@@ -101,7 +61,7 @@ func initFileLogger() {
 
 	applicationConfig, err := configs.Get(constant.LoggerConfigFile)
 	if err != nil {
-		logger.Fatal(context.TODO()).Stack().Err(err).Msg("error loading application config file, env - " + flags.Env())
+		logger.Fatal(context.TODO()).Err(err).Msg("error loading application config file, env - " + flags.Env())
 	}
 
 	err = logger.InitFileLogger(logger.FileConfig{
@@ -125,7 +85,7 @@ func initHTTPClient() {
 
 	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
 	if err != nil {
-		logger.FileLogger.Fatal().Stack().Err(err).Msg("initHTTPClient: error loading application config file, env - " + flags.Env())
+		logger.FileLogger.Fatal().Err(err).Msg("initHTTPClient: error loading application config file, env - " + flags.Env())
 	}
 
 	certificate := applicationConfig.GetString(constant.HTTPTLSCertificateFileLocation)
@@ -171,12 +131,13 @@ func buildIncentiveProvider() models.IncentiveProvider {
 
 	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
 	if err != nil {
-		logger.FileLogger.Fatal().Stack().Err(err).Msg("error loading application config file, env - " + flags.Env())
+		logger.FileLogger.Fatal().Err(err).Msg("error loading application config file, env - " + flags.Env())
 	}
 
 	jwthelper.JwtSecretKey = applicationConfig.GetString(constant.JwtKey)
-	if jwthelper.JwtSecretKey == "" {
-		logger.FileLogger.Fatal().Stack().Err(err).Msg("jwt secret key not found, env - " + flags.Env())
+	jwthelper.AdminJwtSecretKey = applicationConfig.GetString(constant.AdminJwtKey)
+	if jwthelper.JwtSecretKey == "" || jwthelper.AdminJwtSecretKey == "" || jwthelper.JwtSecretKey == jwthelper.AdminJwtSecretKey {
+		logger.FileLogger.Fatal().Err(err).Msg("jwt secret key invalid, env - " + flags.Env())
 	}
 
 	models.ShortCode = applicationConfig.GetString(constant.ShortCodeKey)
@@ -185,7 +146,7 @@ func buildIncentiveProvider() models.IncentiveProvider {
 	models.CaptchaSecretKey = applicationConfig.GetString(constant.CaptchaSecretKey)
 	models.VerifyCaptchaGoogleApi = applicationConfig.GetString(constant.VerifyCaptchaGoogleApi)
 	if models.CaptchaSitesEnableKey == "" || models.CaptchaSecretKey == "" || models.VerifyCaptchaGoogleApi == "" {
-		logger.FileLogger.Fatal().Stack().Err(err).Msg("captcha keys not found, env - " + flags.Env())
+		logger.FileLogger.Fatal().Err(err).Msg("captcha keys not found, env - " + flags.Env())
 	}
 
 	//db config load

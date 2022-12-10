@@ -19,7 +19,7 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if !((req.Month >= 1 && req.Month <= 12) || (req.Quarter >= 1 && req.Quarter <= 4)) {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("monthly and quarterly type is incorrect")).Stack().Msg("GetUserReport : incorrect client id")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("monthly and quarterly type is incorrect")).Msg("GetUserReport : incorrect client id")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -43,7 +43,7 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 
 	response, errs := theProvider.GetUserReport(ctx, req.ClientId, isQuarterReport, req.Quarter, req.Month, time.Now().Year())
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetUserReport : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUserReport : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -58,7 +58,7 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserReport : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserReport : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

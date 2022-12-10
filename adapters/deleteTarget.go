@@ -20,7 +20,7 @@ func DeleteTargets(ctx *gin.Context, req []*models.NewTargetRequest) (int, inter
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if req == nil || len(req) == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Stack().Msg("DeleteTargets : invalid req params")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Msg("DeleteTargets : invalid req params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -41,7 +41,7 @@ func DeleteTargets(ctx *gin.Context, req []*models.NewTargetRequest) (int, inter
 	for _, v := range req {
 
 		if v.RegionCode == "" || v.OutletCode == "" || v.Month < 1 || v.Month > 12 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Stack().Msg("DeleteTargets : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Msg("DeleteTargets : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -62,7 +62,7 @@ func DeleteTargets(ctx *gin.Context, req []*models.NewTargetRequest) (int, inter
 
 	errs := theProvider.DeleteTargets(ctx, targetReq)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("DeleteTargets : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("DeleteTargets : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -82,7 +82,7 @@ func DeleteTargets(ctx *gin.Context, req []*models.NewTargetRequest) (int, inter
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteTargets : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteTargets : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

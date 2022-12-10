@@ -14,7 +14,12 @@ import (
 
 func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error) {
 
-	trx, err := impl.PsqlDb.FetchUserSales(userId, month, year, quarter, isQuarterReport)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(userId)
+	if err != nil {
+		return nil, err //error - userId not in masterDB, outlet-region not in outletDB, outletManager not in hierarchyDB
+	}
+
+	trx, err := impl.PsqlDb.FetchActiveUserSales(userId, user.Region, user.Outlet, isQuarterReport, quarter, month, year)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +60,26 @@ func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, userId str
 			data.SalesCount += v.Quantity
 		}
 
-		target := float64(impl.getSaleTargetPerOutlet(month, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)) / float64(totalEmp)
+		targetPerOutlet, internalErr := impl.getSaleTargetPerOutlet(year, month, quarter, isQuarterReport, grp, trx.Region, trx.Outlet)
+		if internalErr != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidDetailsCode,
+				Message:    internalErr.Error(),
+				Details:    internalErr.Error(),
+			}
+		}
+
+		if targetPerOutlet == 0 {
+			return nil, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidDetailsCode,
+				Message:    "NO TARGET FOUND",
+				Details:    "NO TARGET FOUND",
+			}
+		}
+
+		target := float64(targetPerOutlet) / float64(totalEmp)
 		if target <= 0 {
 			data.Error = fmt.Errorf("per employee target found is %f", target).Error()
 		}

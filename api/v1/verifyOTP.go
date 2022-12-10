@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/adapters"
-	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
@@ -19,13 +18,14 @@ func verifyOTP(ctx *gin.Context) {
 	userReq := &models.VerifyOTP{}
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("verifyOTP : error binding request body")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("verifyOTP : binding request body")
 		logger.LogChan <- &logger.Logging{
 			UserID:     "",
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
-			Msg:        "unauthorized request",
-			Text:       "auth token not found",
+			Msg:        "request binding",
+			Code:       http.StatusBadRequest,
+			Text:       err.Error(),
 			CreateTime: time.Now().Local(),
 		}
 
@@ -36,15 +36,45 @@ func verifyOTP(ctx *gin.Context) {
 	}
 
 	req, _ := objecthelper.MarshalJSON(userReq)
-	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("verifyOTP : req body")
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("verifyOTP : req body")
 	logger.LogChan <- &logger.Logging{
 		UserID:     userReq.ClientId,
 		URL:        ctx.Request.URL.String(),
-		Type:       "info",
+		Type:       "trace",
 		Msg:        "request body",
 		Text:       fmt.Sprintf("%+v", string(req)),
 		CreateTime: time.Now().Local(),
 	}
 
+	if err := validateVerifyOTP(userReq); err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("verifyOTP : invalid request")
+		logger.LogChan <- &logger.Logging{
+			UserID:     "",
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "invaild req",
+			Code:       http.StatusBadRequest,
+			Text:       err.Error(),
+			CreateTime: time.Now().Local(),
+		}
+
+		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
+			Error: err.Error(),
+		})
+		return
+	}
+
+	//since userid not found in token
+	ctx.Set(logger.UserIDLogParam, userReq.ClientId)
+
 	ctx.JSON(adapters.VerifyOTP(ctx, userReq))
+}
+
+func validateVerifyOTP(req *models.VerifyOTP) error {
+
+	if req.ClientId == "" || req.Otp == 0 {
+		return errors.New("BLANK USERID OR OTP")
+	}
+
+	return nil
 }

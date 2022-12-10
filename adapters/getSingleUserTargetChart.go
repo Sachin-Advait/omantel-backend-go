@@ -22,7 +22,7 @@ func GetSingleUserTargetChart(ctx *gin.Context, req *models.SingleUserIncentiveR
 
 	isQuarterReport, quarter, month, year, err := validateSingleUserTargetChartRequest(req)
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetSingleUserTargetChart : validation failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetSingleUserTargetChart : validation failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -40,7 +40,7 @@ func GetSingleUserTargetChart(ctx *gin.Context, req *models.SingleUserIncentiveR
 
 	response, errs := theProvider.GetSingleUserTargetChart(ctx, req.ClientId, isQuarterReport, quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetSingleUserTargetChart : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetSingleUserTargetChart : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -55,7 +55,7 @@ func GetSingleUserTargetChart(ctx *gin.Context, req *models.SingleUserIncentiveR
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetSingleUserTargetChart : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetSingleUserTargetChart : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

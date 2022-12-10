@@ -24,7 +24,7 @@ func createNewTargetViaFile(ctx *gin.Context) {
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if ctxHeader.Authorization == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("createNewTargetViaFile : unauthorized request")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("createNewTargetViaFile : unauthorized request")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -41,12 +41,31 @@ func createNewTargetViaFile(ctx *gin.Context) {
 		return
 	}
 
+	if !ctxHeader.IsAdmin {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("createNewTargetViaFile : not an admin")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "not admin",
+			Code:       http.StatusForbidden,
+			Text:       "not an admin",
+			CreateTime: time.Now().Local(),
+		}
+
+		ctx.JSON(http.StatusForbidden, models.APIFailureResponse{
+			Error:   errors.UnauthorizedUserCode,
+			Message: errors.UnauthorizedUser,
+		})
+		return
+	}
+
 	//  Ensure our file does not exceed 5MB
 	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, 5*1024*1024)
 
 	formFile, err := ctx.FormFile("target")
 	if err != nil { // The file cannot be received.
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewTargetViaFile : invalid file request")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewTargetViaFile : invalid file request")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -65,7 +84,7 @@ func createNewTargetViaFile(ctx *gin.Context) {
 
 	openedFile, err := formFile.Open()
 	if err != nil { // The file cannot be received.
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewTargetViaFile : open file request failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewTargetViaFile : open file request failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -86,7 +105,7 @@ func createNewTargetViaFile(ctx *gin.Context) {
 
 	excelFile, err := excelize.OpenReader(openedFile)
 	if err != nil { // The file cannot be received.
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewTargetViaFile : excelize reader failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewTargetViaFile : excelize reader failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -105,7 +124,7 @@ func createNewTargetViaFile(ctx *gin.Context) {
 
 	rows, err := excelFile.Rows("Sheet1")
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewTargetViaFile : sheet1 not found")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewTargetViaFile : sheet1 not found")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -131,7 +150,7 @@ func createNewTargetViaFile(ctx *gin.Context) {
 		if isFirstRow {
 			firstRow, err := rows.Columns()
 			if err != nil {
-				logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewTargetViaFile : first row error")
+				logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewTargetViaFile : first row error")
 				logger.LogChan <- &logger.Logging{
 					UserID:     ctxHeader.XUserId,
 					URL:        ctx.Request.URL.String(),
@@ -170,7 +189,7 @@ func createNewTargetViaFile(ctx *gin.Context) {
 				case i == 8 && coulmn == "isUpdate":
 					break
 				default:
-					logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewTargetViaFile :  invalid column format")
+					logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewTargetViaFile :  invalid column format")
 					logger.LogChan <- &logger.Logging{
 						UserID:     ctxHeader.XUserId,
 						URL:        ctx.Request.URL.String(),
@@ -194,7 +213,7 @@ func createNewTargetViaFile(ctx *gin.Context) {
 
 		row, err := rows.Columns()
 		if err != nil {
-			logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("createNewTargetViaFile : other rows error")
+			logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewTargetViaFile : other rows error")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -245,7 +264,7 @@ func createNewTargetViaFile(ctx *gin.Context) {
 	}
 
 	req, _ := objecthelper.MarshalJSON(userRequests)
-	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("createNewTargetViaFile : req body")
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("createNewTargetViaFile : req body")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

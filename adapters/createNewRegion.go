@@ -23,7 +23,7 @@ func CreateNewRegion(ctx *gin.Context, req []*models.NewRegionRequest) (int, int
 	for _, eachRecord := range req {
 
 		if eachRecord.RegionCode == "" || eachRecord.RegionName == "" {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid req param")).Stack().Msg("CreateNewRegion : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid req param")).Msg("CreateNewRegion : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -51,7 +51,7 @@ func CreateNewRegion(ctx *gin.Context, req []*models.NewRegionRequest) (int, int
 	case "2":
 		if failedResp != nil {
 			resp, _ := json.Marshal(failedResp)
-			logger.FileLogger.CtxError(ctx).Str(constant.ResponseParam, string(resp)).Stack().Msg("CreateNewRegion V2: provider failed")
+			logger.FileLogger.CtxError(ctx).Str(logger.ResponseParam, string(resp)).Msg("CreateNewRegion V2: provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -65,7 +65,7 @@ func CreateNewRegion(ctx *gin.Context, req []*models.NewRegionRequest) (int, int
 		}
 	default:
 		if errs != nil {
-			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewRegion : provider failed")
+			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("CreateNewRegion : provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -86,7 +86,7 @@ func CreateNewRegion(ctx *gin.Context, req []*models.NewRegionRequest) (int, int
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewRegion : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewRegion : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

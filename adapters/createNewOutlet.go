@@ -23,7 +23,7 @@ func CreateNewOutlet(ctx *gin.Context, req []*models.NewOutletRequest) (int, int
 	for _, eachRecord := range req {
 
 		if eachRecord.OutletCode == "" || eachRecord.OutletName == "" || eachRecord.RegionCode == "" || eachRecord.Lat == 0 || eachRecord.Lang == 0 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid req param")).Stack().Msg("CreateNewOutlet : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid req param")).Msg("CreateNewOutlet : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -52,7 +52,7 @@ func CreateNewOutlet(ctx *gin.Context, req []*models.NewOutletRequest) (int, int
 	case "2":
 		if failedResp != nil {
 			resp, _ := json.Marshal(failedResp)
-			logger.FileLogger.CtxError(ctx).Str(constant.ResponseParam, string(resp)).Stack().Msg("CreateNewOutlet V2: provider failed")
+			logger.FileLogger.CtxError(ctx).Str(logger.ResponseParam, string(resp)).Msg("CreateNewOutlet V2: provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -66,7 +66,7 @@ func CreateNewOutlet(ctx *gin.Context, req []*models.NewOutletRequest) (int, int
 		}
 	default:
 		if errs != nil {
-			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewOutlet : provider failed")
+			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("CreateNewOutlet : provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -87,7 +87,7 @@ func CreateNewOutlet(ctx *gin.Context, req []*models.NewOutletRequest) (int, int
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewOutlet : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewOutlet : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

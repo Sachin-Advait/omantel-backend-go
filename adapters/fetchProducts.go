@@ -23,7 +23,7 @@ func FetchProducts(ctx *gin.Context) (int, interface{}) {
 
 	products, ok := queryParam[constant.Product]
 	if !ok || products[0] == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY PRODUCTS")).Stack().Msg("FetchProducts : invalid params")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY PRODUCTS")).Msg("FetchProducts : invalid params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -50,7 +50,7 @@ func FetchProducts(ctx *gin.Context) (int, interface{}) {
 
 	response, errs := theProvider.FetchProducts(ctx, productsReq)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("FetchProducts : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("FetchProducts : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -65,7 +65,7 @@ func FetchProducts(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchProducts : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchProducts : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

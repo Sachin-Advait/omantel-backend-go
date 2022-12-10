@@ -20,7 +20,7 @@ func DeleteOutlets(ctx *gin.Context, req *models.DeleteOutletRequest) (int, inte
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if req == nil || len(req.OutletCodes) == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Stack().Msg("DeleteOutlets : invalid req params")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Msg("DeleteOutlets : invalid req params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -39,7 +39,7 @@ func DeleteOutlets(ctx *gin.Context, req *models.DeleteOutletRequest) (int, inte
 	for i, v := range req.OutletCodes {
 
 		if v == "" {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Stack().Msg("DeleteOutlets : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Msg("DeleteOutlets : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -60,7 +60,7 @@ func DeleteOutlets(ctx *gin.Context, req *models.DeleteOutletRequest) (int, inte
 
 	errs := theProvider.DeleteOutlets(ctx, req)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("DeleteOutlets : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("DeleteOutlets : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -80,7 +80,7 @@ func DeleteOutlets(ctx *gin.Context, req *models.DeleteOutletRequest) (int, inte
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteOutlets : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteOutlets : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

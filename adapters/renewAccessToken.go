@@ -1,7 +1,6 @@
 package adapters
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -18,48 +17,15 @@ func RenewAccessToken(ctx *gin.Context) (int, interface{}) {
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if ctxHeader.SuperAuthorization == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("RenewAccessToken : unauthorized request")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "auth token not found",
-			CreateTime: time.Now().Local(),
-		}
-
-		return http.StatusBadRequest, models.APIFailureResponse{
-			Error:   errors.UnauthorizedUserCode,
-			Message: errors.UnauthorizedUser,
-		}
-	}
-
-	if ctxHeader.XUserId == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("invalid userID")).Stack().Msg("RenewAccessToken : incorrect client id")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid userID",
-			CreateTime: time.Now().Local(),
-		}
-
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: "invalid userID",
-		}
-	}
-
-	accessToken, errs := theProvider.RenewAccessToken(ctx)
+	response, errs := theProvider.RenewAccessToken(ctx)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("RenewAccessToken : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("RenewAccessToken : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "provider failed",
+			Code:       errs.StatusCode,
 			Text:       errs.Details.(string),
 			CreateTime: time.Now().Local(),
 		}
@@ -69,19 +35,20 @@ func RenewAccessToken(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	resp := models.APISuccessResponse{
-		Status: true,
-		Data:   accessToken,
-	}
-
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("RenewAccessToken : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, "success").Msg("RenewAccessToken : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),
 		Type:       "info",
 		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", resp),
+		Code:       http.StatusOK,
+		Text:       "success response",
 		CreateTime: time.Now().Local(),
+	}
+
+	resp := models.APISuccessResponse{
+		Status: true,
+		Data:   response,
 	}
 
 	return http.StatusOK, resp

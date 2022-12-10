@@ -20,7 +20,7 @@ func DeleteRegions(ctx *gin.Context, req *models.DeleteRegionRequest) (int, inte
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if req == nil || len(req.RegionCodes) == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Stack().Msg("DeleteRegions : invalid req params")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Msg("DeleteRegions : invalid req params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -39,7 +39,7 @@ func DeleteRegions(ctx *gin.Context, req *models.DeleteRegionRequest) (int, inte
 	for i, v := range req.RegionCodes {
 
 		if v == "" {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Stack().Msg("DeleteRegions : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Msg("DeleteRegions : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -60,7 +60,7 @@ func DeleteRegions(ctx *gin.Context, req *models.DeleteRegionRequest) (int, inte
 
 	errs := theProvider.DeleteRegions(ctx, req)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("DeleteRegions : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("DeleteRegions : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -80,7 +80,7 @@ func DeleteRegions(ctx *gin.Context, req *models.DeleteRegionRequest) (int, inte
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteRegions : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteRegions : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

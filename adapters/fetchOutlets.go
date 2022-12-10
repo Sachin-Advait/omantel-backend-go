@@ -23,7 +23,7 @@ func FetchOutlets(ctx *gin.Context) (int, interface{}) {
 
 	outlets, ok := queryParam[constant.Outlet]
 	if !ok || outlets[0] == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY OUTLETS")).Stack().Msg("FetchOutlets : invalid params")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY OUTLETS")).Msg("FetchOutlets : invalid params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -50,7 +50,7 @@ func FetchOutlets(ctx *gin.Context) (int, interface{}) {
 
 	response, errs := theProvider.FetchOutlets(ctx, outletsReq)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("FetchOutlets : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("FetchOutlets : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -65,7 +65,7 @@ func FetchOutlets(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchOutlets : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchOutlets : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

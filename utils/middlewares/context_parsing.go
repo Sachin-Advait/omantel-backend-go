@@ -1,12 +1,13 @@
 package middlewares
 
 import (
+	"net/http"
+	"strings"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +18,6 @@ import (
 func ContextCreator() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
-
 		ctxHeader := context.ContextHeader{}
 
 		if err := ctx.ShouldBindHeader(&ctxHeader); err != nil {

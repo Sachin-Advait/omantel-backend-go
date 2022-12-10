@@ -1,4 +1,5 @@
 secretKey: gis-jwt-token
+adminSecretKey: gis-admin-jwt-token
 sessionExpiryTimeMinutes: 30
 refreshTokenExpiryHours: 3
 captchaSitesEnableKey: 6Lc61GciAAAAAALcJjbHg364YaqPKyJ3_8jbj_Ks

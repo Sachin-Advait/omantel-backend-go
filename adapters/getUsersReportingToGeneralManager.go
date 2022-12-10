@@ -20,7 +20,7 @@ func GetUsersReportingToGeneralManager(ctx *gin.Context, req *models.UserReporti
 
 	response, errs := theProvider.GetUsersReportingToGeneralManager(ctx, req.ClientId)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetUsersReportingToGeneralManager : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUsersReportingToGeneralManager : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -35,7 +35,7 @@ func GetUsersReportingToGeneralManager(ctx *gin.Context, req *models.UserReporti
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUsersReportingToGeneralManager : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUsersReportingToGeneralManager : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

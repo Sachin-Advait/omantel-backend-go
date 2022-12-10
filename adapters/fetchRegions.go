@@ -23,7 +23,7 @@ func FetchRegions(ctx *gin.Context) (int, interface{}) {
 
 	regions, ok := queryParam[constant.Region]
 	if !ok || regions[0] == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY REGIONS")).Stack().Msg("FetchRegions : invalid params")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY REGIONS")).Msg("FetchRegions : invalid params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -50,7 +50,7 @@ func FetchRegions(ctx *gin.Context) (int, interface{}) {
 
 	response, errs := theProvider.FetchRegions(ctx, regionsReq)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("FetchRegions : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("FetchRegions : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -65,7 +65,7 @@ func FetchRegions(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchRegions : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchRegions : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

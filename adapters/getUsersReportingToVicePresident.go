@@ -20,7 +20,7 @@ func GetUsersReportingToVicePresident(ctx *gin.Context, req *models.UserReportin
 
 	response, errs := theProvider.GetUsersReportingToVicePresident(ctx, req.ClientId)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetUsersReportingToVicePresident : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUsersReportingToVicePresident : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -35,7 +35,7 @@ func GetUsersReportingToVicePresident(ctx *gin.Context, req *models.UserReportin
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUsersReportingToVicePresident : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUsersReportingToVicePresident : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

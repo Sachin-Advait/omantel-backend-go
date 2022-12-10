@@ -31,12 +31,14 @@ func IncentiveRoutes(group *gin.RouterGroup) {
 		c.JSON(http.StatusOK, res)
 	})
 
+	group.POST(constant.GenerateOTPPath, generateOTP)
+	group.POST(constant.VerifyOTPPath, verifyOTP)
+	group.POST(constant.CaptchaVerificationPath, captchaVerification)
+	//group.OPTIONS(constant.VerifyOTPPath, verifyOTP)
+
 	group.POST(constant.ClientPath, getSingleUserIncentive)
 	group.POST(constant.TargetChartPath, getSingleUserTargetChart)
 	group.POST(constant.SalePerPlanPath, getSaleCountPerPlan)
-	group.POST(constant.GenerateOTPPath, generateOTP)
-	group.POST(constant.VerifyOTPPath, verifyOTP)
-	//group.OPTIONS(constant.VerifyOTPPath, verifyOTP)
 	group.POST(constant.UserReportPath, getUserReport)
 	group.POST(constant.ReportToOutletManagerPath, getUsersReportingToOutletManager)
 	group.POST(constant.ReportToManagerPath, getUsersReportingToManager)
@@ -53,8 +55,6 @@ func IncentiveRoutes(group *gin.RouterGroup) {
 	group.POST(constant.TopTenSalesCountPath, getTopTenEmpProductSalesCount)
 	group.POST(constant.TopTenSalesTargetPath, getTopTenEmpSalesAndTarget)
 	group.GET(constant.RenewTokenPath, renewAccessToken)
-
-	group.POST(constant.CaptchaVerificationPath, captchaVerification)
 
 	group.GET(constant.FetchRegionPath, fetchRegions)
 	group.POST(constant.UpsertRegionPath, createNewRegion)

@@ -2,8 +2,9 @@ package logger
 
 import (
 	"context"
-	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"runtime/debug"
+
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -11,14 +12,15 @@ import (
 
 // Log Params
 const (
-	RequestIDLogParam   = "requestId"
+	RequestIDLogParam   = "id"
 	UserIDLogParam      = "userId"
 	StatusCodeLogParam  = "statusCode"
 	EndTimeLogParam     = "endTime"
 	StartTimeLogParam   = "startTime"
 	PathLogParam        = "path"
 	QueryLogParam       = "query"
-	HeaderLogParams     = "header"
+	ReqHeaderLogParams  = "reqHeader"
+	ResHeaderLogParams  = "resHeader"
 	LatencyLogParam     = "latency"
 	ClientIPLogParam    = "clientIP"
 	MethodLogParam      = "method"
@@ -26,6 +28,9 @@ const (
 	ErrorLogParam       = "error"
 	ResponseParam       = "response"
 	CorrelationLogParam = "correlationId"
+
+	HTTPConfigLogParam     = "httpConfig"
+	DatabaseConfigLogParam = "databaseConfig"
 )
 
 type Level string
@@ -60,37 +65,37 @@ func InitLogger(level Level) {
 
 // Trace is the console context logging for trace log
 func Trace(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, log.Trace())
+	return withContext(ctx, log.Trace())
 }
 
 // Debug is the console context logging for debug log
 func Debug(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, log.Debug())
+	return withContext(ctx, log.Debug())
 }
 
 // Info is the console context logging for info log
 func Info(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, log.Info())
+	return withContext(ctx, log.Info())
 }
 
 // Warn is the console context logging for warn log
 func Warn(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, log.Warn())
+	return withContext(ctx, log.Warn())
 }
 
 // Error is the console context logging for error log
 func Error(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, log.Error().Stack())
+	return withContext(ctx, log.Error().Stack())
 }
 
 // Panic is the console context logging for panic log
 func Panic(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, log.Panic().Stack())
+	return withContext(ctx, log.Panic().Stack())
 }
 
 // Fatal is the console context logging for fatal log
 func Fatal(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, log.Fatal().Stack())
+	return withContext(ctx, log.Fatal().Stack())
 }
 
 func getErrorStackMarshaller() func(err error) interface{} {
@@ -99,17 +104,11 @@ func getErrorStackMarshaller() func(err error) interface{} {
 	}
 }
 
-func withIDAndPath(ctx context.Context, event *zerolog.Event) *zerolog.Event {
+func withContext(ctx context.Context, event *zerolog.Event) *zerolog.Event {
 	if ctx == nil {
 		return event
 	}
-	id := ctx.Value(RequestIDLogParam)
-	if id != nil {
-		event.Interface(RequestIDLogParam, id)
-	}
-	path := ctx.Value(PathLogParam)
-	if path != nil {
-		event.Interface(PathLogParam, path)
-	}
-	return event
+
+	return event.Interface(RequestIDLogParam, ctx.Value(RequestIDLogParam)).Interface(MethodLogParam, ctx.Value(MethodLogParam)).Interface(PathLogParam, ctx.Value(PathLogParam)).
+		Interface(UserIDLogParam, ctx.Value(UserIDLogParam))
 }

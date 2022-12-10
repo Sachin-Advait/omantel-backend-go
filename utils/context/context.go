@@ -22,4 +22,5 @@ type ContextHeader struct {
 	XAppVersion        string `header:"X-App-version"`     // "X-App-version": "39.0.1 / Chrome 90.04 / EDGE 11"
 	XOSVersion         string `header:"X-OS-version"`      // "X-OS-version": "Android 10 / iOS 10 / Windows 10"
 	XAPIVersion        string `header:"X-Api-Version"`     // "X-Api-Version": "1"
+	IsAdmin            bool
 }

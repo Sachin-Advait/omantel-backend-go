@@ -23,7 +23,7 @@ func CreateNewProduct(ctx *gin.Context, req []*models.NewProductRequest) (int, i
 	for _, eachRecord := range req {
 
 		if eachRecord.ProductCode == "" || eachRecord.ProductName == "" || eachRecord.Weightage == 0 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid product param")).Stack().Msg("CreateNewProduct : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid product param")).Msg("CreateNewProduct : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -51,7 +51,7 @@ func CreateNewProduct(ctx *gin.Context, req []*models.NewProductRequest) (int, i
 	case "2":
 		if failedResp != nil {
 			resp, _ := json.Marshal(failedResp)
-			logger.FileLogger.CtxError(ctx).Str(constant.ResponseParam, string(resp)).Stack().Msg("CreateNewProduct V2: provider failed")
+			logger.FileLogger.CtxError(ctx).Str(logger.ResponseParam, string(resp)).Msg("CreateNewProduct V2: provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -65,7 +65,7 @@ func CreateNewProduct(ctx *gin.Context, req []*models.NewProductRequest) (int, i
 		}
 	default:
 		if errs != nil {
-			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewProduct : provider failed")
+			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("CreateNewProduct : provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -86,7 +86,7 @@ func CreateNewProduct(ctx *gin.Context, req []*models.NewProductRequest) (int, i
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewProduct : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewProduct : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

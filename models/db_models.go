@@ -4,56 +4,39 @@ import "time"
 
 type UserReportDB struct {
 	UserId                       string
+	Position                     string
 	ManagerId                    string
-	Isquarterly                  bool
-	Month                        int
-	Quarter                      int
-	Year                         int
-	Hayyak_sales_count           int
-	Hayyak_target                float64
-	Hayyak_payout                float64
-	Hayyak_extra_payout          float64
-	Hayyak_achieved_percentage   float64
-	Hbb_sales_count              int
-	Hbb_target                   float64
-	Hbb_payout                   float64
-	Hbb_extra_payout             float64
-	Hbb_achieved_percentage      float64
-	Baqati_sales_count           int
-	Baqati_target                float64
-	Baqati_payout                float64
-	Baqati_extra_payout          float64
-	Baqati_achieved_percentage   float64
-	Upgrade_sales_count          int
-	Upgrade_target               float64
-	Upgrade_payout               float64
-	Upgrade_extra_payout         float64
-	Uprade_achieved_percentage   float64
-	Total_payout                 float64
+	ManagerPosition              string
+	Region                       string
+	Outlet                       string
+	Latitude                     float64
+	Longitude                    float64
+	HayyakSalesCount             int
+	HayyakTargetCount            float64
+	HayyakPayout                 float64
+	HayyakExtraPayout            float64
+	HayyakAchievedPercentage     float64
+	HBBSalesCount                int
+	HBBTargetCount               float64
+	HBBPayout                    float64
+	HBBExtraPayout               float64
+	HBBAchievedPercentage        float64
+	BaqatiSalesCount             int
+	BaqatiTargetCount            float64
+	BaqatiPayout                 float64
+	BaqatiExtraPayout            float64
+	BaqatiAchievedPercentage     float64
+	UpgradeSalesCount            int
+	UpgradeTargetCount           float64
+	UpgradePayout                float64
+	UpgradeExtraPayout           float64
+	UpradeAchievedPercentage     float64
+	TotalPayout                  float64
 	HBBSaleCountPerPlanArray     string
 	HayyakSaleCountPerPlanArray  string
 	BaqatiSaleCountPerPlanArray  string
 	UpgradeSaleCountPerPlanArray string
 	CreateAt                     time.Time
-}
-
-type ManagerReportDB struct {
-	UserId             string
-	Position           string
-	ManagerId          string
-	Region             string
-	Outlet             string
-	Latitude           float64
-	Longitude          float64
-	HBBSalesCount      int
-	HBBTargetCount     int
-	HayyakSalesCount   int
-	HayyakTargetCount  int
-	BaqatiSalesCount   int
-	BaqatiTargetCount  int
-	UpgradeSalesCount  int
-	UpgradeTargetCount int
-	CreatedAt          time.Time
 }
 
 type OutletReportDB struct {
@@ -86,16 +69,6 @@ type RegionReportDB struct {
 }
 
 type UserBasicDetailsDB struct {
-	UserId         string
-	Name           string
-	Position       string
-	MobileNumber   string
-	Region         string
-	Outlet         string
-	OutletManageId string
-}
-
-type ManagerBasicDetailsDB struct {
 	UserId          string
 	Name            string
 	Position        string
@@ -104,4 +77,5 @@ type ManagerBasicDetailsDB struct {
 	Outlet          string
 	ManagerId       string
 	ManagerPosition string
+	IsAdmin         bool
 }

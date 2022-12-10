@@ -25,20 +25,17 @@ type APIResponse struct {
 //	* if token is not present then it is allowed to bypass
 //	* context authorization field is reset with only the access token part
 func OptionalAuthHandler() gin.HandlerFunc {
-
 	return func(ctx *gin.Context) {
-
 		cRH, _ := ctx.Get(constant.HeaderInContext)
 		ctxHeader, _ := (cRH).(context.ContextHeader)
 
 		tokenLength := len(ctxHeader.Authorization)
 
 		if tokenLength > 0 && tokenLength <= 7 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("MIDDLEWARE AUTH FAILED")).Stack().Msg("AuthMiddleware : incorrect access token length")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("MIDDLEWARE AUTH FAILED")).Msg("AuthMiddleware : incorrect token length")
 			ctx.JSON(http.StatusBadRequest, APIResponse{
 				ErrorCode: errors.InvalidTokenCode,
 				Message:   errors.InvalidToken,
-				Data:      "MIDDLEWARE AUTH FAILED",
 			})
 			ctx.Abort()
 			return
@@ -46,43 +43,52 @@ func OptionalAuthHandler() gin.HandlerFunc {
 
 		if len(ctxHeader.Authorization) > 7 {
 
-			authUser, status, err := jwthelper.ValidateAccessToken(ctxHeader.Authorization[7:], jwthelper.JwtSecretKey)
+			//first validate admin token
+			authUser, status, err := jwthelper.ValidateAdminAccessToken(ctxHeader.Authorization[7:], jwthelper.AdminJwtSecretKey)
+			if err == nil {
+				ctxHeader.IsAdmin = true
+				ctxHeader.XUserId = authUser
+				ctxHeader.Authorization = ctxHeader.Authorization[7:]
+			} else {
+				authUser, status, err = jwthelper.ValidateAccessToken(ctxHeader.Authorization[7:], jwthelper.JwtSecretKey)
+				if err != nil {
+					if status == constant.TokenExpired {
+						logger.FileLogger.CtxError(ctx).Err(err).Msg("AuthMiddleware : expired token")
+						ctx.JSON(http.StatusUnauthorized, APIResponse{
+							ErrorCode: errors.TokenExpiredCode,
+							Message:   errors.TokenExpired,
+						})
+						ctx.Abort()
+						return
+					}
 
-			if err != nil {
-				if status == constant.TokenExpired {
-					logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("AuthMiddleware : expired access token")
-					ctx.JSON(http.StatusUnauthorized, APIResponse{
-						ErrorCode: errors.TokenExpiredCode,
-						Message:   errors.TokenExpired,
+					logger.FileLogger.CtxError(ctx).Err(err).Msg("AuthMiddleware : invalid token")
+					ctx.JSON(http.StatusBadRequest, APIResponse{
+						ErrorCode: errors.InvalidTokenCode,
+						Message:   errors.InvalidToken,
 					})
 					ctx.Abort()
 					return
 				}
 
-				logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("AuthMiddleware : invalid access token")
-				ctx.JSON(http.StatusBadRequest, APIResponse{
-					ErrorCode: errors.InvalidTokenCode,
-					Message:   errors.InvalidToken,
-				})
-				ctx.Abort()
-				return
-			}
+				if ctxHeader.XUserId != "" && authUser != ctxHeader.XUserId {
+					logger.FileLogger.CtxError(ctx).Err(errors.New("USERID AND AUTHTOKEN ARE CONTRADICTORY")).Msg("AuthMiddleware : userID contradicting with token")
+					ctx.JSON(http.StatusBadRequest, APIResponse{
+						ErrorCode: errors.ContradictoryReqParamCode,
+						Message:   errors.ContradictoryReqParam,
+						Data:      "USERID AND AUTHTOKEN ARE CONTRADICTORY",
+					})
+					ctx.Abort()
+					return
+				}
 
-			if ctxHeader.XUserId != "" && authUser != ctxHeader.XUserId {
-				logger.FileLogger.CtxError(ctx).Err(errors.New("USERID AND AUTHTOKEN ARE CONTRADICTORY")).Stack().Msg("AuthMiddleware : userID contradicting with access token")
-				ctx.JSON(http.StatusBadRequest, APIResponse{
-					ErrorCode: errors.ContradictoryReqParamCode,
-					Message:   errors.ContradictoryReqParam,
-					Data:      "USERID AND AUTHTOKEN ARE CONTRADICTORY",
-				})
-				ctx.Abort()
-				return
+				ctxHeader.IsAdmin = false
+				ctxHeader.XUserId = authUser
+				ctxHeader.Authorization = ctxHeader.Authorization[7:]
 			}
-
-			ctxHeader.XUserId = authUser
-			ctxHeader.Authorization = ctxHeader.Authorization[7:]
 		}
 
+		ctx.Set(logger.UserIDLogParam, ctxHeader.XUserId)
 		ctx.Set(constant.HeaderInContext, ctxHeader)
 		ctx.Next()
 	}

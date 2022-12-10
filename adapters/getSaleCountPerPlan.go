@@ -22,7 +22,7 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.SalesCountRequest) (int, 
 
 	isQuarterReport, quarter, month, year, err := validateSaleCountRequest(req)
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetSaleCountPerPlan : validation failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetSaleCountPerPlan : validation failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -42,7 +42,7 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.SalesCountRequest) (int, 
 
 	response, errs := theProvider.GetSaleCountPerPlan(ctx, req.ClientId, product, isQuarterReport, quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetSaleCountPerPlan : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetSaleCountPerPlan : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -57,7 +57,7 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.SalesCountRequest) (int, 
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetSaleCountPerPlan : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetSaleCountPerPlan : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

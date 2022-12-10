@@ -63,97 +63,67 @@ type Response struct {
 	} `xml:"Body"`
 }
 
-func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[string]string, *errors.Error) {
+func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, userID string) (map[string]string, *errors.Error) {
 
-	var (
-		isUpdate      = true
-		contactNumber string
-	)
+	var isUpdate = true
 
-	mobile, otpModel, err := impl.PsqlDb.FetchOTPValidity(clientID)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	contactNumber = mobile
+	userPosition, ok := constant.EmployeePositionMap[user.Position]
+	if !ok || user.MobileNumber == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    "USER POSITION OR CONTANCT NUMBER NOT FOUND",
+			Details:    "position:" + user.Position + "contact:" + user.MobileNumber,
+		}
+	}
+
+	otpModel, err := impl.PsqlDb.FetchOTPValidity(userID)
+	if err != nil {
+		return nil, err
+	}
 
 	if otpModel.StaffID == "" {
-		name, mobile, err := impl.PsqlDb.FetchUserName(clientID)
-		if err != nil {
-			return nil, err
-		}
-
-		if name == "" {
-			return nil, &errors.Error{
-				StatusCode: http.StatusBadRequest,
-				Code:       errors.UserNotFoundCode,
-				Message:    errors.UserIDInvalid,
-				Details:    "userId is invalid",
-			}
-		}
-
-		if contactNumber == "" {
-			contactNumber = mobile
-		}
-
 		isUpdate = false
+		otpModel.StaffID = userID
+		otpModel.StaffName = user.Name
+		otpModel.StaffPosition = user.Position
 	}
-	otpModel.StaffID = clientID
-
-	// contactNumber, err := impl.PsqlDb.FetchEmployeeContactNumber(clientID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// if otpModel.StaffID != 0 && !otpModel.IsActiveUser {
-	// 	return nil, &errors.Error{
-	// 		StatusCode: http.StatusForbidden,
-	// 		Code:       errors.UserBlockedCode,
-	// 		Message:    errors.UserBlockedError,
-	// 		Details:    "user is blocked",
-	// 	}
-	// }
-
-	//TODO: reset loginAttemptCount
-	// if otpModel.LoginAttemptCount > constant.MaxAllowedLoginAttempt {
-	// 	return nil, &errors.Error{
-	// 		StatusCode: http.StatusForbidden,
-	// 		Code:       errors.RetryLoginLimitReachedCode,
-	// 		Message:    errors.RetryLoginLimitReached,
-	// 		Details:    "retry login limit reached",
-	// 	}
-	// }
 
 	//otpLastUpdateTime updated only while generating OTP more than block time
-	if time.Since(otpModel.OtpLastUpdateTime).Minutes() <= constant.OtpGenerateBlockTimeInMin {
+	// if time.Since(otpModel.OtpLastUpdateTime).Minutes() <= constant.OtpGenerateBlockTimeInMin {
 
-		//too many times sent within 15 mins
-		if otpModel.OTPResendCount > constant.OtpRegenerateAllowedCount {
-			return nil, &errors.Error{
-				StatusCode: http.StatusForbidden,
-				Code:       errors.UserBlockedCode,
-				Message:    errors.OTPLimitError,
-				Details:    "max otp resend reached",
-			}
-		}
+	// 	//too many times sent within 15 mins
+	// 	if otpModel.OTPResendCount > constant.OtpRegenerateAllowedCount {
+	// 		return nil, &errors.Error{
+	// 			StatusCode: http.StatusForbidden,
+	// 			Code:       errors.UserBlockedCode,
+	// 			Message:    errors.OTPLimitError,
+	// 			Details:    "max otp resend reached",
+	// 		}
+	// 	}
 
-		//too many failure attempts within 15 mins
-		if otpModel.OTPVerifyFailedCount >= constant.MaxAllowedLoginAttempt {
-			return nil, &errors.Error{
-				StatusCode: http.StatusForbidden,
-				Code:       errors.UserBlockedCode,
-				Message:    errors.RetryLoginLimitReached,
-				Details:    "incorrect otp attempt reached",
-			}
-		}
+	// 	//too many failure attempts within 15 mins
+	// 	if otpModel.OTPVerifyFailedCount >= constant.MaxAllowedLoginAttempt {
+	// 		return nil, &errors.Error{
+	// 			StatusCode: http.StatusForbidden,
+	// 			Code:       errors.UserBlockedCode,
+	// 			Message:    errors.RetryLoginLimitReached,
+	// 			Details:    "incorrect otp attempt reached",
+	// 		}
+	// 	}
 
-		otpModel.OTPResendCount++
-	} else {
-		//more than 15 mins hence restart counter
-		otpModel.OTPResendCount = 0
-		otpModel.OTPVerifyFailedCount = 0
-		otpModel.OtpLastUpdateTime = time.Now()
-	}
+	// 	otpModel.OTPResendCount++
+	// } else {
+	// 	//more than 15 mins hence restart counter
+	// 	otpModel.OTPResendCount = 0
+	// 	otpModel.OTPVerifyFailedCount = 0
+	// 	otpModel.OtpLastUpdateTime = time.Now()
+	// }
 
 	//TODO: generate random num as OTP
 	otpModel.OTP = generateOTP(6)
@@ -163,30 +133,16 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[s
 	otpModel.UpdateReason = "otp generated"
 	otpModel.UpdatedTime = time.Now()
 
-	if otpModel.OTPResendCount > 0 {
-		otpModel.UpdateReason = "otp re-generated"
-	}
+	// if otpModel.OTPResendCount > 0 {
+	// 	otpModel.UpdateReason = "otp re-generated"
+	// }
 
 	//store OTP in db
 	if err := impl.PsqlDb.InsertStaffOTP(isUpdate, otpModel); err != nil {
 		return nil, err
 	}
 
-	// reqSMS := &restapi.SMSParams{
-	// 	HeaderRequestID:             requestID,
-	// 	HeaderStaffID:               strconv.Itoa(clientID),
-	// 	HeaderTimeStamp:             otpModel.CreatedTime.Format("2006-01-02 15:04:05"),
-	// 	NotificationDateTime:        otpModel.CreatedTime.Format("2006-01-02 15:04:05"),
-	// 	NotificaitionValidityPeriod: otpModel.CreatedTime.Add(3 * time.Minute).Format("2006-01-02 15:04:05"),
-	// 	Message:                     "Your OTP is: " + strconv.Itoa(otpModel.OTP),
-	// 	ContactNumber:               strconv.Itoa(contactNumber),
-	// }
-
-	// if err = restapi.SendOTP(reqSMS); err != nil {
-	// 	return err
-	// }
-
-	if err := impl.callSOAPClientSteps(clientID, contactNumber, otpModel.OTP); err != nil {
+	if err := impl.callSOAPClientSteps(userID, user.MobileNumber, otpModel.OTP); err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,
@@ -195,7 +151,7 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, clientID string) (map[s
 		}
 	}
 
-	return map[string]string{"error": "nil"}, nil
+	return map[string]string{"error": "nil", "position": userPosition}, nil
 }
 
 func generateOTP(max int) int {

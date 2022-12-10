@@ -39,40 +39,6 @@ const (
 	All     = "all"
 )
 
-// Log Params
-const (
-	RequestIDLogParam   = "requestId"
-	UserIDLogParam      = "userId"
-	StatusCodeLogParam  = "statusCode"
-	EndTimeLogParam     = "endTime"
-	StartTimeLogParam   = "startTime"
-	PathLogParam        = "path"
-	QueryLogParam       = "query"
-	HeaderLogParams     = "header"
-	LatencyLogParam     = "latency"
-	ClientIPLogParam    = "clientIP"
-	MethodLogParam      = "method"
-	BodyLogParam        = "body"
-	ErrorLogParam       = "error"
-	ResponseParam       = "response"
-	CorrelationLogParam = "correlationId"
-)
-
-// Log keys
-const (
-	StatusCodeKey = "statusCode"
-	LatencyKey    = "latency"
-	ClientIPKey   = "clientIP"
-	MethodKey     = "method"
-	PathKey       = "path"
-	ErrorKey      = "error"
-	ReqHeader     = "reqHeader"
-	ResHeader     = "resHeader"
-
-	HTTPConfigKey     = "httpConfig"
-	DatabaseConfigKey = "databaseConfig"
-)
-
 //db configuration keywords
 const (
 	PsqlDatabase    = "psqlDB"
@@ -137,6 +103,7 @@ const (
 
 	AccessTokenKey  = "ACCESS-TOKEN"
 	RefreshTokenKey = "REFRESH-TOKEN"
+	IsAdminTokenKey = "IS-ADMIN"
 )
 
 // Log Levels
@@ -153,6 +120,7 @@ const (
 //feed configuration keywords
 const (
 	JwtKey                   = "secretKey"
+	AdminJwtKey              = "adminSecretKey"
 	OTPEndpoint              = "otpUrl"
 	SessionExpiryTimeMinutes = "sessionExpiryTimeMinutes"
 	RefreshTokenExpiryHours  = "refreshTokenExpiryHours"
@@ -237,6 +205,7 @@ const (
 	GeneralManager = "GENERAL MANAGER"
 	SeniorManager  = "SENIOR MANAGER"
 	Manager        = "MANAGER"
+	TeamLeader     = "TL"
 	OutletManager  = "OUTLET MANAGER"
 	Promoter       = "PROMOTER"
 	CSR            = "CSR"
@@ -245,6 +214,7 @@ const (
 var (
 	ManagerMap = map[string]string{
 		OutletManager:  "outlet_manager",
+		TeamLeader:     "team_lead",
 		Manager:        "manager",
 		SeniorManager:  "senior_manager",
 		GeneralManager: "general_manager",
@@ -257,7 +227,7 @@ var (
 		Promoter:       "A",
 		CSR:            "A",
 		OutletManager:  "OM",
-		"TL":           "OM",
+		TeamLeader:     "TL",
 		Manager:        "M",
 		SeniorManager:  "SM",
 		GeneralManager: "GM",

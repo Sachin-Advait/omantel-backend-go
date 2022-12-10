@@ -22,7 +22,7 @@ func GetRegionSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 
 	isQuarterReport, quarter, month, year, err := validateRegionSalesAndTargetRequest(req)
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetRegionSalesAndTarget : validation failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetRegionSalesAndTarget : validation failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -40,7 +40,7 @@ func GetRegionSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 
 	response, errs := theProvider.GetRegionSalesAndTarget(ctx, req.ClientId, isQuarterReport, quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetRegionSalesAndTarget : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetRegionSalesAndTarget : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -55,7 +55,7 @@ func GetRegionSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetRegionSalesAndTarget : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetRegionSalesAndTarget : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

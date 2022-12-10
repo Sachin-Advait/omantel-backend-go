@@ -83,37 +83,37 @@ func InitFileLogger(config FileConfig) error {
 
 // CtxTrace is the file context logging for trace log
 func (f *Logger) CtxTrace(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, f.Trace())
+	return withContext(ctx, f.Trace())
 }
 
 // CtxDebug is the file context logging for debug log
 func (f *Logger) CtxDebug(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, f.Debug())
+	return withContext(ctx, f.Debug())
 }
 
 // CtxInfo is the file context logging for info log
 func (f *Logger) CtxInfo(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, f.Info())
+	return withContext(ctx, f.Info())
 }
 
 // CtxWarn is the file context logging for warn log
 func (f *Logger) CtxWarn(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, f.Warn())
+	return withContext(ctx, f.Warn())
 }
 
 // CtxError is the file context logging for error log
 func (f *Logger) CtxError(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, f.Error().Stack())
+	return withContext(ctx, f.Error())
 }
 
 // CtxPanic is the file context logging for panic log
 func (f *Logger) CtxPanic(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, f.Panic().Stack())
+	return withContext(ctx, f.Panic().Stack())
 }
 
 // CtxFatal is the file context logging for fatal log
 func (f *Logger) CtxFatal(ctx context.Context) *zerolog.Event {
-	return withIDAndPath(ctx, f.Fatal().Stack())
+	return withContext(ctx, f.Fatal().Stack())
 }
 
 func newRollingFile(config FileConfig) io.Writer {

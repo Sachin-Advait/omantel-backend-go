@@ -23,7 +23,7 @@ func FetchPlans(ctx *gin.Context) (int, interface{}) {
 
 	plans, ok := queryParam[constant.Plan]
 	if !ok || plans[0] == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY PLANS")).Stack().Msg("FetchPlans : invalid params")
+		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY PLANS")).Msg("FetchPlans : invalid params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -50,7 +50,7 @@ func FetchPlans(ctx *gin.Context) (int, interface{}) {
 
 	response, errs := theProvider.FetchPlans(ctx, plansReq)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("FetchPlans : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("FetchPlans : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -65,7 +65,7 @@ func FetchPlans(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchPlans : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchPlans : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

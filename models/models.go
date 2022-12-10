@@ -23,14 +23,18 @@ type GenerateOTP struct {
 }
 
 type VerifyOTP struct {
+	IsAdmin  bool   `json:"is_admin"`
 	ClientId string `json:"client_id"`
 	Otp      int    `json:"otp"`
 }
 
 type VerifyOTPResponse struct {
 	Error         string    `json:"error"`
+	IsAdmin       bool      `json:"is_admin"`
 	StaffName     string    `json:"staff_name"`
 	StaffPosition string    `json:"staff_position"`
+	StaffOutlet   string    `json:"staff_outlet"`
+	StaffRegion   string    `json:"staff_region"`
 	Authenticated bool      `json:"authenticated"`
 	AccessToken   string    `json:"access_token"`
 	RefreshToken  string    `json:"refresh_token"`
@@ -359,15 +363,15 @@ type ProductWiseSalesCountPerStaff struct {
 
 type ProductWiseSalesTargetPerStaff struct {
 	Name                    string
-	BaqatiSales             int
-	BaqatiTarget            float64
-	BaqatiAchievedPercent   float64
 	HBBSales                int
 	HBBTarget               float64
 	HBBAchievedPercent      float64
 	HayyakSales             int
 	HayyakTarget            float64
 	HayyakAchievedPercent   float64
+	BaqatiSales             int
+	BaqatiTarget            float64
+	BaqatiAchievedPercent   float64
 	UpgradeSales            int
 	UpgradeTarget           float64
 	UpgradeAchievedPercent  float64
@@ -404,11 +408,13 @@ type ProductPlans struct {
 
 type SaleTarget struct {
 	Mutex         sync.RWMutex
+	Year          int
 	SaleTargetMap map[string]map[string][12]*ProductGrpTarget
 }
 
 type PlanRate struct {
 	Mutex       sync.RWMutex
+	Year        int
 	PlanRateMap map[string]*ProductPlans
 }
 
@@ -424,11 +430,13 @@ type VOP struct {
 
 type ValueOfPoint struct {
 	Mutex  sync.RWMutex
+	Year   int
 	VopMap map[string]map[int]*VOP
 }
 
 type MaxPayout struct {
 	Mutex     sync.RWMutex
+	Year      int
 	Payoutmap map[string]float64
 }
 

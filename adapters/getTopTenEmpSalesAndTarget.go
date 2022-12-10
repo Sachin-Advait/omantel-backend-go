@@ -22,7 +22,7 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiv
 
 	isQuarterReport, quarter, month, year, err := validateTopTenSalesRequest(req)
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetTopTenEmpSalesAndTarget : validation failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetTopTenEmpSalesAndTarget : validation failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -40,7 +40,7 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiv
 
 	response, errs := theProvider.GetTopTenEmpSalesAndTarget(ctx, req.ClientId, isQuarterReport, quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetTopTenEmpSalesAndTarget : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetTopTenEmpSalesAndTarget : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -55,7 +55,7 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiv
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetTopTenEmpSalesAndTarget : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetTopTenEmpSalesAndTarget : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

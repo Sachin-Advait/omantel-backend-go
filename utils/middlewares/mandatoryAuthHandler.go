@@ -8,7 +8,6 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	jwthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/jwtHelper"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,21 +28,19 @@ func MandatoryAuthHandler() gin.HandlerFunc {
 		tokenLength := len(ctxHeader.Authorization)
 
 		if tokenLength < 7 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("MIDDLEWARE AUTH FAILED")).Stack().Msg("AuthMiddleware : incorrect access token length")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("MIDDLEWARE AUTH FAILED")).Msg("MandatoryAuthHandler : incorrect token length")
 			ctx.JSON(http.StatusBadRequest, APIResponse{
 				ErrorCode: errors.InvalidTokenCode,
 				Message:   errors.InvalidToken,
-				Data:      "MIDDLEWARE AUTH FAILED",
 			})
 			ctx.Abort()
 			return
 		}
 
-		authUser, status, err := jwthelper.ValidateAccessToken(ctxHeader.Authorization[7:], jwthelper.JwtSecretKey)
-
+		authUser, status, err := jwthelper.ValidateAdminAccessToken(ctxHeader.Authorization[7:], jwthelper.AdminJwtSecretKey)
 		if err != nil {
 			if status == constant.TokenExpired {
-				logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("AuthMiddleware : expired access token")
+				logger.FileLogger.CtxError(ctx).Err(err).Msg("MandatoryAuthHandler : expired token")
 				ctx.JSON(http.StatusUnauthorized, APIResponse{
 					ErrorCode: errors.TokenExpiredCode,
 					Message:   errors.TokenExpired,
@@ -52,7 +49,7 @@ func MandatoryAuthHandler() gin.HandlerFunc {
 				return
 			}
 
-			logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("AuthMiddleware : invalid access token")
+			logger.FileLogger.CtxError(ctx).Err(err).Msg("MandatoryAuthHandler : invalid token")
 			ctx.JSON(http.StatusBadRequest, APIResponse{
 				ErrorCode: errors.InvalidTokenCode,
 				Message:   errors.InvalidToken,
@@ -61,8 +58,8 @@ func MandatoryAuthHandler() gin.HandlerFunc {
 			return
 		}
 
-		if !objecthelper.IsStrictlyAlphNumeric(authUser) || (ctxHeader.XUserId != "" && authUser != ctxHeader.XUserId) {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("USERID AND AUTHTOKEN ARE CONTRADICTORY")).Stack().Msg("AuthMiddleware : userID contradicting with access token")
+		if ctxHeader.XUserId != "" && authUser != ctxHeader.XUserId {
+			logger.FileLogger.CtxError(ctx).Err(errors.New("USERID AND AUTHTOKEN ARE CONTRADICTORY")).Msg("MandatoryAuthHandler : userID contradicting with token")
 			ctx.JSON(http.StatusBadRequest, APIResponse{
 				ErrorCode: errors.ContradictoryReqParamCode,
 				Message:   errors.ContradictoryReqParam,
@@ -72,6 +69,7 @@ func MandatoryAuthHandler() gin.HandlerFunc {
 			return
 		}
 
+		ctxHeader.IsAdmin = true
 		ctxHeader.XUserId = authUser
 		ctxHeader.Authorization = ctxHeader.Authorization[7:]
 

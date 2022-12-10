@@ -21,7 +21,7 @@ func getSingleUserTargetChart(ctx *gin.Context) {
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if ctxHeader.Authorization == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Stack().Msg("getSingleUserTargetChart : unauthorized request")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("getSingleUserTargetChart : unauthorized request")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -41,7 +41,7 @@ func getSingleUserTargetChart(ctx *gin.Context) {
 	userReq := &models.SingleUserIncentiveRequest{}
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("getSingleUserTargetChart : error binding request body")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("getSingleUserTargetChart : error binding request body")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -58,7 +58,7 @@ func getSingleUserTargetChart(ctx *gin.Context) {
 	}
 
 	req, _ := objecthelper.MarshalJSON(userReq)
-	logger.FileLogger.CtxInfo(ctx).Interface(constant.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getSingleUserTargetChart : req body")
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getSingleUserTargetChart : req body")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

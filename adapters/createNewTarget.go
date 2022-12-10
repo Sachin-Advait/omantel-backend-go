@@ -22,7 +22,7 @@ func CreateNewTarget(ctx *gin.Context, req []*models.NewTargetRequest) (int, int
 
 	for _, eachRecord := range req {
 		if eachRecord.RegionCode == "" || eachRecord.OutletCode == "" || eachRecord.Month < 1 || eachRecord.Month > 12 || eachRecord.Baqati == 0 || eachRecord.HBB == 0 || eachRecord.Hayyak == 0 || eachRecord.Upgrade == 0 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid target param")).Stack().Msg("CreateNewTarget : invalid req params")
+			logger.FileLogger.CtxError(ctx).Err(errors.New("invalid target param")).Msg("CreateNewTarget : invalid req params")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -50,7 +50,7 @@ func CreateNewTarget(ctx *gin.Context, req []*models.NewTargetRequest) (int, int
 	case "2":
 		if failedResp != nil {
 			resp, _ := json.Marshal(failedResp)
-			logger.FileLogger.CtxError(ctx).Str(constant.ResponseParam, string(resp)).Stack().Msg("CreateNewTarget V2: provider failed")
+			logger.FileLogger.CtxError(ctx).Str(logger.ResponseParam, string(resp)).Msg("CreateNewTarget V2: provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -64,7 +64,7 @@ func CreateNewTarget(ctx *gin.Context, req []*models.NewTargetRequest) (int, int
 		}
 	default:
 		if errs != nil {
-			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("CreateNewTarget : provider failed")
+			logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("CreateNewTarget : provider failed")
 			logger.LogChan <- &logger.Logging{
 				UserID:     ctxHeader.XUserId,
 				URL:        ctx.Request.URL.String(),
@@ -85,7 +85,7 @@ func CreateNewTarget(ctx *gin.Context, req []*models.NewTargetRequest) (int, int
 		Data:   errors.SuccessInfoMessage,
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewTarget : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("CreateNewTarget : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

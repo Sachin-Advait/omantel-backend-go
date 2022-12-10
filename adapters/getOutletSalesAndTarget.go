@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -22,7 +23,7 @@ func GetOutletSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 
 	isQuarterReport, quarter, month, year, err := validateOutletSalesAndTargetRequest(req)
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetOutletSalesAndTarget : validation failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetOutletSalesAndTarget : validation failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -40,7 +41,7 @@ func GetOutletSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 
 	response, errs := theProvider.GetOutletSalesAndTarget(ctx, req.ClientId, isQuarterReport, quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetOutletSalesAndTarget : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetOutletSalesAndTarget : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -55,7 +56,8 @@ func GetOutletSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetOutletSalesAndTarget : success")
+	responseBytes, _ := json.Marshal(response)
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, string(responseBytes)).Msg("GetOutletSalesAndTarget : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),

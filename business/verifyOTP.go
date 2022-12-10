@@ -11,28 +11,14 @@ import (
 	jwthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/jwtHelper"
 )
 
-func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID string, otp int) (*models.VerifyOTPResponse, *errors.Error) {
+func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*models.VerifyOTPResponse, *errors.Error) {
 
-	_, otpModel, err := impl.PsqlDb.FetchOTPValidity(clientID)
+	otpModel, err := impl.PsqlDb.FetchOTPValidity(req.ClientId)
 	if err != nil {
 		return nil, err
 	}
 
 	if otpModel.StaffID == "" {
-		name, _, err := impl.PsqlDb.FetchUserName(clientID)
-		if err != nil {
-			return nil, err
-		}
-
-		if name == "" {
-			return nil, &errors.Error{
-				StatusCode: http.StatusBadRequest,
-				Code:       errors.UserNotFoundCode,
-				Message:    errors.UserIDInvalid,
-				Details:    "userId is invalid",
-			}
-		}
-
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.OTPInvalidCode,
@@ -40,25 +26,6 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID string, otp int)
 			Details:    "otp not found",
 		}
 	}
-
-	// if !otpModel.IsActiveUser {
-	// 	return nil, &errors.Error{
-	// 		StatusCode: http.StatusForbidden,
-	// 		Code:       errors.UserBlockedCode,
-	// 		Message:    errors.UserBlockedError,
-	// 		Details:    "user is blocked",
-	// 	}
-	// }
-
-	//TODO: reset loginAttemptCount
-	// if otpModel.LoginAttemptCount > constant.MaxAllowedLoginAttempt {
-	// 	return nil, &errors.Error{
-	// 		StatusCode: http.StatusForbidden,
-	// 		Code:       errors.RetryLoginLimitReachedCode,
-	// 		Message:    errors.RetryLoginLimitReached,
-	// 		Details:    "retry login limit reached",
-	// 	}
-	// }
 
 	//otp generated more than 30 mins ago
 	if time.Since(otpModel.OtpCreateTime).Minutes() >= constant.OtpTimeoutInMin {
@@ -91,7 +58,7 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID string, otp int)
 	}
 
 	//otp unmatched
-	if otp != otpModel.OTP {
+	if req.Otp != otpModel.OTP {
 		otpModel.OTPVerifyFailedCount++
 		otpModel.IsActiveUser = false
 		otpModel.UpdateReason = "incorrect otp"
@@ -118,6 +85,11 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID string, otp int)
 	otpModel.UpdateReason = "otp login success"
 	otpModel.UpdatedTime = time.Now()
 
+	user, err := impl.PsqlDb.FetchUserBasicDetails(req.ClientId)
+	if err != nil {
+		return nil, err
+	}
+
 	//store OTP in db
 	if err := impl.PsqlDb.InsertStaffOTP(true, otpModel); err != nil {
 		return nil, err
@@ -126,7 +98,18 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID string, otp int)
 	accessTokenExpiry := impl.Config.SessionExpiryTime
 	refreshTokenExpiry := impl.Config.RefreshTokenExpiryTime
 
-	accessToken, _, jwtErr := jwthelper.CreateAccessToken(clientID, accessTokenExpiry, jwthelper.JwtSecretKey)
+	var (
+		jwtErr       error
+		accessToken  string
+		refreshToken string
+	)
+
+	if user.IsAdmin {
+		accessToken, _, jwtErr = jwthelper.CreateAccessToken(req.ClientId, accessTokenExpiry, jwthelper.AdminJwtSecretKey, true)
+	} else {
+		accessToken, _, jwtErr = jwthelper.CreateAccessToken(req.ClientId, accessTokenExpiry, jwthelper.JwtSecretKey, false)
+	}
+
 	if jwtErr != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -136,7 +119,12 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID string, otp int)
 		}
 	}
 
-	refreshToken, _, jwtErr := jwthelper.CreateRefreshToken(clientID, refreshTokenExpiry, jwthelper.JwtSecretKey)
+	if user.IsAdmin {
+		refreshToken, _, jwtErr = jwthelper.CreateRefreshToken(req.ClientId, refreshTokenExpiry, jwthelper.AdminJwtSecretKey, true)
+	} else {
+		refreshToken, _, jwtErr = jwthelper.CreateRefreshToken(req.ClientId, refreshTokenExpiry, jwthelper.JwtSecretKey, false)
+	}
+
 	if jwtErr != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -148,8 +136,11 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, clientID string, otp int)
 
 	resp := &models.VerifyOTPResponse{
 		Authenticated: true,
-		StaffName:     otpModel.StaffName,
-		StaffPosition: constant.EmployeePositionMap[otpModel.StaffPosition],
+		IsAdmin:       user.IsAdmin,
+		StaffName:     user.Name,
+		StaffPosition: constant.EmployeePositionMap[user.Position],
+		StaffOutlet:   user.Outlet,
+		StaffRegion:   user.Region,
 		AccessToken:   accessToken,
 		RefreshToken:  refreshToken,
 		LastLoginTime: time.Now(),

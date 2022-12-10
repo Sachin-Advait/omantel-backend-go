@@ -3,6 +3,7 @@ package business
 import (
 	"net/http"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
@@ -15,7 +16,25 @@ func (impl *IncentiveImpl) RenewAccessToken(ctx *gin.Context) (string, *errors.E
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	authUserID, status, err := jwthelper.ValidateRefreshToken(ctxHeader.SuperAuthorization, jwthelper.JwtSecretKey)
+	var (
+		isAdmin    bool
+		authUserID string
+		status     int
+		err        error
+	)
+
+	authUserID, status, err = jwthelper.ValidateRefreshToken(ctxHeader.SuperAuthorization, jwthelper.JwtSecretKey)
+	if err != nil {
+		invalidErr, ok := err.(*jwt.ValidationError)
+		if ok && invalidErr.Errors == jwt.ValidationErrorSignatureInvalid {
+			isAdmin = true
+		}
+	}
+
+	if isAdmin {
+		authUserID, status, err = jwthelper.ValidateAdminRefreshToken(ctxHeader.SuperAuthorization, jwthelper.AdminJwtSecretKey)
+	}
+
 	if err != nil {
 		if status == constant.TokenExpired {
 			return "", &errors.Error{
@@ -43,7 +62,14 @@ func (impl *IncentiveImpl) RenewAccessToken(ctx *gin.Context) (string, *errors.E
 		}
 	}
 
-	accessToken, _, err := jwthelper.RefreshAccessToken(ctxHeader.SuperAuthorization, impl.Config.SessionExpiryTime, jwthelper.JwtSecretKey)
+	var accessToken string
+
+	if isAdmin {
+		accessToken, _, err = jwthelper.RefreshAccessToken(ctxHeader.SuperAuthorization, impl.Config.SessionExpiryTime, jwthelper.AdminJwtSecretKey, true)
+	} else {
+		accessToken, _, err = jwthelper.RefreshAccessToken(ctxHeader.SuperAuthorization, impl.Config.SessionExpiryTime, jwthelper.JwtSecretKey, false)
+	}
+
 	if err != nil {
 		return "", &errors.Error{
 			StatusCode: http.StatusInternalServerError,

@@ -22,7 +22,7 @@ func GetRegionTotalSalesCount(ctx *gin.Context, req *models.SingleUserIncentiveR
 
 	isQuarterReport, quarter, month, year, err := validateRegionTotalSalesRequest(req)
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Stack().Msg("GetRegionTotalSalesCount : validation failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetRegionTotalSalesCount : validation failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -40,7 +40,7 @@ func GetRegionTotalSalesCount(ctx *gin.Context, req *models.SingleUserIncentiveR
 
 	response, errs := theProvider.GetRegionTotalSalesCount(ctx, req.ClientId, isQuarterReport, quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Stack().Msg("GetRegionTotalSalesCount : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetRegionTotalSalesCount : provider failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
@@ -55,7 +55,7 @@ func GetRegionTotalSalesCount(ctx *gin.Context, req *models.SingleUserIncentiveR
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(constant.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetRegionTotalSalesCount : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetRegionTotalSalesCount : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),
