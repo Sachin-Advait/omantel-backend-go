@@ -36,7 +36,8 @@ type UserReportDB struct {
 	HayyakSaleCountPerPlanArray  string
 	BaqatiSaleCountPerPlanArray  string
 	UpgradeSaleCountPerPlanArray string
-	CreateAt                     time.Time
+	CreatedAt                    time.Time
+	ModifiedAt                   time.Time
 }
 
 type OutletReportDB struct {
@@ -53,6 +54,7 @@ type OutletReportDB struct {
 	UpgradeSalesCount  int
 	UpgradeTargetCount int
 	CreatedAt          time.Time
+	ModifiedAt         time.Time
 }
 
 type RegionReportDB struct {
@@ -66,6 +68,7 @@ type RegionReportDB struct {
 	UpgradeSalesCount  int
 	UpgradeTargetCount int
 	CreatedAt          time.Time
+	ModifiedAt         time.Time
 }
 
 type UserBasicDetailsDB struct {

@@ -143,7 +143,7 @@ func createNewOutletViaFile(ctx *gin.Context) {
 
 	isFirstRow := true
 
-	userRequests := make([]*models.NewOutletRequest, 0)
+	userRequests := make([]*models.CreateOutletRequest, 0)
 
 	for rows.Next() {
 
@@ -224,7 +224,7 @@ func createNewOutletViaFile(ctx *gin.Context) {
 			return
 		}
 
-		userReq := &models.NewOutletRequest{}
+		userReq := &models.CreateOutletRequest{}
 
 		//LOOP:
 		for i, colCell := range row {

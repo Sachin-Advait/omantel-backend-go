@@ -27,6 +27,7 @@ func getOutletSalesAndTarget(ctx *gin.Context) {
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "unauthorized request",
+			Code:       http.StatusBadRequest,
 			Text:       "auth token not found",
 			CreateTime: time.Now().Local(),
 		}
@@ -46,7 +47,8 @@ func getOutletSalesAndTarget(ctx *gin.Context) {
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
-			Msg:        "error binding request body",
+			Msg:        "request binding",
+			Code:       http.StatusBadRequest,
 			Text:       err.Error(),
 			CreateTime: time.Now().Local(),
 		}
@@ -62,7 +64,7 @@ func getOutletSalesAndTarget(ctx *gin.Context) {
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),
-		Type:       "info",
+		Type:       "trace",
 		Msg:        "request body",
 		Text:       fmt.Sprintf("%+v", string(req)),
 		CreateTime: time.Now().Local(),

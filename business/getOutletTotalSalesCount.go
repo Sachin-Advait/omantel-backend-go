@@ -13,7 +13,7 @@ import (
 
 func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
 
-	user, err := impl.PsqlDb.FetchUserBasicDetails(userID)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
@@ -22,8 +22,8 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, userID str
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
-			Message:    "INCORRECT USER POSITION",
-			Details:    "incorrect position",
+			Message:    user.UserId + ": INCORRECT MANAGER POSITION - " + user.Position,
+			Details:    "incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
 		}
 	}
 
@@ -45,12 +45,21 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, userID str
 	if user.Position == constant.OutletManager || user.Position == constant.TeamLeader {
 
 		outletReport, err := impl.PsqlDb.FetchOutletReport(user.Outlet, isQuarterReport, quarter, month, year)
-		if needUpdate && (err != nil || (err == nil && outletReport.CreatedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-			outletReport, err = impl.updateOutletReport(ctx, user.Region, user.Outlet, isQuarterReport, quarter, month, year)
-		}
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && outletReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-		if err != nil {
-			return nil, err
+				outletResp, err := impl.updateOutletReport(ctx, user.Region, user.Outlet, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				outletReport = outletResp
+			}
 		}
 
 		eachOutletResp := &models.ProductWiseSalesCountPerOutlet{
@@ -72,7 +81,7 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, userID str
 	}
 
 	// for non outlet and tl manager
-	allDistinctOM, err := impl.PsqlDb.FetchAllOMReportingToGivenManager(user.Position, userID)
+	allDistinctOM, err := impl.PsqlDb.FetchAllOMReportingToGivenManager(user.Position, userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
@@ -85,12 +94,21 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, userID str
 	for _, eachOM := range allDistinctOM {
 
 		outletReport, err := impl.PsqlDb.FetchOutletReport(eachOM.Outlet, isQuarterReport, quarter, month, year)
-		if needUpdate && (err != nil || (err == nil && outletReport.CreatedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-			outletReport, err = impl.updateOutletReport(ctx, eachOM.Region, eachOM.Outlet, isQuarterReport, quarter, month, year)
-		}
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && outletReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-		if err != nil {
-			return nil, err
+				outletResp, err := impl.updateOutletReport(ctx, eachOM.Region, eachOM.Outlet, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				outletReport = outletResp
+			}
 		}
 
 		eachOutletResp := &models.ProductWiseSalesCountPerOutlet{

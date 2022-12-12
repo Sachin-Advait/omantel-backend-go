@@ -40,7 +40,7 @@ func FetchRegions(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	regionsReq := &models.DeleteRegionRequest{}
+	regionsReq := &models.RegionRequest{}
 
 	if strings.ToLower(regions[0]) != constant.All {
 		for _, v := range regions {

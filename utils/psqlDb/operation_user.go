@@ -12,7 +12,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func (dbConn *DBImplementation) FetchUserName(userID string) (string, *errors.Error) {
+func (dbConn *DBImplementation) FetchUserName(userID string, quarter, year int) (string, *errors.Error) {
 
 	logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserName start")
 	defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserName done")
@@ -22,7 +22,8 @@ func (dbConn *DBImplementation) FetchUserName(userID string) (string, *errors.Er
 
 	var name string
 
-	err := dbConn.Operation.QueryRowContext(ctx, "select name from user_master_table where emp_id=$1", userID).Scan(&name)
+	err := dbConn.Operation.QueryRowContext(ctx, "select name from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3", userID, quarter, year).
+		Scan(&name)
 	if err == nil {
 		return name, nil
 	}
@@ -45,7 +46,7 @@ func (dbConn *DBImplementation) FetchUserName(userID string) (string, *errors.Er
 }
 
 // FetchUserBasicDetails - userID, name, position, region, outlet, mobile, isAdmin
-func (dbConn *DBImplementation) FetchUserBasicDetails(userID string) (*models.UserBasicDetailsDB, *errors.Error) {
+func (dbConn *DBImplementation) FetchUserBasicDetails(userID string, quarter, year int) (*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserBasicDetails start")
 	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserBasicDetails done")
@@ -55,8 +56,8 @@ func (dbConn *DBImplementation) FetchUserBasicDetails(userID string) (*models.Us
 
 	user := &models.UserBasicDetailsDB{}
 
-	err := dbConn.Operation.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin from user_master_table where emp_id=$1", userID).
-		Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin)
+	err := dbConn.Operation.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
+		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin)
 	if err == nil {
 		return user, nil
 	}
@@ -79,7 +80,7 @@ func (dbConn *DBImplementation) FetchUserBasicDetails(userID string) (*models.Us
 }
 
 //TODO: FetchUserDetails - for basic user info and outlet-manger of agent
-func (dbConn *DBImplementation) FetchUserDetails(userID string) (*models.UserBasicDetailsDB, *errors.Error) {
+func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year int) (*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchAgentUserDetails start")
 	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchAgentUserDetails done")
@@ -92,8 +93,8 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string) (*models.UserBas
 	}
 
 	err := dbConn.Operation.QueryRowContext(ctx,
-		"select a.emp_id, a.name, a.usr_position, a.mobile_number, a.region, a.outlet, a.isAdmin, b.outlet_manager from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id where a.emp_id=$1",
-		userID).Scan(&user.UserId, &user.Name, &user.Position, &user.MobileNumber, &user.Region, &user.Outlet, &user.IsAdmin, &user.ManagerId)
+		"select a.emp_id, a.name, a.usr_position, a.mobile_number, a.region, a.outlet, a.isAdmin, b.outlet_manager from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.emp_id=$1 and a.quarter=$2 and a.year=$3",
+		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.MobileNumber, &user.Region, &user.Outlet, &user.IsAdmin, &user.ManagerId)
 	if err != nil {
 		if strings.Contains(err.Error(), "no rows") {
 			return nil, &errors.Error{
@@ -208,7 +209,7 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 }
 
 // FetchTotalNonManagerialEmployees - all non-managerial employees count of a given region and outlet
-func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string) (int, *errors.Error) {
+func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet string, quarter, year int) (int, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
 	// defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
@@ -219,8 +220,8 @@ func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet 
 	var count int
 
 	//usr_position=='BACK OFFICE'
-	err := dbConn.Operation.QueryRowContext(ctx, "select count(*) from user_master_table where region=$1 and outlet=$2 and (usr_position='PROMOTER' OR usr_position='CSR')",
-		region, outlet).Scan(&count)
+	err := dbConn.Operation.QueryRowContext(ctx, "select count(*) from user_master_table where deleted IS NULL and isactive=true and region=$1 and outlet=$2 and (usr_position='PROMOTER' OR usr_position='CSR') and quarter=$3 and year=$4",
+		region, outlet, quarter, year).Scan(&count)
 	if err != nil {
 		return -1, &errors.Error{
 			StatusCode: http.StatusInternalServerError,

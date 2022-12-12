@@ -65,9 +65,13 @@ type Response struct {
 
 func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, userID string) (map[string]string, *errors.Error) {
 
+	currTime := time.Now()
+	currYear, currMonth, _ := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
 	var isUpdate = true
 
-	user, err := impl.PsqlDb.FetchUserBasicDetails(userID)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, currQuarter, currYear)
 	if err != nil {
 		return nil, err
 	}

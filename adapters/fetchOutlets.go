@@ -40,7 +40,7 @@ func FetchOutlets(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	outletsReq := &models.DeleteOutletRequest{}
+	outletsReq := &models.OutletRequest{}
 
 	if strings.ToLower(outlets[0]) != constant.All {
 		for _, v := range outlets {

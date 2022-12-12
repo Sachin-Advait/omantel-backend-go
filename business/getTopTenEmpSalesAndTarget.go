@@ -15,7 +15,7 @@ import (
 
 func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error) {
 
-	user, err := impl.PsqlDb.FetchUserBasicDetails(userID)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
@@ -24,8 +24,8 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
-			Message:    "INCORRECT USER POSITION",
-			Details:    "incorrect position",
+			Message:    user.UserId + ": INCORRECT MANAGER POSITION - " + user.Position,
+			Details:    "incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
 		}
 	}
 
@@ -46,7 +46,7 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 	// for oulletManager and teamLeader
 	if user.Position == constant.OutletManager || user.Position == constant.TeamLeader {
 
-		agentList, err := impl.PsqlDb.FetchAllAgentsUserOfOM(userID)
+		agentList, err := impl.PsqlDb.FetchAllAgentsUserOfOM(userID, quarter, year)
 		if err != nil {
 			return nil, err
 		}
@@ -58,15 +58,24 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 		for _, agent := range agentList {
 
 			agentReport, err := impl.PsqlDb.FetchAgentUserReport(agent.UserId, isQuarterReport, quarter, month, year)
-			if needUpdate && (err != nil || (err == nil && agentReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-				_, agentReport, err = impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
+			if !needUpdate {
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				if err != nil || (err == nil && agentReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+
+					_, resp, err := impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
+					if err != nil {
+						return nil, err
+					}
+
+					//TODO: test this out for struct assignment
+					agentReport = resp
+				}
 			}
 
-			if err != nil {
-				return nil, err
-			}
-
-			agentName, err := impl.PsqlDb.FetchUserName(agentReport.UserId)
+			agentName, err := impl.PsqlDb.FetchUserName(agentReport.UserId, quarter, year)
 			if err != nil {
 				return nil, err
 			}
@@ -89,7 +98,10 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 
 			agentProductWiseRprt.TotalSales = agentProductWiseRprt.HBBSales + agentProductWiseRprt.HayyakSales + agentProductWiseRprt.BaqatiSales + agentProductWiseRprt.UpgradeSales
 			agentProductWiseRprt.TotalTarget = agentProductWiseRprt.HBBTarget + agentProductWiseRprt.HayyakTarget + agentProductWiseRprt.BaqatiTarget + agentProductWiseRprt.UpgradeTarget
-			agentProductWiseRprt.TotalAchievedPercentage = math.Round(float64(agentProductWiseRprt.TotalSales*100/int(agentProductWiseRprt.TotalTarget))*100) / 100
+
+			if agentProductWiseRprt.TotalTarget > 0 {
+				agentProductWiseRprt.TotalAchievedPercentage = math.Round(float64(agentProductWiseRprt.TotalSales*100/int(agentProductWiseRprt.TotalTarget))*100) / 100
+			}
 
 			resp = append(resp, agentProductWiseRprt)
 
@@ -105,8 +117,9 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 		return resp, nil
 	}
 
-	// for all other non-outlet managers
-	allDistinctMngr, err := impl.PsqlDb.FetchAllMngrReportingToManagerRole(user.Position, userID)
+	/////// for all other non-outlet managers
+
+	allDistinctMngr, err := impl.PsqlDb.FetchAllMngrReportingToManagerRole(user.Position, userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
@@ -119,19 +132,24 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 	for _, eachMngr := range allDistinctMngr {
 
 		mngrReport, err := impl.PsqlDb.FetchManagerReport(eachMngr.UserId, isQuarterReport, quarter, month, year)
-		if needUpdate && (err != nil || (err == nil && mngrReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-			mngrReport, err = impl.updateManagerReport(ctx, eachMngr, isQuarterReport, quarter, month, year)
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && mngrReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+
+				resp, err := impl.updateManagerReport(ctx, eachMngr, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				mngrReport = resp
+			}
 		}
 
-		if err != nil {
-			return nil, err
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		mngrName, err := impl.PsqlDb.FetchUserName(mngrReport.UserId)
+		mngrName, err := impl.PsqlDb.FetchUserName(mngrReport.UserId, quarter, year)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +172,10 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 
 		mngrProductWiseRprt.TotalSales = mngrProductWiseRprt.HBBSales + mngrProductWiseRprt.HayyakSales + mngrProductWiseRprt.BaqatiSales + mngrProductWiseRprt.UpgradeSales
 		mngrProductWiseRprt.TotalTarget = mngrProductWiseRprt.HBBTarget + mngrProductWiseRprt.HayyakTarget + mngrProductWiseRprt.BaqatiTarget + mngrProductWiseRprt.UpgradeTarget
-		mngrProductWiseRprt.TotalAchievedPercentage = math.Round(float64(mngrProductWiseRprt.TotalSales*100/int(mngrProductWiseRprt.TotalTarget))*100) / 100
+
+		if mngrProductWiseRprt.TotalTarget > 0 {
+			mngrProductWiseRprt.TotalAchievedPercentage = math.Round(float64(mngrProductWiseRprt.TotalSales*100/int(mngrProductWiseRprt.TotalTarget))*100) / 100
+		}
 
 		resp = append(resp, mngrProductWiseRprt)
 

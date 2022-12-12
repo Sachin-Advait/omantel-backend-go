@@ -2,13 +2,18 @@ package business
 
 import (
 	"errors"
+	"time"
 
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
 func (impl *IncentiveImpl) LoadPlansFromDB(printLog bool) error {
 
-	if err := impl.PsqlDb.FetchPlans(); err != nil {
+	currTime := time.Now()
+	currYear, currMonth, _ := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	if err := impl.PsqlDb.FetchPlans(currQuarter, currYear); err != nil {
 		if printLog {
 			logger.FileLogger.Error().Err(errors.New(err.Details.(string))).Msg("LoadPlansFromDB : productPlans fetching failed")
 		}
@@ -24,7 +29,11 @@ func (impl *IncentiveImpl) LoadPlansFromDB(printLog bool) error {
 
 func (impl *IncentiveImpl) LoadTargetFromDB(printLog bool) error {
 
-	if err := impl.PsqlDb.FetchSaleTarget(); err != nil {
+	currTime := time.Now()
+	currYear, currMonth, _ := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	if err := impl.PsqlDb.FetchSaleTarget(currQuarter, currYear); err != nil {
 		if printLog {
 			logger.FileLogger.Error().Err(errors.New(err.Details.(string))).Msg("LoadTargetFromDB : saleTarget fetching failed")
 		}
@@ -40,7 +49,11 @@ func (impl *IncentiveImpl) LoadTargetFromDB(printLog bool) error {
 
 func (impl *IncentiveImpl) LoadScaleOrderFromDB(printLog bool) error {
 
-	if err := impl.PsqlDb.FetchValueOfPoint(); err != nil {
+	currTime := time.Now()
+	currYear, currMonth, _ := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	if err := impl.PsqlDb.FetchValueOfPoint(currQuarter, currYear); err != nil {
 		if printLog {
 			logger.FileLogger.Error().Err(errors.New(err.Details.(string))).Msg("LoadScaleOrderFromDB : vop fetching failed")
 		}
@@ -56,7 +69,11 @@ func (impl *IncentiveImpl) LoadScaleOrderFromDB(printLog bool) error {
 
 func (impl *IncentiveImpl) LoadMaxPayFromDB(printLog bool) error {
 
-	if err := impl.PsqlDb.FetchMaxPayout(); err != nil {
+	currTime := time.Now()
+	currYear, currMonth, _ := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	if err := impl.PsqlDb.FetchMaxPayout(currQuarter, currYear); err != nil {
 		if printLog {
 			logger.FileLogger.Error().Err(errors.New(err.Details.(string))).Msg("LoadMaxPayFromDB : maxPayout fetching failed")
 		}

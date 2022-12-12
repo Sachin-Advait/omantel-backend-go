@@ -143,7 +143,7 @@ func createNewPlanViaFile(ctx *gin.Context) {
 
 	isFirstRow := true
 
-	userRequests := make([]*models.NewPlanRequest, 0)
+	userRequests := make([]*models.CreatePlanRequest, 0)
 
 	for rows.Next() {
 
@@ -224,7 +224,7 @@ func createNewPlanViaFile(ctx *gin.Context) {
 			return
 		}
 
-		userReq := &models.NewPlanRequest{}
+		userReq := &models.CreatePlanRequest{}
 
 		//LOOP:
 		for i, colCell := range row {

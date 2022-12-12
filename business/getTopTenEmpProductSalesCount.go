@@ -14,7 +14,7 @@ import (
 
 func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerStaff, *errors.Error) {
 
-	user, err := impl.PsqlDb.FetchUserBasicDetails(userID)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
@@ -23,8 +23,8 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userI
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
-			Message:    "INCORRECT USER POSITION",
-			Details:    "incorrect position",
+			Message:    user.UserId + ": INCORRECT MANAGER POSITION - " + user.Position,
+			Details:    "incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
 		}
 	}
 
@@ -45,7 +45,7 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userI
 	// for oulletManager and teamLeader
 	if user.Position == constant.OutletManager || user.Position == constant.TeamLeader {
 
-		agentList, err := impl.PsqlDb.FetchAllAgentsUserOfOM(userID)
+		agentList, err := impl.PsqlDb.FetchAllAgentsUserOfOM(userID, quarter, year)
 		if err != nil {
 			return nil, err
 		}
@@ -57,15 +57,24 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userI
 		for _, agent := range agentList {
 
 			agentReport, err := impl.PsqlDb.FetchAgentUserReport(agent.UserId, isQuarterReport, quarter, month, year)
-			if needUpdate && (err != nil || (err == nil && agentReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-				_, agentReport, err = impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
+			if !needUpdate {
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				if err != nil || (err == nil && agentReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+
+					_, resp, err := impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
+					if err != nil {
+						return nil, err
+					}
+
+					//TODO: test this out for struct assignment
+					agentReport = resp
+				}
 			}
 
-			if err != nil {
-				return nil, err
-			}
-
-			agentName, err := impl.PsqlDb.FetchUserName(agentReport.UserId)
+			agentName, err := impl.PsqlDb.FetchUserName(agentReport.UserId, quarter, year)
 			if err != nil {
 				return nil, err
 			}
@@ -94,8 +103,9 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userI
 		return resp, nil
 	}
 
-	// for all other non-outlet managers
-	allDistinctMngr, err := impl.PsqlDb.FetchAllMngrReportingToManagerRole(user.Position, userID)
+	/////// for all other non-outlet managers
+
+	allDistinctMngr, err := impl.PsqlDb.FetchAllMngrReportingToManagerRole(user.Position, userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
@@ -108,19 +118,24 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userI
 	for _, eachMngr := range allDistinctMngr {
 
 		mngrReport, err := impl.PsqlDb.FetchManagerReport(eachMngr.UserId, isQuarterReport, quarter, month, year)
-		if needUpdate && (err != nil || (err == nil && mngrReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-			mngrReport, err = impl.updateManagerReport(ctx, eachMngr, isQuarterReport, quarter, month, year)
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && mngrReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+
+				resp, err := impl.updateManagerReport(ctx, eachMngr, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				mngrReport = resp
+			}
 		}
 
-		if err != nil {
-			return nil, err
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		mngrName, err := impl.PsqlDb.FetchUserName(mngrReport.UserId)
+		mngrName, err := impl.PsqlDb.FetchUserName(mngrReport.UserId, quarter, year)
 		if err != nil {
 			return nil, err
 		}

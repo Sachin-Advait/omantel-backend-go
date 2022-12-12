@@ -27,6 +27,7 @@ func deletePlans(ctx *gin.Context) {
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "unauthorized request",
+			Code:       http.StatusBadRequest,
 			Text:       "auth token not found",
 			CreateTime: time.Now().Local(),
 		}
@@ -57,15 +58,16 @@ func deletePlans(ctx *gin.Context) {
 		return
 	}
 
-	userReq := &models.DeletePlanRequest{}
+	userReq := &models.PlanRequest{}
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("deletePlans : error binding request body")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "error binding request body",
+			Type:       "trace",
+			Msg:        "request binding",
+			Code:       http.StatusBadRequest,
 			Text:       err.Error(),
 			CreateTime: time.Now().Local(),
 		}

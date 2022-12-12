@@ -265,3 +265,20 @@ CREATE TABLE IF NOT EXISTS public.outlet_reports_table
     created timestamp with time zone NOT NULL,
     PRIMARY KEY (outlet, month, quarter, year)
 );
+
+
+
+
+SELECT distinct usr_position FROM public.user_master_table;
+
+select * from plans_table where plan_name='FIXED BUSINESS BROADBAND - 200MBPS - 3 YEARS';
+
+select * from sale_transaction_table where emp_id='7632644';
+select prev_product, curr_product, quantity, product_group, category, subcategory, sales_date, inactive_date from sale_transaction_table where 
+emp_id='7632644' and region='BATINAH NORTH' and outlet='SOHAR OUTLET' and quarter=3 and EXTRACT('year' from sales_date)=2022
+
+select a.emp_id, a.name, a.usr_position, a.mobile_number, a.region, a.outlet, a.isAdmin, b.outlet_manager from user_master_table a INNER JOIN user_hierarchy_table b 
+on a.emp_id=b.emp_id where a.emp_id='7632644';
+
+select outlet, region, latitude, longitude, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, 
+upgrade_target, created from outlet_reports_table where outlet='BATINAH NORTH' and month=0 and quarter=3 and year=2022;

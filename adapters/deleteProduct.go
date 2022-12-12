@@ -14,7 +14,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func DeleteProducts(ctx *gin.Context, req *models.DeleteProductRequest) (int, interface{}) {
+func DeleteProducts(ctx *gin.Context, req *models.ProductRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)

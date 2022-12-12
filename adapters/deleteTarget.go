@@ -3,7 +3,6 @@ package adapters
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,12 +13,13 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func DeleteTargets(ctx *gin.Context, req []*models.NewTargetRequest) (int, interface{}) {
+func DeleteTargets(ctx *gin.Context, req *models.TargetRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if req == nil || len(req) == 0 {
+	if req == nil || (req.Month == 0 && req.Quarter == 0) || req.Year == 0 || (req.Month != 0 && !(req.Month >= 1 && req.Month <= 12)) ||
+		(req.Quarter != 0 && !(req.Quarter >= 1 && req.Quarter <= 4)) {
 		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Msg("DeleteTargets : invalid req params")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
@@ -36,31 +36,7 @@ func DeleteTargets(ctx *gin.Context, req []*models.NewTargetRequest) (int, inter
 		}
 	}
 
-	targetReq := &models.DeleteTargetRequest{}
-
-	for _, v := range req {
-
-		if v.RegionCode == "" || v.OutletCode == "" || v.Month < 1 || v.Month > 12 {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Msg("DeleteTargets : invalid req params")
-			logger.LogChan <- &logger.Logging{
-				UserID:     ctxHeader.XUserId,
-				URL:        ctx.Request.URL.String(),
-				Type:       "error",
-				Msg:        "invalid req params",
-				Text:       "blank ids",
-				CreateTime: time.Now().Local(),
-			}
-
-			return http.StatusBadRequest, &models.APIFailureResponse{
-				Error:   errors.InvalidReqParameters,
-				Message: "Invalid target param",
-			}
-		}
-
-		targetReq.TargetCodes = append(targetReq.TargetCodes, strings.ToUpper(v.RegionCode)+strings.ToUpper(v.OutletCode)+fmt.Sprintf("%d", v.Month))
-	}
-
-	errs := theProvider.DeleteTargets(ctx, targetReq)
+	errs := theProvider.DeleteTargets(ctx, req)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("DeleteTargets : provider failed")
 		logger.LogChan <- &logger.Logging{

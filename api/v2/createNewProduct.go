@@ -143,7 +143,7 @@ func createNewProductViaFile(ctx *gin.Context) {
 
 	isFirstRow := true
 
-	userRequests := make([]*models.NewProductRequest, 0)
+	userRequests := make([]*models.CreateProductRequest, 0)
 
 	for rows.Next() {
 
@@ -220,7 +220,7 @@ func createNewProductViaFile(ctx *gin.Context) {
 			return
 		}
 
-		userReq := &models.NewProductRequest{}
+		userReq := &models.CreateProductRequest{}
 
 		//LOOP:
 		for i, colCell := range row {

@@ -2,11 +2,20 @@ package business
 
 import (
 	"github.com/gin-gonic/gin"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) DeleteTargets(ctx *gin.Context, req *models.DeleteTargetRequest) *errors.Error {
+func (impl *IncentiveImpl) DeleteTargets(ctx *gin.Context, req *models.TargetRequest) *errors.Error {
 
-	return impl.PsqlDb.DeleteTargetRecord(req.TargetCodes)
+	cRH, _ := ctx.Get(constant.HeaderInContext)
+	ctxHeader, _ := (cRH).(context.ContextHeader)
+
+	if req.Month != 0 {
+		req.Quarter = impl.getQuarterFromMonth(req.Month)
+	}
+
+	return impl.PsqlDb.DeleteTargetRecord(ctxHeader.XUserId, req.TargetCodes, req.Quarter, req.Year)
 }

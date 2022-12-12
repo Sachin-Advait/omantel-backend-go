@@ -1,6 +1,9 @@
 package business
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
@@ -9,5 +12,29 @@ import (
 
 func (impl *IncentiveImpl) GetUsersReportingToGeneralManager(ctx *gin.Context, generalManagerID string) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
-	return impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.GeneralManager, generalManagerID)
+	currTime := time.Now()
+	currYear, currMonth, _ := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.GeneralManager, generalManagerID, currQuarter, currYear)
+	if err != nil {
+		return nil, err
+	}
+
+	for index, eachSM := range response {
+
+		if eachSM.ID == "" || eachSM.Name == "" || eachSM.Position != constant.SeniorManager {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InvalidDetailsCode,
+				Message:    "INVALID SM LIST FOUND",
+				Details:    "sm details incorrect - " + eachSM.ID,
+			}
+		}
+
+		eachSM.Position = constant.EmployeePositionMap[eachSM.Position]
+		response[index] = eachSM
+	}
+
+	return response, nil
 }

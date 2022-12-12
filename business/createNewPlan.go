@@ -2,6 +2,7 @@ package business
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
@@ -10,16 +11,32 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) CreateNewPlan(ctx *gin.Context, req []*models.NewPlanRequest) ([]*models.NewPlanFailedResponse, *errors.Error) {
+func (impl *IncentiveImpl) CreateNewPlan(ctx *gin.Context, req []*models.CreatePlanRequest) ([]*models.PlanFailedResponse, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
+	currTime := time.Now()
+	currYear, currMonth, _ := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	for index, val := range req {
+		if val.Quarter == 0 {
+			val.Quarter = currQuarter
+		}
+
+		if val.Year == 0 {
+			val.Year = currYear
+		}
+
+		req[index] = val
+	}
+
 	switch ctxHeader.XAPIVersion {
 	case "1":
-		return nil, impl.PsqlDb.UpsertPlanRecord(req[0])
+		return nil, impl.PsqlDb.UpsertPlanRecord(ctxHeader.XUserId, req[0])
 	case "2":
-		return impl.PsqlDb.UpsertPlanRecordViaFile(req), nil
+		return impl.PsqlDb.UpsertPlanRecordViaFile(ctxHeader.XUserId, req), nil
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,

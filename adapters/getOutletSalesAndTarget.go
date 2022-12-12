@@ -29,6 +29,7 @@ func GetOutletSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "invalid req params",
+			Code:       http.StatusBadRequest,
 			Text:       err.Error(),
 			CreateTime: time.Now().Local(),
 		}
@@ -47,6 +48,7 @@ func GetOutletSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "provider failed",
+			Code:       errs.StatusCode,
 			Text:       errs.Details.(string),
 			CreateTime: time.Now().Local(),
 		}
@@ -63,6 +65,7 @@ func GetOutletSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 		URL:        ctx.Request.URL.String(),
 		Type:       "info",
 		Msg:        "success",
+		Code:       http.StatusOK,
 		Text:       fmt.Sprintf("%+v", response),
 		CreateTime: time.Now().Local(),
 	}

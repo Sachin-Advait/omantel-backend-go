@@ -111,8 +111,8 @@ func (dbConn *DBImplementation) InsertOutletReport(outlet *models.OutletReportDB
 		quarter = 0
 	}
 
-	rslt, err := dbConn.Operation.ExecContext(ctx, "INSERT INTO outlet_reports_table(outlet, region, latitude, longitude, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created, isquarterly, month, quarter, year) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) "+
-		"ON CONFLICT(outlet, month, quarter, year) DO UPDATE SET hbb_sales_count=$18, hbb_target=$19, hayyak_sales_count=$20, hayyak_target=$21, baqati_sales_count=$22, baqati_target=$23, upgrade_sales_count=$24, upgrade_target=$25, created=$26",
+	rslt, err := dbConn.Operation.ExecContext(ctx, "INSERT INTO outlet_reports_table(outlet, region, latitude, longitude, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created, modified, isquarterly, month, quarter, year) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) "+
+		"ON CONFLICT(outlet, month, quarter, year) DO UPDATE SET hbb_sales_count=$19, hbb_target=$20, hayyak_sales_count=$21, hayyak_target=$22, baqati_sales_count=$23, baqati_target=$24, upgrade_sales_count=$25, upgrade_target=$26, modified=$27",
 		outlet.Outlet,
 		outlet.Region,
 		outlet.Latitude,
@@ -126,6 +126,7 @@ func (dbConn *DBImplementation) InsertOutletReport(outlet *models.OutletReportDB
 		outlet.UpgradeSalesCount,
 		outlet.UpgradeTargetCount,
 		outlet.CreatedAt,
+		outlet.ModifiedAt,
 		isQuarterReport,
 		month,
 		quarter,
@@ -138,7 +139,7 @@ func (dbConn *DBImplementation) InsertOutletReport(outlet *models.OutletReportDB
 		outlet.BaqatiTargetCount,
 		outlet.UpgradeSalesCount,
 		outlet.UpgradeTargetCount,
-		outlet.CreatedAt,
+		outlet.ModifiedAt,
 	)
 
 	if err != nil {
@@ -261,8 +262,8 @@ func (dbConn *DBImplementation) InsertRegionReport(region *models.RegionReportDB
 		quarter = 0
 	}
 
-	rslt, err := dbConn.Operation.ExecContext(ctx, "INSERT INTO region_reports_table(region, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created, isquarterly, month, quarter, year) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) "+
-		"ON CONFLICT(region, month, quarter, year) DO UPDATE SET hbb_sales_count=$15, hbb_target=$16, hayyak_sales_count=$17, hayyak_target=$18, baqati_sales_count=$19, baqati_target=$20, upgrade_sales_count=$21, upgrade_target=$22, created=$23",
+	rslt, err := dbConn.Operation.ExecContext(ctx, "INSERT INTO region_reports_table(region, hbb_sales_count, hbb_target, hayyak_sales_count, hayyak_target, baqati_sales_count, baqati_target, upgrade_sales_count, upgrade_target, created, modified, isquarterly, month, quarter, year) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) "+
+		"ON CONFLICT(region, month, quarter, year) DO UPDATE SET hbb_sales_count=$16, hbb_target=$17, hayyak_sales_count=$18, hayyak_target=$19, baqati_sales_count=$20, baqati_target=$21, upgrade_sales_count=$22, upgrade_target=$23, modified=$24",
 		region.Region,
 		region.HBBSalesCount,
 		region.HBBTargetCount,
@@ -273,6 +274,7 @@ func (dbConn *DBImplementation) InsertRegionReport(region *models.RegionReportDB
 		region.UpgradeSalesCount,
 		region.UpgradeTargetCount,
 		region.CreatedAt,
+		region.ModifiedAt,
 		isQuarterReport,
 		month,
 		quarter,
@@ -285,7 +287,7 @@ func (dbConn *DBImplementation) InsertRegionReport(region *models.RegionReportDB
 		region.BaqatiTargetCount,
 		region.UpgradeSalesCount,
 		region.UpgradeTargetCount,
-		region.CreatedAt,
+		region.ModifiedAt,
 	)
 
 	if err != nil {
@@ -368,7 +370,7 @@ func (dbConn *DBImplementation) FetchAgentUserReport(userId string, isQuarterRep
 		&rcrd.HBBSaleCountPerPlanArray,
 		&rcrd.BaqatiSaleCountPerPlanArray,
 		&rcrd.UpgradeSaleCountPerPlanArray,
-		&rcrd.CreateAt,
+		&rcrd.CreatedAt,
 	)
 
 	if err == nil {
@@ -416,8 +418,8 @@ func (dbConn *DBImplementation) InsertAgentUserReport(usr *models.UserReportDB, 
 		quarter = 0
 	}
 
-	rslt, err := dbConn.Operation.ExecContext(ctx, "INSERT INTO user_reports_table(select emp_id, position, reporting_manager, reporting_manager_position, region, outlet, latitude, longitude, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan, created, isquarterly, month, quarter, year) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38) "+
-		"ON CONFLICT(emp_id, month, quarter, year) DO UPDATE SET position=$39, reporting_manager=$40, reporting_manager_position=$41, region=$42, outlet=$43, latitude=$44, longitude=$45, hayyak_sales_count=$46, hayyak_target=$47, hayyak_achieved_percentage=$48, hayyak_payout=$49, hayyak_extra_payout=$50, hbb_sales_count=$51, hbb_target=$52, hbb_achieved_percentage=$53, hbb_payout=$54, hbb_extra_payout=$55, baqati_sales_count=$56, baqati_target=$57, baqati_achieved_percentage=$58, baqati_payout=$59, baqati_extra_payout=$60, upgrade_sales_count=$61, upgrade_target=$62, uprade_achieved_percentage=$63, upgrade_payout=$64, upgrade_extra_payout=$65, total_payout=$66, hayyak_sales_count_per_plan=$67, hbb_sales_count_per_plan=$68, baqati_sales_count_per_plan=$69, upgrade_sales_count_per_plan=$70, created=$71",
+	rslt, err := dbConn.Operation.ExecContext(ctx, "INSERT INTO user_reports_table(select emp_id, position, reporting_manager, reporting_manager_position, region, outlet, latitude, longitude, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan, created, modified, isquarterly, month, quarter, year) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39) "+
+		"ON CONFLICT(emp_id, month, quarter, year) DO UPDATE SET position=$40, reporting_manager=$41, reporting_manager_position=$42, region=$43, outlet=$44, latitude=$45, longitude=$46, hayyak_sales_count=$47, hayyak_target=$48, hayyak_achieved_percentage=$49, hayyak_payout=$50, hayyak_extra_payout=$51, hbb_sales_count=$52, hbb_target=$53, hbb_achieved_percentage=$54, hbb_payout=$55, hbb_extra_payout=$56, baqati_sales_count=$57, baqati_target=$58, baqati_achieved_percentage=$59, baqati_payout=$60, baqati_extra_payout=$61, upgrade_sales_count=$62, upgrade_target=$63, uprade_achieved_percentage=$64, upgrade_payout=$65, upgrade_extra_payout=$66, total_payout=$67, hayyak_sales_count_per_plan=$68, hbb_sales_count_per_plan=$69, baqati_sales_count_per_plan=$70, upgrade_sales_count_per_plan=$71, modified=$72",
 		&usr.UserId,
 		&usr.Position,
 		&usr.ManagerId,
@@ -451,7 +453,8 @@ func (dbConn *DBImplementation) InsertAgentUserReport(usr *models.UserReportDB, 
 		&usr.HBBSaleCountPerPlanArray,
 		&usr.BaqatiSaleCountPerPlanArray,
 		&usr.UpgradeSaleCountPerPlanArray,
-		&usr.CreateAt,
+		&usr.CreatedAt,
+		&usr.ModifiedAt,
 		isQuarterReport,
 		month,
 		quarter,
@@ -488,7 +491,7 @@ func (dbConn *DBImplementation) InsertAgentUserReport(usr *models.UserReportDB, 
 		&usr.HBBSaleCountPerPlanArray,
 		&usr.BaqatiSaleCountPerPlanArray,
 		&usr.UpgradeSaleCountPerPlanArray,
-		&usr.CreateAt,
+		&usr.ModifiedAt,
 	)
 
 	if err != nil {
@@ -571,7 +574,7 @@ func (dbConn *DBImplementation) FetchManagerReport(userId string, isQuarterRepor
 		&rcrd.HBBSaleCountPerPlanArray,
 		&rcrd.BaqatiSaleCountPerPlanArray,
 		&rcrd.UpgradeSaleCountPerPlanArray,
-		&rcrd.CreateAt,
+		&rcrd.CreatedAt,
 	)
 
 	if err == nil {
@@ -619,8 +622,8 @@ func (dbConn *DBImplementation) InsertManagerReport(usr *models.UserReportDB, is
 		quarter = 0
 	}
 
-	rslt, err := dbConn.Operation.ExecContext(ctx, "INSERT INTO manager_reports_table(select emp_id, position, reporting_manager, reporting_manager_position, region, outlet, latitude, longitude, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan, created, isquarterly, month, quarter, year) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38) "+
-		"ON CONFLICT(emp_id, month, quarter, year) DO UPDATE SET position=$39, reporting_manager=$40, reporting_manager_position=$41, region=$42, outlet=$43, latitude=$44, longitude=$45, hayyak_sales_count=$46, hayyak_target=$47, hayyak_achieved_percentage=$48, hayyak_payout=$49, hayyak_extra_payout=$50, hbb_sales_count=$51, hbb_target=$52, hbb_achieved_percentage=$53, hbb_payout=$54, hbb_extra_payout=$55, baqati_sales_count=$56, baqati_target=$57, baqati_achieved_percentage=$58, baqati_payout=$59, baqati_extra_payout=$60, upgrade_sales_count=$61, upgrade_target=$62, uprade_achieved_percentage=$63, upgrade_payout=$64, upgrade_extra_payout=$65, total_payout=$66, hayyak_sales_count_per_plan=$67, hbb_sales_count_per_plan=$68, baqati_sales_count_per_plan=$69, upgrade_sales_count_per_plan=$70, created=$71",
+	rslt, err := dbConn.Operation.ExecContext(ctx, "INSERT INTO manager_reports_table(select emp_id, position, reporting_manager, reporting_manager_position, region, outlet, latitude, longitude, hayyak_sales_count, hayyak_target, hayyak_achieved_percentage, hayyak_payout, hayyak_extra_payout, hbb_sales_count, hbb_target, hbb_achieved_percentage, hbb_payout, hbb_extra_payout, baqati_sales_count, baqati_target, baqati_achieved_percentage, baqati_payout, baqati_extra_payout, upgrade_sales_count, upgrade_target, uprade_achieved_percentage, upgrade_payout, upgrade_extra_payout, total_payout, hayyak_sales_count_per_plan, hbb_sales_count_per_plan, baqati_sales_count_per_plan, upgrade_sales_count_per_plan, created, modified, isquarterly, month, quarter, year) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39) "+
+		"ON CONFLICT(emp_id, month, quarter, year) DO UPDATE SET position=$40, reporting_manager=$41, reporting_manager_position=$42, region=$43, outlet=$44, latitude=$45, longitude=$46, hayyak_sales_count=$47, hayyak_target=$48, hayyak_achieved_percentage=$49, hayyak_payout=$50, hayyak_extra_payout=$51, hbb_sales_count=$52, hbb_target=$53, hbb_achieved_percentage=$54, hbb_payout=$55, hbb_extra_payout=$56, baqati_sales_count=$57, baqati_target=$58, baqati_achieved_percentage=$59, baqati_payout=$60, baqati_extra_payout=$61, upgrade_sales_count=$62, upgrade_target=$63, uprade_achieved_percentage=$64, upgrade_payout=$65, upgrade_extra_payout=$66, total_payout=$67, hayyak_sales_count_per_plan=$68, hbb_sales_count_per_plan=$69, baqati_sales_count_per_plan=$70, upgrade_sales_count_per_plan=$71, modified=$72",
 		&usr.UserId,
 		&usr.Position,
 		&usr.ManagerId,
@@ -654,7 +657,8 @@ func (dbConn *DBImplementation) InsertManagerReport(usr *models.UserReportDB, is
 		&usr.HBBSaleCountPerPlanArray,
 		&usr.BaqatiSaleCountPerPlanArray,
 		&usr.UpgradeSaleCountPerPlanArray,
-		&usr.CreateAt,
+		&usr.CreatedAt,
+		&usr.ModifiedAt,
 		isQuarterReport,
 		month,
 		quarter,
@@ -691,7 +695,7 @@ func (dbConn *DBImplementation) InsertManagerReport(usr *models.UserReportDB, is
 		&usr.HBBSaleCountPerPlanArray,
 		&usr.BaqatiSaleCountPerPlanArray,
 		&usr.UpgradeSaleCountPerPlanArray,
-		&usr.CreateAt,
+		&usr.ModifiedAt,
 	)
 
 	if err != nil {

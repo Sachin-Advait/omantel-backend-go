@@ -40,7 +40,7 @@ func FetchProducts(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	productsReq := &models.DeleteProductRequest{}
+	productsReq := &models.ProductRequest{}
 
 	if strings.ToLower(products[0]) != constant.All {
 		for _, v := range products {

@@ -15,7 +15,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func CreateNewOutlet(ctx *gin.Context, req []*models.NewOutletRequest) (int, interface{}) {
+func CreateNewOutlet(ctx *gin.Context, req []*models.CreateOutletRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)

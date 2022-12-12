@@ -40,7 +40,7 @@ func FetchPlans(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	plansReq := &models.DeletePlanRequest{}
+	plansReq := &models.PlanRequest{}
 
 	if strings.ToLower(plans[0]) != constant.All {
 		for _, v := range plans {

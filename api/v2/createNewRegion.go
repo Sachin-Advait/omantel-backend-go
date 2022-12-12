@@ -143,7 +143,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 
 	isFirstRow := true
 
-	userRequests := make([]*models.NewRegionRequest, 0)
+	userRequests := make([]*models.CreateRegionRequest, 0)
 
 	for rows.Next() {
 
@@ -218,7 +218,7 @@ func createNewRegionViaFile(ctx *gin.Context) {
 			return
 		}
 
-		userReq := &models.NewRegionRequest{}
+		userReq := &models.CreateRegionRequest{}
 
 		//LOOP:
 		for i, colCell := range row {

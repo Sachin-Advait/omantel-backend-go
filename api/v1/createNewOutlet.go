@@ -27,6 +27,7 @@ func createNewOutlet(ctx *gin.Context) {
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "unauthorized request",
+			Code:       http.StatusBadRequest,
 			Text:       "auth token not found",
 			CreateTime: time.Now().Local(),
 		}
@@ -57,7 +58,7 @@ func createNewOutlet(ctx *gin.Context) {
 		return
 	}
 
-	userReq := &models.NewOutletRequest{}
+	userReq := &models.CreateOutletRequest{}
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("createNewOutlet : error binding request body")
@@ -65,7 +66,8 @@ func createNewOutlet(ctx *gin.Context) {
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
-			Msg:        "error binding request body",
+			Msg:        "request binding",
+			Code:       http.StatusBadRequest,
 			Text:       err.Error(),
 			CreateTime: time.Now().Local(),
 		}
@@ -81,11 +83,11 @@ func createNewOutlet(ctx *gin.Context) {
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),
-		Type:       "info",
+		Type:       "trace",
 		Msg:        "request body",
 		Text:       fmt.Sprintf("%+v", string(req)),
 		CreateTime: time.Now().Local(),
 	}
 
-	ctx.JSON(adapters.CreateNewOutlet(ctx, []*models.NewOutletRequest{userReq}))
+	ctx.JSON(adapters.CreateNewOutlet(ctx, []*models.CreateOutletRequest{userReq}))
 }

@@ -13,7 +13,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func FetchTargets(ctx *gin.Context, req *models.GetTargetRequest) (int, interface{}) {
+func FetchTargets(ctx *gin.Context, req *models.TargetRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)

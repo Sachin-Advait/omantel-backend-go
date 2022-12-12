@@ -15,7 +15,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func CreateNewProduct(ctx *gin.Context, req []*models.NewProductRequest) (int, interface{}) {
+func CreateNewProduct(ctx *gin.Context, req []*models.CreateProductRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)

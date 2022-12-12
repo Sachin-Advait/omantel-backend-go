@@ -2,15 +2,28 @@ package business
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) FetchProducts(ctx *gin.Context, req *models.DeleteProductRequest) ([]*models.GetProductResponse, *errors.Error) {
+func (impl *IncentiveImpl) FetchProducts(ctx *gin.Context, req *models.ProductRequest) ([]*models.ProductResponse, *errors.Error) {
 
-	resp, err := impl.PsqlDb.FetchProductRecord(req.ProductCodes)
+	currTime := time.Now()
+	currYear, currMonth, _ := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	if req.Quarter == 0 {
+		req.Quarter = currQuarter
+	}
+
+	if req.Year == 0 {
+		req.Year = currYear
+	}
+
+	resp, err := impl.PsqlDb.FetchProductRecord(req.ProductCodes, req.Quarter, req.Year)
 	if err != nil {
 		return nil, err
 	}

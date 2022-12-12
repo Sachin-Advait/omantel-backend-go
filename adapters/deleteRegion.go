@@ -14,7 +14,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func DeleteRegions(ctx *gin.Context, req *models.DeleteRegionRequest) (int, interface{}) {
+func DeleteRegions(ctx *gin.Context, req *models.RegionRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)

@@ -27,6 +27,7 @@ func deleteTargets(ctx *gin.Context) {
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "unauthorized request",
+			Code:       http.StatusBadRequest,
 			Text:       "auth token not found",
 			CreateTime: time.Now().Local(),
 		}
@@ -57,7 +58,7 @@ func deleteTargets(ctx *gin.Context) {
 		return
 	}
 
-	var userReq []*models.NewTargetRequest
+	var userReq models.TargetRequest
 
 	if err := ctx.ShouldBindJSON(&userReq); err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("deleteTargets : error binding request body")
@@ -65,7 +66,7 @@ func deleteTargets(ctx *gin.Context) {
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
-			Msg:        "error binding request body",
+			Msg:        "request binding",
 			Text:       err.Error(),
 			CreateTime: time.Now().Local(),
 		}
@@ -81,11 +82,12 @@ func deleteTargets(ctx *gin.Context) {
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),
-		Type:       "info",
+		Type:       "trace",
 		Msg:        "request body",
+		Code:       http.StatusBadRequest,
 		Text:       fmt.Sprintf("%+v", string(req)),
 		CreateTime: time.Now().Local(),
 	}
 
-	ctx.JSON(adapters.DeleteTargets(ctx, userReq))
+	ctx.JSON(adapters.DeleteTargets(ctx, &userReq))
 }

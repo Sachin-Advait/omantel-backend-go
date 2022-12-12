@@ -34,23 +34,23 @@ type IncentiveProvider interface {
 	GetTopTenEmpSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*ProductWiseSalesTargetPerStaff, *errors.Error)
 	RenewAccessToken(ctx *gin.Context) (string, *errors.Error)
 
-	FetchRegions(ctx *gin.Context, req *DeleteRegionRequest) ([]*GetRegionResponse, *errors.Error)
-	CreateNewRegion(ctx *gin.Context, req []*NewRegionRequest) ([]*NewRegionFailedResponse, *errors.Error)
-	DeleteRegions(ctx *gin.Context, req *DeleteRegionRequest) *errors.Error
+	FetchRegions(ctx *gin.Context, req *RegionRequest) ([]*RegionResponse, *errors.Error)
+	CreateNewRegion(ctx *gin.Context, req []*CreateRegionRequest) ([]*RegionFailedResponse, *errors.Error)
+	DeleteRegions(ctx *gin.Context, req *RegionRequest) *errors.Error
 
-	FetchOutlets(ctx *gin.Context, req *DeleteOutletRequest) ([]*GetOutletResponse, *errors.Error)
-	CreateNewOutlet(ctx *gin.Context, req []*NewOutletRequest) ([]*NewOutletFailedResponse, *errors.Error)
-	DeleteOutlets(ctx *gin.Context, req *DeleteOutletRequest) *errors.Error
+	FetchOutlets(ctx *gin.Context, req *OutletRequest) ([]*OutletResponse, *errors.Error)
+	CreateNewOutlet(ctx *gin.Context, req []*CreateOutletRequest) ([]*OutletFailedResponse, *errors.Error)
+	DeleteOutlets(ctx *gin.Context, req *OutletRequest) *errors.Error
 
-	FetchProducts(ctx *gin.Context, req *DeleteProductRequest) ([]*GetProductResponse, *errors.Error)
-	CreateNewProduct(ctx *gin.Context, req []*NewProductRequest) ([]*NewProductFailedResponse, *errors.Error)
-	DeleteProducts(ctx *gin.Context, req *DeleteProductRequest) *errors.Error
+	FetchProducts(ctx *gin.Context, req *ProductRequest) ([]*ProductResponse, *errors.Error)
+	CreateNewProduct(ctx *gin.Context, req []*CreateProductRequest) ([]*ProductFailedResponse, *errors.Error)
+	DeleteProducts(ctx *gin.Context, req *ProductRequest) *errors.Error
 
-	FetchPlans(ctx *gin.Context, req *DeletePlanRequest) ([]*GetPlanResponse, *errors.Error)
-	CreateNewPlan(ctx *gin.Context, req []*NewPlanRequest) ([]*NewPlanFailedResponse, *errors.Error)
-	DeletePlans(ctx *gin.Context, req *DeletePlanRequest) *errors.Error
+	FetchPlans(ctx *gin.Context, req *PlanRequest) ([]*PlanResponse, *errors.Error)
+	CreateNewPlan(ctx *gin.Context, req []*CreatePlanRequest) ([]*PlanFailedResponse, *errors.Error)
+	DeletePlans(ctx *gin.Context, req *PlanRequest) *errors.Error
 
-	FetchTargets(ctx *gin.Context, req *GetTargetRequest) (map[string][]*GetTargetResponse, *errors.Error)
-	CreateNewTarget(ctx *gin.Context, req []*NewTargetRequest) ([]*NewTargetFailedResponse, *errors.Error)
-	DeleteTargets(ctx *gin.Context, req *DeleteTargetRequest) *errors.Error
+	FetchTargets(ctx *gin.Context, req *TargetRequest) (map[string][]*TargetResponse, *errors.Error)
+	CreateNewTarget(ctx *gin.Context, req []*CreateTargetRequest) ([]*TargetFailedResponse, *errors.Error)
+	DeleteTargets(ctx *gin.Context, req *TargetRequest) *errors.Error
 }

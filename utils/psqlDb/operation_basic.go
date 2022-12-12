@@ -10,7 +10,7 @@ import (
 )
 
 // FetchPlans loads the global variable PlanRates with the rate plan for each plan type
-func (dbConn *DBImplementation) FetchPlans() *errors.Error {
+func (dbConn *DBImplementation) FetchPlans(quarter, year int) *errors.Error {
 
 	// logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchPlans start")
 	// defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchPlans done")
@@ -18,7 +18,7 @@ func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select plan_code, plan_name, plan_price, sip_plan_rate from plans_table")
+	rows, err := dbConn.Operation.QueryContext(ctx, "select plan_code, plan_name, plan_price, sip_plan_rate from plans_table where deleted IS NULL and quarter=$1 and year=$2", quarter, year)
 	if err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -47,7 +47,7 @@ func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 
 		models.PlanRates.Mutex.Lock()
 
-		models.PlanRates.Year = 2022
+		models.PlanRates.Year = year
 
 		if models.PlanRates.PlanRateMap == nil {
 			models.PlanRates.PlanRateMap = make(map[string]*models.ProductPlans)
@@ -67,7 +67,7 @@ func (dbConn *DBImplementation) FetchPlans() *errors.Error {
 }
 
 // FetchSaleTarget loads the global variable SalesTrgt with the target for each outlet
-func (dbConn *DBImplementation) FetchSaleTarget() *errors.Error {
+func (dbConn *DBImplementation) FetchSaleTarget(quarter, year int) *errors.Error {
 
 	// logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchSaleTarget start")
 	// defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchSaleTarget done")
@@ -77,7 +77,7 @@ func (dbConn *DBImplementation) FetchSaleTarget() *errors.Error {
 
 	models.SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*models.ProductGrpTarget)
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select region, outlet, month, baqati, hbb, hayyak, upgrade from targets_table")
+	rows, err := dbConn.Operation.QueryContext(ctx, "select region, outlet, month, baqati, hbb, hayyak, upgrade from targets_table where deleted IS NULL and quarter=$1 and year=$2", quarter, year)
 	if err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -109,7 +109,7 @@ func (dbConn *DBImplementation) FetchSaleTarget() *errors.Error {
 
 		models.SalesTrgt.Mutex.Lock()
 
-		models.SalesTrgt.Year = 2022
+		models.SalesTrgt.Year = year
 
 		if models.SalesTrgt.SaleTargetMap[region] == nil {
 			models.SalesTrgt.SaleTargetMap[region] = make(map[string][12]*models.ProductGrpTarget)
@@ -138,9 +138,9 @@ func (dbConn *DBImplementation) FetchSaleTarget() *errors.Error {
 }
 
 // FetchValueOfPoint loads the global variable ValOfPoint with the value of point for each product type
-func (dbConn *DBImplementation) FetchValueOfPoint() *errors.Error {
+func (dbConn *DBImplementation) FetchValueOfPoint(quarter, year int) *errors.Error {
 
-	// rows, err := dbConn.Operation.Query("select group, top_percentage, vop, extra_pay from Product_Plans_Table")
+	// rows, err := dbConn.Operation.Query("select group, top_percentage, vop, extra_pay from Product_Plans_Table where deleted IS NULL and quarter=$1 and year=$2", quarter, year)
 	// if err != nil {
 	// 	return err
 	// }
@@ -177,7 +177,7 @@ func (dbConn *DBImplementation) FetchValueOfPoint() *errors.Error {
 
 	models.ValOfPoint.Mutex.Lock()
 
-	models.ValOfPoint.Year = 2022
+	models.ValOfPoint.Year = year
 
 	models.ValOfPoint.VopMap = make(map[string]map[int]*models.VOP)
 	models.ValOfPoint.VopMap["HBB"] = make(map[int]*models.VOP)
@@ -355,9 +355,9 @@ func (dbConn *DBImplementation) FetchValueOfPoint() *errors.Error {
 }
 
 // FetchMaxPayout loads the gloabal variable MaxPay with the maximum payout limit
-func (dbConn *DBImplementation) FetchMaxPayout() *errors.Error {
+func (dbConn *DBImplementation) FetchMaxPayout(quarter, year int) *errors.Error {
 
-	// rows, err := dbConn.Operation.Query("select group, percentage, max_pay from Max_Payout_Table")
+	// rows, err := dbConn.Operation.Query("select group, percentage, max_pay from Max_Payout_Table where deleted IS NULL and quarter=$1 and year=$2", quarter, year)
 	// if err != nil {
 	// 	return err
 	// }
@@ -386,7 +386,7 @@ func (dbConn *DBImplementation) FetchMaxPayout() *errors.Error {
 
 	models.MaxPay.Mutex.Lock()
 
-	models.MaxPay.Year = 2022
+	models.MaxPay.Year = year
 
 	models.MaxPay.Payoutmap = make(map[string]float64)
 	models.MaxPay.Payoutmap["HBB"] = 350

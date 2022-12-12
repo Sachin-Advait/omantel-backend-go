@@ -27,6 +27,7 @@ func deleteRegions(ctx *gin.Context) {
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "unauthorized request",
+			Code:       http.StatusBadRequest,
 			Text:       "auth token not found",
 			CreateTime: time.Now().Local(),
 		}
@@ -57,7 +58,7 @@ func deleteRegions(ctx *gin.Context) {
 		return
 	}
 
-	userReq := &models.DeleteRegionRequest{}
+	userReq := &models.RegionRequest{}
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("deleteRegions : error binding request body")
@@ -65,7 +66,7 @@ func deleteRegions(ctx *gin.Context) {
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
-			Msg:        "error binding request body",
+			Msg:        "request binding",
 			Text:       err.Error(),
 			CreateTime: time.Now().Local(),
 		}
@@ -81,9 +82,10 @@ func deleteRegions(ctx *gin.Context) {
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),
-		Type:       "info",
+		Type:       "trace",
 		Msg:        "request body",
 		Text:       fmt.Sprintf("%+v", string(req)),
+		Code:       http.StatusBadRequest,
 		CreateTime: time.Now().Local(),
 	}
 

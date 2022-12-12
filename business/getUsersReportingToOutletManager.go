@@ -1,6 +1,9 @@
 package business
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
@@ -9,17 +12,36 @@ import (
 
 func (impl *IncentiveImpl) GetUsersReportingToOutletManager(ctx *gin.Context, outletManagerID string) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
-	omResponse, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.OutletManager, outletManagerID)
+	currTime := time.Now()
+	currYear, currMonth, _ := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.OutletManager, outletManagerID, currQuarter, currYear)
 	if err != nil {
 		return nil, err
 	}
 
-	tlResponse, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.TeamLeader, outletManagerID)
+	tlResponse, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.TeamLeader, outletManagerID, currQuarter, currYear)
 	if err != nil {
 		return nil, err
 	}
 
-	omResponse = append(omResponse, tlResponse...)
+	response = append(response, tlResponse...)
 
-	return omResponse, nil
+	for index, agents := range response {
+
+		if agents.ID == "" || agents.Name == "" || !(agents.Position == constant.Promoter || agents.Position == constant.CSR) {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InvalidDetailsCode,
+				Message:    "INVALID AGENT LIST FOUND",
+				Details:    "agent details incorrect - " + agents.ID,
+			}
+		}
+
+		agents.Position = constant.EmployeePositionMap[agents.Position]
+		response[index] = agents
+	}
+
+	return response, nil
 }

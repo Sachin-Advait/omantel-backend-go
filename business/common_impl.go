@@ -233,20 +233,27 @@ func (impl *IncentiveImpl) getQuarterFromMonth(month int) int {
 func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserBasicDetailsDB, isQuarterReport bool, quarter, month, year int) (*models.TotalIncentive, *models.UserReportDB, *errors.Error) {
 
 	if user == nil || user.UserId == "" || user.ManagerId == "" || user.ManagerPosition == "" {
+		if user == nil {
+			return nil, nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    "INVALID AGENT DETAILS",
+				Details:    "invalid agent details",
+			}
+		}
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    errors.InvalidDetails,
-			Details:    "incorrect user details",
+			Message:    user.UserId + ": INVALID AGENT DETAILS",
+			Details:    "invalid agent details - userId:" + user.UserId,
 		}
 	}
 
 	if !(user.Position == constant.Promoter || user.Position == constant.CSR) {
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message:    "INCORRECT AGENT POSITION",
-			Details:    "incorrect agent position",
+			Message:    user.UserId + ": INCORRECT AGENT POSITION - " + user.Position,
+			Details:    "incorrect agent position - userId:" + user.UserId + " position:" + user.Position,
 		}
 	}
 
@@ -254,14 +261,23 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    "INCORRECT AGENT OUTLET REGION VALUES",
-			Details:    "incorrect agent values",
+			Message:    user.UserId + ": AGENT BLANK REGION OR OUTLET - region:" + user.Region + " outlet:" + user.Outlet,
+			Details:    "agent blank region or outlet - userId: " + user.UserId + " region:" + user.Region + " outlet:" + user.Outlet,
 		}
 	}
 
-	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(user.Region, user.Outlet)
+	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(user.Region, user.Outlet, quarter, year)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
+		return nil, nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    user.UserId + ": AGENT INVALID OUTLET CO-ORDINATES - region:" + user.Region + " outlet:" + user.Outlet,
+			Details:    user.UserId + ": AGENT invalid outlet co-ordintaes - region:" + user.Region + " outlet:" + user.Outlet,
+		}
 	}
 
 	allUserSales, err := impl.PsqlDb.FetchActiveUserSales(user.UserId, user.Region, user.Outlet, isQuarterReport, quarter, month, year)
@@ -279,7 +295,8 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		Outlet:          user.Outlet,
 		Latitude:        outletResponse.Lat,
 		Longitude:       outletResponse.Lang,
-		CreateAt:        time.Now(),
+		CreatedAt:       time.Now(),
+		ModifiedAt:      time.Now(),
 	}
 
 	if len(allUserSales.SaleRecords) == 0 {
@@ -291,7 +308,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		return resp, report, nil
 	}
 
-	totalEmp, err := impl.PsqlDb.FetchTotalNonManagerialEmployees(user.Region, user.Outlet)
+	totalEmp, err := impl.PsqlDb.FetchTotalNonManagerialEmployees(user.Region, user.Outlet, quarter, year)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -755,20 +772,27 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.UserBasicDetailsDB, isQuarterReport bool, quarter, month, year int) (*models.UserReportDB, *errors.Error) {
 
 	if omngr == nil || omngr.UserId == "" || omngr.ManagerId == "" || omngr.ManagerPosition == "" {
+		if omngr == nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    "INVALID OUTLET MANAGER DETAILS",
+				Details:    "invalid omngr details",
+			}
+		}
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    errors.InvalidDetails,
-			Details:    omngr.UserId + "incorrect omngr details",
+			Message:    omngr.UserId + ": INVALID OUTLET MANAGER DETAILS",
+			Details:    "invalid omngr details - userId:" + omngr.UserId,
 		}
 	}
 
 	if !(omngr.Position == constant.OutletManager || omngr.Position == constant.TeamLeader) {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message:    "INCORRECT AGENT POSITION",
-			Details:    omngr.UserId + "incorrect omngr position",
+			Message:    omngr.UserId + ": INCORRECT OUTLET MANAGER POSITION - " + omngr.Position,
+			Details:    "incorrect omngr position - userId:" + omngr.UserId + " position:" + omngr.Position,
 		}
 	}
 
@@ -776,17 +800,35 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    "INCORRECT AGENT OUTLET REGION VALUES",
-			Details:    omngr.UserId + "incorrect omng outlet values",
+			Message:    omngr.UserId + ": AGENT BLANK REGION OR OUTLET - region:" + omngr.Region + " outlet:" + omngr.Outlet,
+			Details:    "agent blank region or outlet - userId: " + omngr.UserId + " region:" + omngr.Region + " outlet:" + omngr.Outlet,
 		}
 	}
 
+	var needUpdate bool
+
 	currTime := time.Now()
 	currYear, currMonth, currDay := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
 
-	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(omngr.Region, omngr.Outlet)
+	if isQuarterReport && year == currYear && quarter <= currQuarter {
+		needUpdate = true
+	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
+		needUpdate = true
+	}
+
+	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(omngr.Region, omngr.Outlet, quarter, year)
 	if err != nil {
 		return nil, err
+	}
+
+	if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    omngr.UserId + ": OUTLET MANAGER INVALID OUTLET CO-ORDINATES - region:" + omngr.Region + " outlet:" + omngr.Outlet,
+			Details:    omngr.UserId + ": OUTLET MANAGER invalid outlet co-ordintaes - region:" + omngr.Region + " outlet:" + omngr.Outlet,
+		}
 	}
 
 	report := &models.UserReportDB{
@@ -798,16 +840,25 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 		Outlet:          omngr.Outlet,
 		Latitude:        outletResponse.Lat,
 		Longitude:       outletResponse.Lang,
-		CreateAt:        time.Now(),
+		CreatedAt:       time.Now(),
+		ModifiedAt:      time.Now(),
 	}
 
-	userAgents, err := impl.PsqlDb.FetchAllAgentsUserOfOM(omngr.UserId)
+	userAgents, err := impl.PsqlDb.FetchAllAgentsUserOfOM(omngr.UserId, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(userAgents) == 0 {
+
 		return report, nil
+
+		// return nil, &errors.Error{
+		// 	StatusCode: http.StatusBadRequest,
+		// 	Code:       errors.InvalidDetailsCode,
+		// 	Message:    "NO AGENTS FOUND FOR OM - " + omngr.UserId,
+		// 	Details:    "no agents found for OM - " + omngr.UserId,
+		// }
 	}
 
 	hbbSaleMap := make(map[string]int, 0)
@@ -818,12 +869,21 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	for _, eachAgent := range userAgents {
 
 		agentReport, err := impl.PsqlDb.FetchAgentUserReport(eachAgent.UserId, isQuarterReport, quarter, month, year)
-		if err != nil || (agentReport != nil && agentReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
-			_, agentReport, err = impl.updateAgentUserReport(ctx, eachAgent, isQuarterReport, quarter, month, year)
-		}
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && agentReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-		if err != nil {
-			return nil, err
+				_, resp, err := impl.updateAgentUserReport(ctx, eachAgent, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				agentReport = resp
+			}
 		}
 
 		report.HayyakSalesCount += agentReport.HayyakSalesCount
@@ -964,19 +1024,18 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 
 	if mngr == nil || mngr.UserId == "" {
 		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message:    errors.InvalidDetails,
-			Details:    mngr.UserId + "incorrect mngr details",
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "INVALID MANAGER DETAILS",
+			Details:    "invalid mngr details",
 		}
 	}
 
 	if _, ok := constant.ManagerMap[mngr.Position]; !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message:    "INCORRECT MANAGER POSITION",
-			Details:    mngr.UserId + "incorrect manager position",
+			Message:    mngr.UserId + ": INCORRECT MANAGER POSITION - " + mngr.Position,
+			Details:    "incorrect mngr position - userId:" + mngr.UserId + " position:" + mngr.Position,
 		}
 	}
 
@@ -994,13 +1053,22 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    "INVALID MANAGER DETAILS",
-			Details:    mngr.UserId + "INVALID MANAGER DETAILS",
+			Message:    mngr.UserId + ": INVALID MANAGER'S MANAGER DETAILS",
+			Details:    mngr.UserId + ": invalid manager's manager details",
 		}
 	}
 
+	var needUpdate bool
+
 	currTime := time.Now()
 	currYear, currMonth, currDay := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+
+	if isQuarterReport && year == currYear && quarter <= currQuarter {
+		needUpdate = true
+	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
+		needUpdate = true
+	}
 
 	report := &models.UserReportDB{
 		UserId:          mngr.UserId,
@@ -1009,22 +1077,30 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 		ManagerPosition: mngr.ManagerPosition,
 		Region:          mngr.Region,
 		Outlet:          mngr.Outlet,
-		CreateAt:        time.Now(),
+		CreatedAt:       time.Now(),
+		ModifiedAt:      time.Now(),
 	}
 
-	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(mngr.Region, mngr.Outlet)
+	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(mngr.Region, mngr.Outlet, quarter, year)
 	if err == nil {
 		report.Latitude = outletResponse.Lat
 		report.Longitude = outletResponse.Lang
 	}
 
-	allDistinctOM, err := impl.PsqlDb.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId)
+	allDistinctOM, err := impl.PsqlDb.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(allDistinctOM) == 0 {
 		return report, nil
+
+		// return nil, &errors.Error{
+		// 	StatusCode: http.StatusBadRequest,
+		// 	Code:       errors.InvalidDetailsCode,
+		// 	Message:    "NO OM FOUND FOR MANAGER - " + mngr.UserId,
+		// 	Details:    "no om found for manager - " + mngr.UserId,
+		// }
 	}
 
 	hbbSaleMap := make(map[string]int, 0)
@@ -1035,12 +1111,21 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 	for _, om := range allDistinctOM {
 
 		omReport, err := impl.PsqlDb.FetchManagerReport(om.UserId, isQuarterReport, quarter, month, year)
-		if err != nil || (omReport != nil && omReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
-			omReport, err = impl.updateOutletManagerReport(ctx, om, isQuarterReport, quarter, month, year)
-		}
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && omReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-		if err != nil {
-			return nil, err
+				resp, err := impl.updateOutletManagerReport(ctx, om, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				omReport = resp
+			}
 		}
 
 		report.HayyakSalesCount += omReport.HayyakSalesCount
@@ -1182,14 +1267,23 @@ func (impl *IncentiveImpl) updateOutletReport(ctx *gin.Context, regionName, outl
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    errors.InvalidDetails,
-			Details:    "invalid region or outlet",
+			Message:    "BLANK REGION OR OUTLET - region:" + regionName + " outlet:" + outletName,
+			Details:    "blank region or outlet - region:" + regionName + " outlet:" + outletName,
 		}
 	}
 
-	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(regionName, outletName)
+	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(regionName, outletName, quarter, year)
 	if err != nil {
 		return nil, err
+	}
+
+	if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    "INVALID OUTLET CO-ORDINATES - region:" + regionName + " outlet:" + outletName,
+			Details:    "invalid outlet co-ordintaes - region:" + regionName + " outlet:" + outletName,
+		}
 	}
 
 	hbbSales, hayyakSales, baqatiSales, upgradeSales, err := impl.PsqlDb.FetchOutletSalesCount(regionName, outletName, isQuarterReport, quarter, month, year)
@@ -1251,6 +1345,7 @@ func (impl *IncentiveImpl) updateOutletReport(ctx *gin.Context, regionName, outl
 		BaqatiTargetCount:  baqatiTarget,
 		UpgradeTargetCount: upgradeTarget,
 		CreatedAt:          time.Now(),
+		ModifiedAt:         time.Now(),
 	}
 
 	go func(report *models.OutletReportDB) {
@@ -1268,15 +1363,24 @@ func (impl *IncentiveImpl) updateRegionReport(ctx *gin.Context, regionName strin
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    errors.InvalidDetails,
-			Details:    "blank region ",
+			Message:    "BLANK REGION NAME",
+			Details:    "blank region name",
 		}
 	}
 
+	var needUpdate bool
+
 	currTime := time.Now()
 	currYear, currMonth, currDay := currTime.Date()
+	currQuarter := impl.getQuarterFromMonth(int(currMonth))
 
-	allOutlets, err := impl.PsqlDb.FetchAllOutletNames(regionName)
+	if isQuarterReport && year == currYear && quarter <= currQuarter {
+		needUpdate = true
+	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
+		needUpdate = true
+	}
+
+	allOutlets, err := impl.PsqlDb.FetchAllOutletNames(regionName, quarter, year)
 	if err != nil {
 		return nil, err
 	}
@@ -1285,24 +1389,35 @@ func (impl *IncentiveImpl) updateRegionReport(ctx *gin.Context, regionName strin
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    "NO OUTLETS FOUND UNDER - " + regionName,
-			Details:    "NO OUTLETS FOUND UNDER - " + regionName,
+			Message:    "NO OUTLETS FOUND FOR REGION - " + regionName,
+			Details:    "no outlet found for region - " + regionName,
 		}
 	}
 
 	regionReport := &models.RegionReportDB{
-		Region:    regionName,
-		CreatedAt: time.Now(),
+		Region:     regionName,
+		CreatedAt:  time.Now(),
+		ModifiedAt: time.Now(),
 	}
 
 	for _, eachOutlet := range allOutlets {
-		outletReport, err := impl.PsqlDb.FetchOutletReport(eachOutlet, isQuarterReport, quarter, month, year)
-		if err != nil || (outletReport != nil && outletReport.CreatedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
-			outletReport, err = impl.updateOutletReport(ctx, regionName, eachOutlet, isQuarterReport, quarter, month, year)
-		}
 
-		if err != nil {
-			return nil, err
+		outletReport, err := impl.PsqlDb.FetchOutletReport(eachOutlet, isQuarterReport, quarter, month, year)
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && outletReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+
+				outletResp, err := impl.updateOutletReport(ctx, regionName, eachOutlet, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				outletReport = outletResp
+			}
 		}
 
 		regionReport.HayyakSalesCount += outletReport.HayyakSalesCount

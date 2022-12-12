@@ -13,7 +13,7 @@ import (
 
 func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
 
-	user, err := impl.PsqlDb.FetchUserBasicDetails(userID)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
@@ -22,8 +22,8 @@ func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userID str
 	if !ok || user.Position == constant.Promoter || user.Position == constant.CSR || user.Position == constant.OutletManager || user.Position == constant.TeamLeader {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
-			Message:    "INCORRECT USER POSITION",
-			Details:    "incorrect position",
+			Message:    user.UserId + ": INCORRECT MANAGER POSITION - " + user.Position,
+			Details:    "incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
 		}
 	}
 
@@ -45,12 +45,21 @@ func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userID str
 	if user.Position == constant.Manager {
 
 		regionReport, err := impl.PsqlDb.FetchRegionReport(user.Region, isQuarterReport, quarter, month, year)
-		if needUpdate && (err != nil || (err == nil && regionReport.CreatedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-			regionReport, err = impl.updateRegionReport(ctx, user.Region, isQuarterReport, quarter, month, year)
-		}
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && regionReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-		if err != nil {
-			return nil, err
+				regionResp, err := impl.updateRegionReport(ctx, user.Region, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				regionReport = regionResp
+			}
 		}
 
 		eachRegionResp := &models.ProductWiseSalesCountPerOutlet{
@@ -68,26 +77,36 @@ func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userID str
 		return resp, nil
 	}
 
-	// for non region manager
-	allDistinctMngr, err := impl.PsqlDb.FetchAllRMReportingToGivenManager(mangerPosition, userID)
+	//// for non region manager
+
+	allDistinctMngr, err := impl.PsqlDb.FetchAllRMReportingToGivenManager(mangerPosition, userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(allDistinctMngr) == 0 {
-		logger.FileLogger.CtxError(ctx).Str("position", mangerPosition).Msg("GetRegionSalesAndTarget : no OM found")
+		logger.FileLogger.CtxError(ctx).Str("position", mangerPosition).Msg("GetRegionSalesAndTarget : no RM found")
 		return resp, nil
 	}
 
 	for _, eachMngr := range allDistinctMngr {
 
-		regionReport, err := impl.PsqlDb.FetchRegionReport(eachMngr.Outlet, isQuarterReport, quarter, month, year)
-		if needUpdate && (err != nil || (err == nil && regionReport.CreatedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-			regionReport, err = impl.updateRegionReport(ctx, eachMngr.Region, isQuarterReport, quarter, month, year)
-		}
+		regionReport, err := impl.PsqlDb.FetchRegionReport(eachMngr.Region, isQuarterReport, quarter, month, year)
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && regionReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-		if err != nil {
-			return nil, err
+				regionResp, err := impl.updateRegionReport(ctx, eachMngr.Region, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				regionReport = regionResp
+			}
 		}
 
 		eachRegionResp := &models.ProductWiseSalesCountPerOutlet{

@@ -26,6 +26,7 @@ func fetchProducts(ctx *gin.Context) {
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "unauthorized request",
+			Code:       http.StatusBadRequest,
 			Text:       "auth token not found",
 			CreateTime: time.Now().Local(),
 		}
@@ -41,7 +42,7 @@ func fetchProducts(ctx *gin.Context) {
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),
-		Type:       "info",
+		Type:       "trace",
 		Msg:        "request body",
 		Text:       fmt.Sprintf("%+v", ctx.Request.URL.Query()),
 		CreateTime: time.Now().Local(),

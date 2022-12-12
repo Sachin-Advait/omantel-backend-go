@@ -13,17 +13,17 @@ import (
 // GetUserPayout - cached response
 func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.TotalIncentive, *errors.Error) {
 
-	user, err := impl.PsqlDb.FetchUserDetails(userID)
+	user, err := impl.PsqlDb.FetchUserDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, ok := constant.EmployeePositionMap[user.Position]; !ok {
+	_, ok := constant.EmployeePositionMap[user.Position]
+	if !ok {
 		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    userID + "INVALID POSITION FOUND",
-			Details:    "invalid position for user payout, userid-" + userID + ", position-" + user.Position,
+			StatusCode: http.StatusBadRequest,
+			Message:    user.UserId + ": INCORRECT USER POSITION - " + user.Position,
+			Details:    "incorrect user position: userId-" + user.UserId + " position-" + user.Position,
 		}
 	}
 
@@ -67,7 +67,7 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 			}, nil
 		}
 
-		if err != nil || (err == nil && userReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+		if err != nil || (err == nil && userReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
 			resp, _, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
 			if err != nil {
@@ -125,7 +125,7 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 		}, nil
 	}
 
-	if err != nil || (err == nil && mngrReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+	if err != nil || (err == nil && mngrReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
 		mngrReport, err := impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
 		if err != nil {

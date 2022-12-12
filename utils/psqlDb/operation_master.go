@@ -15,7 +15,7 @@ import (
 
 /////////////////////// OUTLET TABLE ///////////////////////////
 
-func (dbConn *DBImplementation) FetchOutletDetailsViaName(regionName, outletName string) (*models.GetOutletResponse, *errors.Error) {
+func (dbConn *DBImplementation) FetchOutletDetailsViaName(regionName, outletName string, quarter, year int) (*models.OutletResponse, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("region", regionName).Str("outlet", outletName).Time("start", time.Now()).Msg("FetchOutletDetailsViaName start")
 	// defer logger.FileLogger.Info().Str("region", regionName).Str("outlet", outletName).Time("end", time.Now()).Msg("FetchOutletDetailsViaName done")
@@ -32,11 +32,11 @@ func (dbConn *DBImplementation) FetchOutletDetailsViaName(regionName, outletName
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	outlet := &models.GetOutletResponse{}
+	outlet := &models.OutletResponse{}
 
 	err := dbConn.Operation.QueryRowContext(ctx,
-		"SELECT outlet_code, outlet_name, region_code, region_name, latitude, longitude FROM outlets_table where region_name=$1 and outlet_name=$2", regionName, outletName).
-		Scan(&outlet.OutletCode, &outlet.OutletName, &outlet.RegionCode, &outlet.RegionName, &outlet.Lat, &outlet.Lang)
+		"SELECT outlet_code, outlet_name, region_code, region_name, latitude, longitude FROM outlets_table where deleted IS NULL and region_name=$1 and outlet_name=$2 and quarter=$3 and year=$4",
+		regionName, outletName, quarter, year).Scan(&outlet.OutletCode, &outlet.OutletName, &outlet.RegionCode, &outlet.RegionName, &outlet.Lat, &outlet.Lang, quarter, year)
 	if err == nil {
 		return outlet, nil
 	}
@@ -58,7 +58,7 @@ func (dbConn *DBImplementation) FetchOutletDetailsViaName(regionName, outletName
 	}
 }
 
-func (dbConn *DBImplementation) FetchAllOutletNames(regionName string) ([]string, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllOutletNames(regionName string, quarter, year int) ([]string, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("region", regionName).Time("start", time.Now()).Msg("FetchAllOutletNames start")
 	// defer logger.FileLogger.Info().Str("region", regionName).Time("end", time.Now()).Msg("FetchAllOutletNames done")
@@ -77,7 +77,7 @@ func (dbConn *DBImplementation) FetchAllOutletNames(regionName string) ([]string
 
 	outlets := make([]string, 0)
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "SELECT outlet_name FROM outlets_table where region_name=$1", regionName)
+	rows, err := dbConn.Operation.QueryContext(ctx, "SELECT outlet_name FROM outlets_table where deleted IS NULL and region_name=$1 and quarter=$2 and year=$3", regionName, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -124,11 +124,11 @@ func (dbConn *DBImplementation) FetchOutletSalesCount(region, outlet string, isQ
 
 	if isQuarterReport {
 		rows, sqlErr = dbConn.Operation.QueryContext(ctx,
-			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and quarter=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY category, product_group",
+			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where deleted IS NULL and region=$1 and outlet=$2 and quarter=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY category, product_group",
 			region, outlet, quarter, year)
 	} else {
 		rows, sqlErr = dbConn.Operation.QueryContext(ctx,
-			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and EXTRACT('month' from b.sales_date)=$3 and EXTRACT('year' from b.sales_date)=$4 GROUP BY category, product_group",
+			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where deleted IS NULL and region=$1 and outlet=$2 and EXTRACT('month' from b.sales_date)=$3 and EXTRACT('year' from b.sales_date)=$4 GROUP BY category, product_group",
 			region, outlet, month, year)
 	}
 
@@ -282,7 +282,7 @@ func (dbConn *DBImplementation) FetchActiveUserSales(userID string, region strin
 	return trx, nil
 }
 
-func (dbConn *DBImplementation) FetchAgentUserHierarchy(userID string) (*models.UserHierarchy, *errors.Error) {
+func (dbConn *DBImplementation) FetchAgentUserHierarchy(userID string, quarter, year int) (*models.UserHierarchy, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("userID", userID).Time("start", time.Now()).Msg("FetchAgentUserHierarchy start")
 	// defer logger.FileLogger.Info().Str("userID", userID).Time("end", time.Now()).Msg("FetchAgentUserHierarchy done")
@@ -292,7 +292,7 @@ func (dbConn *DBImplementation) FetchAgentUserHierarchy(userID string) (*models.
 
 	rcrd := &models.UserHierarchy{}
 
-	err := dbConn.Operation.QueryRowContext(ctx, "select outlet_manager, manager, senior_manager, general_manager, vice_president from user_hierarchy_table where emp_id", userID).
+	err := dbConn.Operation.QueryRowContext(ctx, "select outlet_manager, manager, senior_manager, general_manager, vice_president from user_hierarchy_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3", userID, quarter, year).
 		Scan(&rcrd.OutletManager, &rcrd.Manager, &rcrd.SeniorManager, &rcrd.GeneralManager, &rcrd.VicePresident)
 	if err == nil {
 		return rcrd, nil
@@ -316,7 +316,7 @@ func (dbConn *DBImplementation) FetchAgentUserHierarchy(userID string) (*models.
 }
 
 // FetchAllAgentsUserOfOM - all outlet employees reporting to given outlet manager in argument
-func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string) ([]*models.UserBasicDetailsDB, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("userID", userID).Time("start", time.Now()).Msg("FetchAgentUserHierarchy start")
 	// defer logger.FileLogger.Info().Str("userID", userID).Time("end", time.Now()).Msg("FetchAgentUserHierarchy done")
@@ -324,7 +324,7 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string) (
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select distinct emp_id from user_hierarchy_table where outlet_manager=$1 and team_lead=$2", outletManagerID, outletManagerID)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select distinct emp_id from user_hierarchy_table where deleted IS NULL and outlet_manager=$1 and team_lead=$2 and quarter=$3 and year=$4", outletManagerID, outletManagerID, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -359,7 +359,7 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string) (
 	response := make([]*models.UserBasicDetailsDB, 0)
 
 	for _, eachUser := range userIds {
-		userRecord, err := dbConn.FetchUserDetails(eachUser)
+		userRecord, err := dbConn.FetchUserDetails(eachUser, quarter, year)
 		if err != nil {
 			return nil, err
 		}
@@ -371,7 +371,7 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string) (
 }
 
 // FetchAllOMReportingToGivenManager - all outlet managers reporting to given manager in argument
-func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPosition string, managerID string) (map[string]*models.UserBasicDetailsDB, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPosition string, managerID string, quarter, year int) (map[string]*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllOMReportingToGivenManager start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllOMReportingToGivenManager done")
@@ -383,13 +383,13 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 
 	switch managerPosition {
 	case constant.VicePresident:
-		query = "select outlet_manager, team_lead from user_hierarchy_table where vice_president= $1"
+		query = "select outlet_manager, team_lead from user_hierarchy_table where deleted IS NULL and vice_president=$1 and quarter=$2 and year=$3"
 	case constant.GeneralManager:
-		query = "select outlet_manager, team_lead from user_hierarchy_table where general_manager= $1"
+		query = "select outlet_manager, team_lead from user_hierarchy_table where deleted IS NULL and general_manager=$1 and quarter=$2 and year=$3"
 	case constant.SeniorManager:
-		query = "select outlet_manager, team_lead from user_hierarchy_table where senior_manager= $1"
+		query = "select outlet_manager, team_lead from user_hierarchy_table where deleted IS NULL and senior_manager=$1 and quarter=$2 and year=$3"
 	case constant.Manager:
-		query = "select outlet_manager, team_lead from user_hierarchy_table where manager= $1"
+		query = "select outlet_manager, team_lead from user_hierarchy_table where deleted IS NULL and manager=$1 and quarter=$2 and year=$3"
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -398,7 +398,7 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 		}
 	}
 
-	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID)
+	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -435,7 +435,7 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 	}
 
 	for eachUser, _ := range response {
-		userRecord, err := dbConn.FetchUserDetails(eachUser)
+		userRecord, err := dbConn.FetchUserDetails(eachUser, quarter, year)
 		if err != nil {
 			return nil, err
 		}
@@ -447,7 +447,7 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 }
 
 // FetchAllRMReportingToGivenManager - all regional managers reporting to given manager in argument
-func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPosition string, managerID string) ([]*models.UserBasicDetailsDB, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPosition string, managerID string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllManagerReportingToGivenManager start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllManagerReportingToGivenManager done")
@@ -459,11 +459,11 @@ func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPositio
 
 	switch managerPosition {
 	case constant.VicePresident:
-		query = "select distinct manager from user_hierarchy_table where vice_president= $1"
+		query = "select distinct manager from user_hierarchy_table where deleted IS NULL and vice_president= $1 and quarter=$2 and year=$3"
 	case constant.GeneralManager:
-		query = "select distinct manager, team_lead from user_hierarchy_table where general_manager= $1"
+		query = "select distinct manager from user_hierarchy_table where deleted IS NULL and general_manager= $1 and quarter=$2 and year=$3"
 	case constant.SeniorManager:
-		query = "select distinct manager, team_lead from user_hierarchy_table where senior_manager= $1"
+		query = "select distinct manager from user_hierarchy_table where deleted IS NULL and senior_manager= $1 and quarter=$2 and year=$3"
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -472,7 +472,7 @@ func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPositio
 		}
 	}
 
-	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID)
+	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -507,7 +507,7 @@ func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPositio
 	response := make([]*models.UserBasicDetailsDB, 0)
 
 	for _, eachManager := range managerArray {
-		userRecord, err := dbConn.FetchUserDetails(eachManager)
+		userRecord, err := dbConn.FetchUserDetails(eachManager, quarter, year)
 		if err != nil {
 			return nil, err
 		}
@@ -519,7 +519,7 @@ func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPositio
 }
 
 // FetchAllEmpReportingToGivenManagerRole -
-func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, managerPosition string) ([]*models.UserBasicDetailsDB, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, managerPosition string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllMngrReportingToManagerRole start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllMngrReportingToManagerRole done")
@@ -542,11 +542,11 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 
 	switch managerPosition {
 	case constant.VicePresident:
-		query = "select distinct general_manager from user_hierarchy_table where vice_president=$1"
+		query = "select distinct general_manager from user_hierarchy_table where deleted IS NULL and vice_president=$1 and quarter=$2 and year=$3"
 	case constant.GeneralManager:
-		query = "select distinct senior_manager from user_hierarchy_table where general_manager=$1"
+		query = "select distinct senior_manager from user_hierarchy_table where deleted IS NULL and general_manager=$1 and quarter=$2 and year=$3"
 	case constant.SeniorManager:
-		query = "select distinct manager from user_hierarchy_table where senior_manager=$1"
+		query = "select distinct manager from user_hierarchy_table where deleted IS NULL and senior_manager=$1 and quarter=$2 and year=$3"
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -556,7 +556,7 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 		}
 	}
 
-	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID)
+	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -591,7 +591,7 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 	response := make([]*models.UserBasicDetailsDB, 0)
 
 	for _, eachManager := range managerArray {
-		userRecord, err := dbConn.FetchUserDetails(eachManager)
+		userRecord, err := dbConn.FetchUserDetails(eachManager, quarter, year)
 		if err != nil {
 			return nil, err
 		}
@@ -603,7 +603,7 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 }
 
 // FetchAllEmpReportingToGivenManagerRole
-func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPosition string, managerID string) ([]*models.ReportingStaffIDAndName, *errors.Error) {
+func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPosition string, managerID string, quarter, year int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllEmpReportingToGivenManagerRole start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllEmpReportingToGivenManagerRole done")
@@ -613,8 +613,8 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    managerID + "DB CALL WITHOOUT DETAILS",
-			Details:    "FetchAllEmpReportingToGivenManagerRole: invalid db call, mngrID-" + managerID + ", mngrPos-" + managerPosition,
+			Message:    managerID + ": INVALID MANAGER POSITION - " + managerPosition,
+			Details:    "FetchAllEmpReportingToGivenManagerRole: invalid position, mngrID-" + managerID + ", mngrPos-" + managerPosition,
 		}
 	}
 
@@ -625,20 +625,20 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 
 	switch managerPosition {
 	case constant.VicePresident:
-		query = "select distinct a.general_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.general_manager=b.emp_id where a.vice_president=$1"
+		query = "select distinct a.general_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.general_manager=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.vice_president=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
 	case constant.GeneralManager:
-		query = "select distinct a.senior_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.senior_manager=b.emp_id where a.general_manager=$1"
+		query = "select distinct a.senior_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.senior_manager=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.general_manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
 	case constant.SeniorManager:
-		query = "select distinct a.manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.manager=b.emp_id where a.senior_manager=$1"
+		query = "select distinct a.manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.manager=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.senior_manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
 	case constant.Manager:
-		query = "select distinct a.outlet_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager=$1"
+		query = "select distinct a.outlet_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
 	case constant.OutletManager:
-		query = "select distinct a.emp_id, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.outlet_manager=$1"
+		query = "select distinct a.emp_id, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.outlet_manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
 	case constant.TeamLeader:
-		query = "select distinct a.emp_id, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.outlet_manager=$1"
+		query = "select distinct a.emp_id, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.outlet_manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
 	}
 
-	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID)
+	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID, quarter, year, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -671,14 +671,14 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 	if managerPosition == constant.Manager {
 
 		rows, err := dbConn.Operation.QueryContext(ctx,
-			"select distinct a.team_lead, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager=$1",
-			managerID)
+			"select distinct a.team_lead, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5",
+			managerID, quarter, year, quarter, year)
 		if err != nil {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
 				Message:    errors.InternalServerError,
-				Details:    "FetchAllEmpReportingToGivenManagerRole: query failed - " + err.Error(),
+				Details:    "FetchAllEmpReportingToGivenManagerRole: tl query failed - " + err.Error(),
 			}
 		}
 
@@ -691,7 +691,7 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 					StatusCode: http.StatusInternalServerError,
 					Code:       errors.InternalServerErrorCode,
 					Message:    errors.InternalServerError,
-					Details:    "FetchAllEmpReportingToGivenManagerRole: scan failed - " + err.Error(),
+					Details:    "FetchAllEmpReportingToGivenManagerRole: tl scan failed - " + err.Error(),
 				}
 			}
 

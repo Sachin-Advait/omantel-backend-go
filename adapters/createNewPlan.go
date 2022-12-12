@@ -15,7 +15,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func CreateNewPlan(ctx *gin.Context, req []*models.NewPlanRequest) (int, interface{}) {
+func CreateNewPlan(ctx *gin.Context, req []*models.CreatePlanRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)

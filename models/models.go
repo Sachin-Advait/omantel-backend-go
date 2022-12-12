@@ -51,45 +51,53 @@ type UserReporting struct {
 	ClientId string `json:"client_id"`
 }
 
-type NewRegionRequest struct {
+type CreateRegionRequest struct {
 	RegionCode string `json:"region_code"`
 	RegionName string `json:"region_name"`
+	Quarter    int    `json:"quarter"`
+	Year       int    `json:"year"`
 	IsUpdate   bool   `json:"isUpdate"`
 }
 
-type NewRegionFailedResponse struct {
+type RegionFailedResponse struct {
 	RegionCode string `json:"region_code"`
 	Message    string `json:"message"`
 }
 
-type DeleteRegionRequest struct {
+type RegionRequest struct {
 	RegionCodes []string `json:"region_codes"`
+	Quarter     int      `json:"quarter"`
+	Year        int      `json:"year"`
 }
 
-type GetRegionResponse struct {
+type RegionResponse struct {
 	RegionCode string `json:"region_code"`
 	RegionName string `json:"region_name"`
 }
 
-type NewOutletRequest struct {
+type CreateOutletRequest struct {
 	OutletCode string  `json:"outlet_code"`
 	OutletName string  `json:"outlet_name"`
 	RegionCode string  `json:"region_code"`
 	Lat        float64 `json:"lat"`
 	Lang       float64 `json:"lang"`
+	Quarter    int     `json:"quarter"`
+	Year       int     `json:"year"`
 	IsUpdate   bool    `json:"isUpdate"`
 }
 
-type NewOutletFailedResponse struct {
+type OutletFailedResponse struct {
 	OutletCode string `json:"outlet_code"`
 	Message    string `json:"message"`
 }
 
-type DeleteOutletRequest struct {
+type OutletRequest struct {
 	OutletCodes []string `json:"outlet_codes"`
+	Quarter     int      `json:"quarter"`
+	Year        int      `json:"year"`
 }
 
-type GetOutletResponse struct {
+type OutletResponse struct {
 	OutletCode string  `json:"outlet_code"`
 	OutletName string  `json:"outlet_name"`
 	RegionCode string  `json:"region_code"`
@@ -98,47 +106,55 @@ type GetOutletResponse struct {
 	Lang       float64 `json:"lang"`
 }
 
-type NewProductRequest struct {
+type CreateProductRequest struct {
 	ProductCode string  `json:"product_code"`
 	ProductName string  `json:"product_name"`
 	Weightage   float64 `json:"weightage"`
+	Quarter     int     `json:"quarter"`
+	Year        int     `json:"year"`
 	IsUpdate    bool    `json:"isUpdate"`
 }
 
-type NewProductFailedResponse struct {
+type ProductFailedResponse struct {
 	ProductCode string `json:"product_code"`
 	Message     string `json:"message"`
 }
 
-type DeleteProductRequest struct {
+type ProductRequest struct {
 	ProductCodes []string `json:"product_codes"`
+	Quarter      int      `json:"quarter"`
+	Year         int      `json:"year"`
 }
 
-type GetProductResponse struct {
+type ProductResponse struct {
 	ProductCode string  `json:"product_code"`
 	ProductName string  `json:"product_name"`
 	Weightage   float64 `json:"weightage"`
 }
 
-type NewPlanRequest struct {
+type CreatePlanRequest struct {
 	PlanCode    string  `json:"plan_code"`
 	PlanName    string  `json:"plan_name"`
 	ProductCode string  `json:"product_code"`
 	PlanPrice   float64 `json:"plan_price"`
 	SIPPlanRate float64 `json:"sip_plan_rate"`
+	Quarter     int     `json:"quarter"`
+	Year        int     `json:"year"`
 	IsUpdate    bool    `json:"isUpdate"`
 }
 
-type NewPlanFailedResponse struct {
+type PlanFailedResponse struct {
 	PlanCode string `json:"plan_code"`
 	Message  string `json:"message"`
 }
 
-type DeletePlanRequest struct {
+type PlanRequest struct {
 	PlanCodes []string `json:"plan_codes"`
+	Quarter   int      `json:"quarter"`
+	Year      int      `json:"year"`
 }
 
-type GetPlanResponse struct {
+type PlanResponse struct {
 	PlanCode    string  `json:"plan_code"`
 	PlanName    string  `json:"plan_name"`
 	ProductCode string  `json:"product_code"`
@@ -146,36 +162,35 @@ type GetPlanResponse struct {
 	SIPPlanRate float64 `json:"sip_plan_rate"`
 }
 
-type NewTargetRequest struct {
+type CreateTargetRequest struct {
 	TargetCode string  `json:"target_code"`
 	RegionCode string  `json:"region_code"`
 	OutletCode string  `json:"outlet_code"`
-	Year       int     `json:"year"`
 	Month      int     `json:"month"`
 	Baqati     float64 `json:"baqati"`
 	Hayyak     float64 `json:"hayyak"`
 	HBB        float64 `json:"hbb"`
 	Upgrade    float64 `json:"upgrade"`
+	Quarter    int     `json:"quarter"`
+	Year       int     `json:"year"`
 	IsUpdate   bool    `json:"isUpdate"`
 }
 
-type NewTargetFailedResponse struct {
+type TargetFailedResponse struct {
 	TargetCode string `json:"target_code"`
 	Message    string `json:"message"`
 }
 
-type DeleteTargetRequest struct {
-	TargetCodes []string `json:"target_codes"`
+type TargetRequest struct {
+	TargetCodes []string `json:"target_code"`
+	RegionCode  string   `json:"region_code"`
+	OutletCode  []string `json:"outlet_code"`
+	Month       int      `json:"month"`
+	Quarter     int      `json:"quarter"`
+	Year        int      `json:"year"`
 }
 
-type GetTargetRequest struct {
-	TargetCode []string `json:"target_codes"`
-	OutletCode []string `json:"outlet_codes"`
-	Month      int      `json:"month"`
-	Year       int      `json:"year"`
-}
-
-type GetTargetResponse struct {
+type TargetResponse struct {
 	TargetCode string  `json:"target_code"`
 	RegionCode string  `json:"region_code"`
 	Month      int     `json:"month"`
@@ -238,7 +253,7 @@ type UserRecord struct {
 	HayyakSaleCountPerPlanArray  string
 	BaqatiSaleCountPerPlanArray  string
 	UpgradeSaleCountPerPlanArray string
-	CreateAt                     time.Time
+	CreatedAt                    time.Time
 }
 
 type Transaction struct {

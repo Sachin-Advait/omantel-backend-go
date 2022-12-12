@@ -1,6 +1,7 @@
 package business
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,9 +12,18 @@ import (
 
 func (impl *IncentiveImpl) GetUserReport(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.UserReportDB, *errors.Error) {
 
-	user, err := impl.PsqlDb.FetchUserDetails(userID)
+	user, err := impl.PsqlDb.FetchUserDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
+	}
+
+	_, ok := constant.EmployeePositionMap[user.Position]
+	if !ok {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    user.UserId + ": INCORRECT USER POSITION - " + user.Position,
+			Details:    "incorrect user position: userId-" + user.UserId + " position-" + user.Position,
+		}
 	}
 
 	var needUpdate bool
@@ -31,25 +41,65 @@ func (impl *IncentiveImpl) GetUserReport(ctx *gin.Context, userID string, isQuar
 	if user.Position == constant.Promoter || user.Position == constant.CSR {
 
 		userReport, err := impl.PsqlDb.FetchAgentUserReport(user.UserId, isQuarterReport, quarter, month, year)
-		if needUpdate && (err != nil || (err == nil && userReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-			_, userReport, err = impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+
+			userReport.Position = constant.EmployeePositionMap[userReport.Position]
+			userReport.ManagerPosition = constant.EmployeePositionMap[userReport.ManagerPosition]
+
+			return userReport, nil
 		}
 
-		if err != nil {
-			return nil, err
+		if err != nil || (err == nil && userReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+
+			_, resp, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+			if err != nil {
+				return nil, err
+			}
+
+			resp.Position = constant.EmployeePositionMap[resp.Position]
+			resp.ManagerPosition = constant.EmployeePositionMap[resp.ManagerPosition]
+
+			return resp, nil
 		}
+
+		userReport.Position = constant.EmployeePositionMap[userReport.Position]
+		userReport.ManagerPosition = constant.EmployeePositionMap[userReport.ManagerPosition]
 
 		return userReport, nil
 	}
 
-	userReport, err := impl.PsqlDb.FetchManagerReport(user.UserId, isQuarterReport, quarter, month, year)
-	if needUpdate && (err != nil || (err == nil && userReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-		userReport, err = impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
+	/////
+
+	mngrReport, err := impl.PsqlDb.FetchManagerReport(user.UserId, isQuarterReport, quarter, month, year)
+	if !needUpdate {
+		if err != nil {
+			return nil, err
+		}
+
+		mngrReport.Position = constant.EmployeePositionMap[mngrReport.Position]
+		mngrReport.ManagerPosition = constant.EmployeePositionMap[mngrReport.ManagerPosition]
+
+		return mngrReport, nil
 	}
 
-	if err != nil {
-		return nil, err
+	if err != nil || (err == nil && mngrReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+
+		resp, err := impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
+		if err != nil {
+			return nil, err
+		}
+
+		resp.Position = constant.EmployeePositionMap[resp.Position]
+		resp.ManagerPosition = constant.EmployeePositionMap[resp.ManagerPosition]
+
+		return resp, nil
 	}
 
-	return userReport, nil
+	mngrReport.Position = constant.EmployeePositionMap[mngrReport.Position]
+	mngrReport.ManagerPosition = constant.EmployeePositionMap[mngrReport.ManagerPosition]
+
+	return mngrReport, nil
 }

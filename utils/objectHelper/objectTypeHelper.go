@@ -187,3 +187,13 @@ func RoundTime(input float64) int {
 
 	return int(i)
 }
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rands.Intn(len(letterRunes))]
+	}
+	return string(b)
+}

@@ -15,7 +15,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-func CreateNewRegion(ctx *gin.Context, req []*models.NewRegionRequest) (int, interface{}) {
+func CreateNewRegion(ctx *gin.Context, req []*models.CreateRegionRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)

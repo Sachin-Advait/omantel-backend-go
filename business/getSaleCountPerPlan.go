@@ -18,14 +18,23 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidReqParameters,
-			Message:    "INVALID PRODUCT",
-			Details:    "Invalid product",
+			Message:    "INVALID PRODUCT - " + product,
+			Details:    "invalid product - " + product,
 		}
 	}
 
-	user, err := impl.PsqlDb.FetchUserDetails(userID)
+	user, err := impl.PsqlDb.FetchUserDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
+	}
+
+	_, ok = constant.EmployeePositionMap[user.Position]
+	if !ok {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    user.UserId + ": INCORRECT USER POSITION - " + user.Position,
+			Details:    "incorrect user position: userId-" + user.UserId + " position-" + user.Position,
+		}
 	}
 
 	var needUpdate bool
@@ -40,29 +49,70 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product
 		needUpdate = true
 	}
 
-	var userReport *models.UserReportDB
-
 	response := make([]*models.SaleCountPerPlan, 0)
 
 	if user.Position == constant.Promoter || user.Position == constant.CSR {
 
-		userReport, err = impl.PsqlDb.FetchAgentUserReport(user.UserId, isQuarterReport, quarter, month, year)
-		if needUpdate && (err != nil || (err == nil && userReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-			_, userReport, err = impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+		userReport, err := impl.PsqlDb.FetchAgentUserReport(user.UserId, isQuarterReport, quarter, month, year)
+		if !needUpdate {
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if err != nil || (err == nil && userReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+
+				_, resp, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+				if err != nil {
+					return nil, err
+				}
+
+				//TODO: test this out for struct assignment
+				userReport = resp
+			}
 		}
 
+		var saleCountString string
+
+		switch product {
+		case constant.HBBCategory:
+			saleCountString = userReport.HBBSaleCountPerPlanArray
+		case constant.HayyakCategory:
+			saleCountString = userReport.HayyakSaleCountPerPlanArray
+		case constant.BaqatiCategory:
+			saleCountString = userReport.BaqatiSaleCountPerPlanArray
+		case constant.UpgradeCategory:
+			saleCountString = userReport.UpgradeSaleCountPerPlanArray
+		}
+
+		if err := json.Unmarshal([]byte(saleCountString), &response); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    errors.InternalServerError,
+				Details:    "GetSaleCountPerPlan: resp marshal error - " + err.Error(),
+			}
+		}
+
+		return response, nil
+	}
+
+	///////
+
+	mngrReport, err := impl.PsqlDb.FetchManagerReport(user.UserId, isQuarterReport, quarter, month, year)
+	if !needUpdate {
 		if err != nil {
 			return nil, err
 		}
 	} else {
+		if err != nil || (err == nil && mngrReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-		userReport, err = impl.PsqlDb.FetchManagerReport(userID, isQuarterReport, quarter, month, year)
-		if needUpdate && (err != nil || (err == nil && userReport.CreateAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location())))) {
-			userReport, err = impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
-		}
+			resp, err := impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
+			if err != nil {
+				return nil, err
+			}
 
-		if err != nil {
-			return nil, err
+			//TODO: test this out for struct assignment
+			mngrReport = resp
 		}
 	}
 
@@ -70,13 +120,13 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product
 
 	switch product {
 	case constant.HBBCategory:
-		saleCountString = userReport.HBBSaleCountPerPlanArray
+		saleCountString = mngrReport.HBBSaleCountPerPlanArray
 	case constant.HayyakCategory:
-		saleCountString = userReport.HayyakSaleCountPerPlanArray
+		saleCountString = mngrReport.HayyakSaleCountPerPlanArray
 	case constant.BaqatiCategory:
-		saleCountString = userReport.BaqatiSaleCountPerPlanArray
+		saleCountString = mngrReport.BaqatiSaleCountPerPlanArray
 	case constant.UpgradeCategory:
-		saleCountString = userReport.UpgradeSaleCountPerPlanArray
+		saleCountString = mngrReport.UpgradeSaleCountPerPlanArray
 	}
 
 	if err := json.Unmarshal([]byte(saleCountString), &response); err != nil {
