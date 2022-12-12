@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS public.user_master_table
     created timestamp with time zone NOT NULL,
     modified timestamp with time zone NOT NULL,
     deleted timestamp with time zone,
-    comment character varying(128) NOT NULL
+    comment character varying(128) NOT NULL,
     quarter integer NOT NULL,
     year integer NOT NULL,
     PRIMARY KEY (emp_id, quarter, year)
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS public.regions_table
     created timestamp with time zone NOT NULL,
     modified timestamp with time zone NOT NULL,
     deleted timestamp with time zone,
-    comment character varying(128) NOT NULL
+    comment character varying(128) NOT NULL,
     quarter integer NOT NULL,
     year integer NOT NULL,
     PRIMARY KEY (region_code, quarter, year)
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS public.outlets_table
     comment character varying(128) NOT NULL,
     quarter integer NOT NULL,
     year integer NOT NULL,
-    PRIMARY KEY (outlet_code, quarter, year),
+    PRIMARY KEY (outlet_code, quarter, year)
 );
 
 CREATE TABLE IF NOT EXISTS public.user_hierarchy_table
@@ -77,10 +77,10 @@ CREATE TABLE IF NOT EXISTS public.user_hierarchy_table
     created timestamp with time zone NOT NULL,
     modified timestamp with time zone NOT NULL,
     deleted timestamp with time zone,
-    comment character varying(128) NOT NULL
+    comment character varying(128) NOT NULL,
     quarter integer NOT NULL,
     year integer NOT NULL,
-    PRIMARY KEY (emp_id, quarter, year),
+    PRIMARY KEY (emp_id, quarter, year)
 );
 
 
@@ -92,16 +92,16 @@ CREATE TABLE IF NOT EXISTS public.products_table
     created timestamp with time zone NOT NULL,
     modified timestamp with time zone NOT NULL,
     deleted timestamp with time zone,
-    comment character varying(128) NOT NULL
+    comment character varying(128) NOT NULL,
     quarter integer NOT NULL,
     year integer NOT NULL,
-    PRIMARY KEY (product_code, quarter, year),
+    PRIMARY KEY (product_code, quarter, year)
 );
 
 
 CREATE TABLE IF NOT EXISTS public.plans_table
 (
-    plan_code character varying(32),
+    plan_code character varying(128), -- TODO: once planCode is given this will be 32 in length
     plan_name character varying(128) NOT NULL,
     product_code character varying(32) NOT NULL,
     plan_price NUMERIC (10, 3) NOT NULL DEFAULT 0,
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS public.plans_table
     comment character varying(128) NOT NULL,
     quarter integer NOT NULL,
     year integer NOT NULL,
-    PRIMARY KEY (plan_code, quarter, year),
+    PRIMARY KEY (plan_code, quarter, year)
 );
 
 
@@ -129,10 +129,10 @@ CREATE TABLE IF NOT EXISTS public.targets_table
     created timestamp with time zone NOT NULL,
     modified timestamp with time zone NOT NULL,
     deleted timestamp with time zone,
-    comment character varying(128) NOT NULL
+    comment character varying(128) NOT NULL,
     quarter integer NOT NULL,
     year integer NOT NULL,  
-    PRIMARY KEY (target_code, quarter, year),
+    PRIMARY KEY (target_code, quarter, year)
 );
 
 
