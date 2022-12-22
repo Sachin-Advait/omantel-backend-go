@@ -202,8 +202,8 @@ const (
 
 const (
 	VicePresident  = "VICE PRESIDENT"
-	GeneralManager = "GENERAL MANAGER"
-	SeniorManager  = "SENIOR MANAGER"
+	GeneralManager = "GM"
+	SeniorManager  = "SM"
 	Manager        = "MANAGER"
 	TeamLeader     = "TL"
 	OutletManager  = "OUTLET MANAGER"

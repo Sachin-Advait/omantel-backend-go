@@ -20,7 +20,7 @@ func GetSingleUserIncentive(ctx *gin.Context, req *models.SingleUserIncentiveReq
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	isQuarterReport, quarter, month, year, err := validateSingleUserIncentiveRequest(req)
+	isQuarterReport, quarter, month, year, err := validateSingleUserIncentiveRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetSingleUserIncentive : validation failed")
 		logger.LogChan <- &logger.Logging{
@@ -68,7 +68,17 @@ func GetSingleUserIncentive(ctx *gin.Context, req *models.SingleUserIncentiveReq
 	return http.StatusOK, response
 }
 
-func validateSingleUserIncentiveRequest(req *models.SingleUserIncentiveRequest) (isQuarterReport bool, quarter, month, year int, err error) {
+func validateSingleUserIncentiveRequest(req *models.SingleUserIncentiveRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, quarter, month, year int, err error) {
+
+	if req.ClientId == "" {
+		err = errors.New("blank userId")
+		return
+	}
+
+	// if req.ClientId == "" || ctxHeader.XUserId != req.ClientId {
+	// 	err = errors.New("incorrect user token")
+	// 	return
+	// }
 
 	var date time.Time
 

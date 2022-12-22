@@ -52,6 +52,7 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 		}
 
 		if len(agentList) == 0 {
+			logger.FileLogger.CtxError(ctx).Str("position", user.Position).Msg("GetTopTenEmpSalesAndTarget : no Agent found")
 			return resp, nil
 		}
 
@@ -65,11 +66,13 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 			} else {
 				if err != nil || (err == nil && agentReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-					_, resp, err := impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
+					ind, resp, err := impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
 					if err != nil {
 						return nil, err
 					}
 
+					logger.FileLogger.CtxInfo(ctx).Str("agentReport", agent.UserId).Str(constant.HBBCategory, ind.HBB.Error).Str(constant.HayyakCategory, ind.Hayyak.Error).
+						Str(constant.BaqatiCategory, ind.Baqati.Error).Str(constant.UpgradeCategory, ind.Upgrade.Error).Msg("GetTopTenEmpSalesAndTarget : trace")
 					//TODO: test this out for struct assignment
 					agentReport = resp
 				}
@@ -144,6 +147,7 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Interface("mngrReport", resp).Msg("GetTopTenEmpSalesAndTarget : trace")
 				//TODO: test this out for struct assignment
 				mngrReport = resp
 			}

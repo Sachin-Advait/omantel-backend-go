@@ -8,6 +8,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
 func (impl *IncentiveImpl) GetUserReport(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.UserReportDB, *errors.Error) {
@@ -46,6 +47,8 @@ func (impl *IncentiveImpl) GetUserReport(ctx *gin.Context, userID string, isQuar
 				return nil, err
 			}
 
+			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserReport : precalculated")
+
 			userReport.Position = constant.EmployeePositionMap[userReport.Position]
 			userReport.ManagerPosition = constant.EmployeePositionMap[userReport.ManagerPosition]
 
@@ -59,11 +62,15 @@ func (impl *IncentiveImpl) GetUserReport(ctx *gin.Context, userID string, isQuar
 				return nil, err
 			}
 
+			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserReport : updated")
+
 			resp.Position = constant.EmployeePositionMap[resp.Position]
 			resp.ManagerPosition = constant.EmployeePositionMap[resp.ManagerPosition]
 
 			return resp, nil
 		}
+
+		logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserReport : trace")
 
 		userReport.Position = constant.EmployeePositionMap[userReport.Position]
 		userReport.ManagerPosition = constant.EmployeePositionMap[userReport.ManagerPosition]
@@ -79,6 +86,8 @@ func (impl *IncentiveImpl) GetUserReport(ctx *gin.Context, userID string, isQuar
 			return nil, err
 		}
 
+		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserReport : precalculated")
+
 		mngrReport.Position = constant.EmployeePositionMap[mngrReport.Position]
 		mngrReport.ManagerPosition = constant.EmployeePositionMap[mngrReport.ManagerPosition]
 
@@ -92,11 +101,15 @@ func (impl *IncentiveImpl) GetUserReport(ctx *gin.Context, userID string, isQuar
 			return nil, err
 		}
 
+		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserReport : updated")
+
 		resp.Position = constant.EmployeePositionMap[resp.Position]
 		resp.ManagerPosition = constant.EmployeePositionMap[resp.ManagerPosition]
 
 		return resp, nil
 	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserReport : trace")
 
 	mngrReport.Position = constant.EmployeePositionMap[mngrReport.Position]
 	mngrReport.ManagerPosition = constant.EmployeePositionMap[mngrReport.ManagerPosition]

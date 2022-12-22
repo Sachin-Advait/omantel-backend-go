@@ -28,6 +28,16 @@ func (dbConn *DBImplementation) FetchPlans(quarter, year int) *errors.Error {
 		}
 	}
 
+	models.PlanRates.Year = year
+
+	if models.PlanRates.PlanRateMap == nil {
+		models.PlanRates.PlanRateMap = make(map[int]map[string]*models.ProductPlans)
+	}
+
+	if models.PlanRates.PlanRateMap[quarter] == nil {
+		models.PlanRates.PlanRateMap[quarter] = make(map[string]*models.ProductPlans)
+	}
+
 	var (
 		id            string
 		plan_name     string
@@ -47,13 +57,7 @@ func (dbConn *DBImplementation) FetchPlans(quarter, year int) *errors.Error {
 
 		models.PlanRates.Mutex.Lock()
 
-		models.PlanRates.Year = year
-
-		if models.PlanRates.PlanRateMap == nil {
-			models.PlanRates.PlanRateMap = make(map[string]*models.ProductPlans)
-		}
-
-		models.PlanRates.PlanRateMap[id] = &models.ProductPlans{
+		models.PlanRates.PlanRateMap[quarter][id] = &models.ProductPlans{
 			PlanName:    plan_name,
 			PlanPrice:   plan_price,
 			SIPRatePlan: sip_plan_rate,
@@ -75,7 +79,11 @@ func (dbConn *DBImplementation) FetchSaleTarget(quarter, year int) *errors.Error
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	models.SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*models.ProductGrpTarget)
+	models.SalesTrgt.Year = year
+
+	if models.SalesTrgt.SaleTargetMap == nil {
+		models.SalesTrgt.SaleTargetMap = make(map[string]map[string][12]*models.ProductGrpTarget)
+	}
 
 	rows, err := dbConn.Operation.QueryContext(ctx, "select region, outlet, month, baqati, hbb, hayyak, upgrade from targets_table where deleted IS NULL and quarter=$1 and year=$2", quarter, year)
 	if err != nil {
@@ -108,8 +116,6 @@ func (dbConn *DBImplementation) FetchSaleTarget(quarter, year int) *errors.Error
 		}
 
 		models.SalesTrgt.Mutex.Lock()
-
-		models.SalesTrgt.Year = year
 
 		if models.SalesTrgt.SaleTargetMap[region] == nil {
 			models.SalesTrgt.SaleTargetMap[region] = make(map[string][12]*models.ProductGrpTarget)
@@ -175,176 +181,183 @@ func (dbConn *DBImplementation) FetchValueOfPoint(quarter, year int) *errors.Err
 
 	// }
 
-	models.ValOfPoint.Mutex.Lock()
-
 	models.ValOfPoint.Year = year
 
-	models.ValOfPoint.VopMap = make(map[string]map[int]*models.VOP)
-	models.ValOfPoint.VopMap["HBB"] = make(map[int]*models.VOP)
-	models.ValOfPoint.VopMap["BAQATI"] = make(map[int]*models.VOP)
-	models.ValOfPoint.VopMap["HAYYAK"] = make(map[int]*models.VOP)
-	models.ValOfPoint.VopMap["UPGRADE"] = make(map[int]*models.VOP)
+	if models.ValOfPoint.VopMap == nil {
+		models.ValOfPoint.VopMap = make(map[int]map[string]map[int]*models.VOP)
+	}
 
-	models.ValOfPoint.VopMap["HBB"][75] = &models.VOP{
+	if models.ValOfPoint.VopMap[quarter] == nil {
+		models.ValOfPoint.VopMap[quarter] = make(map[string]map[int]*models.VOP)
+	}
+
+	models.ValOfPoint.VopMap[quarter]["HBB"] = make(map[int]*models.VOP)
+	models.ValOfPoint.VopMap[quarter]["BAQATI"] = make(map[int]*models.VOP)
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"] = make(map[int]*models.VOP)
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"] = make(map[int]*models.VOP)
+
+	models.ValOfPoint.Mutex.Lock()
+
+	models.ValOfPoint.VopMap[quarter]["HBB"][75] = &models.VOP{
 		Point:    0.0,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HBB"][95] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HBB"][95] = &models.VOP{
 		Point:    0.15,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HBB"][110] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HBB"][110] = &models.VOP{
 		Point:    0.25,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HBB"][139] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HBB"][139] = &models.VOP{
 		Point:    0.45,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HBB"][140] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HBB"][140] = &models.VOP{
 		Point:    0.75,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HBB"][159] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HBB"][159] = &models.VOP{
 		Point:    0,
 		ExtraPay: 17.5,
 	}
-	models.ValOfPoint.VopMap["HBB"][179] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HBB"][179] = &models.VOP{
 		Point:    0,
 		ExtraPay: 35.0,
 	}
-	models.ValOfPoint.VopMap["HBB"][189] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HBB"][189] = &models.VOP{
 		Point:    0,
 		ExtraPay: 52.5,
 	}
-	models.ValOfPoint.VopMap["HBB"][199] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HBB"][199] = &models.VOP{
 		Point:    0,
 		ExtraPay: 70.0,
 	}
-	models.ValOfPoint.VopMap["HBB"][200] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HBB"][200] = &models.VOP{
 		Point:    0,
 		ExtraPay: 87.5,
 	}
 
-	models.ValOfPoint.VopMap["BAQATI"][75] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][75] = &models.VOP{
 		Point:    0.0,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["BAQATI"][95] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][95] = &models.VOP{
 		Point:    0.15,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["BAQATI"][110] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][110] = &models.VOP{
 		Point:    0.25,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["BAQATI"][139] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][139] = &models.VOP{
 		Point:    0.45,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["BAQATI"][140] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][140] = &models.VOP{
 		Point:    0.75,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["BAQATI"][159] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][159] = &models.VOP{
 		Point:    0,
 		ExtraPay: 17.5,
 	}
-	models.ValOfPoint.VopMap["BAQATI"][179] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][179] = &models.VOP{
 		Point:    0,
 		ExtraPay: 35.0,
 	}
-	models.ValOfPoint.VopMap["BAQATI"][189] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][189] = &models.VOP{
 		Point:    0,
 		ExtraPay: 53,
 	}
-	models.ValOfPoint.VopMap["BAQATI"][199] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][199] = &models.VOP{
 		Point:    0,
 		ExtraPay: 70.0,
 	}
-	models.ValOfPoint.VopMap["BAQATI"][200] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["BAQATI"][200] = &models.VOP{
 		Point:    0,
 		ExtraPay: 87.5,
 	}
 
-	models.ValOfPoint.VopMap["HAYYAK"][75] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][75] = &models.VOP{
 		Point:    0.0,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HAYYAK"][95] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][95] = &models.VOP{
 		Point:    0.15,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HAYYAK"][110] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][110] = &models.VOP{
 		Point:    0.25,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HAYYAK"][139] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][139] = &models.VOP{
 		Point:    0.45,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HAYYAK"][140] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][140] = &models.VOP{
 		Point:    0.75,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["HAYYAK"][159] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][159] = &models.VOP{
 		Point:    0,
 		ExtraPay: 11,
 	}
-	models.ValOfPoint.VopMap["HAYYAK"][179] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][179] = &models.VOP{
 		Point:    0,
 		ExtraPay: 22,
 	}
-	models.ValOfPoint.VopMap["HAYYAK"][189] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][189] = &models.VOP{
 		Point:    0,
 		ExtraPay: 33,
 	}
-	models.ValOfPoint.VopMap["HAYYAK"][199] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][199] = &models.VOP{
 		Point:    0,
 		ExtraPay: 44,
 	}
-	models.ValOfPoint.VopMap["HAYYAK"][200] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["HAYYAK"][200] = &models.VOP{
 		Point:    0,
 		ExtraPay: 55,
 	}
 
-	models.ValOfPoint.VopMap["UPGRADE"][75] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][75] = &models.VOP{
 		Point:    0.0,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["UPGRADE"][95] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][95] = &models.VOP{
 		Point:    0.1,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["UPGRADE"][110] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][110] = &models.VOP{
 		Point:    0.15,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["UPGRADE"][139] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][139] = &models.VOP{
 		Point:    0.3,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["UPGRADE"][140] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][140] = &models.VOP{
 		Point:    0.5,
 		ExtraPay: 0,
 	}
-	models.ValOfPoint.VopMap["UPGRADE"][159] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][159] = &models.VOP{
 		Point:    0,
 		ExtraPay: 4,
 	}
-	models.ValOfPoint.VopMap["UPGRADE"][179] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][179] = &models.VOP{
 		Point:    0,
 		ExtraPay: 8,
 	}
-	models.ValOfPoint.VopMap["UPGRADE"][189] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][189] = &models.VOP{
 		Point:    0,
 		ExtraPay: 12,
 	}
-	models.ValOfPoint.VopMap["UPGRADE"][199] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][199] = &models.VOP{
 		Point:    0,
 		ExtraPay: 16,
 	}
-	models.ValOfPoint.VopMap["UPGRADE"][200] = &models.VOP{
+	models.ValOfPoint.VopMap[quarter]["UPGRADE"][200] = &models.VOP{
 		Point:    0,
 		ExtraPay: 20,
 	}
@@ -384,15 +397,22 @@ func (dbConn *DBImplementation) FetchMaxPayout(quarter, year int) *errors.Error 
 
 	// }
 
-	models.MaxPay.Mutex.Lock()
-
 	models.MaxPay.Year = year
 
-	models.MaxPay.Payoutmap = make(map[string]float64)
-	models.MaxPay.Payoutmap["HBB"] = 350
-	models.MaxPay.Payoutmap["BAQATI"] = 350
-	models.MaxPay.Payoutmap["HAYYAK"] = 220
-	models.MaxPay.Payoutmap["UPGRADE"] = 80
+	if models.MaxPay.Payoutmap == nil {
+		models.MaxPay.Payoutmap = make(map[int]map[string]float64)
+	}
+
+	if models.MaxPay.Payoutmap[quarter] == nil {
+		models.MaxPay.Payoutmap[quarter] = make(map[string]float64)
+	}
+
+	models.MaxPay.Mutex.Lock()
+
+	models.MaxPay.Payoutmap[quarter]["HBB"] = 350
+	models.MaxPay.Payoutmap[quarter]["BAQATI"] = 350
+	models.MaxPay.Payoutmap[quarter]["HAYYAK"] = 220
+	models.MaxPay.Payoutmap[quarter]["UPGRADE"] = 80
 	models.MaxPay.Mutex.Unlock()
 
 	return nil

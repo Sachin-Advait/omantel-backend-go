@@ -18,6 +18,24 @@ func GetUsersReportingToManager(ctx *gin.Context, req *models.UserReporting) (in
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
+	err := validateUserReportToMngr(req, ctxHeader)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetUsersReportingToManager : validation failed")
+		logger.LogChan <- &logger.Logging{
+			UserID:     ctxHeader.XUserId,
+			URL:        ctx.Request.URL.String(),
+			Type:       "error",
+			Msg:        "invalid req params",
+			Text:       err.Error(),
+			CreateTime: time.Now().Local(),
+		}
+
+		return http.StatusBadRequest, &models.APIFailureResponse{
+			Error:   errors.InvalidReqParameters,
+			Message: err.Error(),
+		}
+	}
+
 	response, errs := theProvider.GetUsersReportingToManager(ctx, req.ClientId)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUsersReportingToManager : provider failed")
@@ -46,4 +64,17 @@ func GetUsersReportingToManager(ctx *gin.Context, req *models.UserReporting) (in
 	}
 
 	return http.StatusOK, response
+}
+
+func validateUserReportToMngr(req *models.UserReporting, ctxHeader context.ContextHeader) error {
+
+	if req.ClientId == "" {
+		return errors.New("blank userId")
+	}
+
+	// if req.ClientId == "" || ctxHeader.XUserId != req.ClientId {
+	// 	return errors.New("incorrect user token")
+	// }
+
+	return nil
 }

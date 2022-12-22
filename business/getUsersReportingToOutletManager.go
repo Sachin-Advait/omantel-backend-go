@@ -21,13 +21,6 @@ func (impl *IncentiveImpl) GetUsersReportingToOutletManager(ctx *gin.Context, ou
 		return nil, err
 	}
 
-	tlResponse, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.TeamLeader, outletManagerID, currQuarter, currYear)
-	if err != nil {
-		return nil, err
-	}
-
-	response = append(response, tlResponse...)
-
 	for index, agents := range response {
 
 		if agents.ID == "" || agents.Name == "" || !(agents.Position == constant.Promoter || agents.Position == constant.CSR) {

@@ -8,6 +8,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
 // GetUserPayout - cached response
@@ -47,6 +48,8 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 				return nil, err
 			}
 
+			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserPayout : precalculated")
+
 			return &models.TotalIncentive{
 				HBB: &models.IndividualIncentive{
 					Payout:      userReport.HBBPayout,
@@ -74,8 +77,12 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 				return nil, err
 			}
 
+			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserPayout : updated")
+
 			return resp, nil
 		}
+
+		logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserPayout : trace")
 
 		return &models.TotalIncentive{
 			HBB: &models.IndividualIncentive{
@@ -105,6 +112,8 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 			return nil, err
 		}
 
+		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserPayout : precalculated")
+
 		return &models.TotalIncentive{
 			HBB: &models.IndividualIncentive{
 				Payout:      mngrReport.HBBPayout,
@@ -132,6 +141,8 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 			return nil, err
 		}
 
+		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserPayout : updated")
+
 		return &models.TotalIncentive{
 			HBB: &models.IndividualIncentive{
 				Payout:      mngrReport.HBBPayout,
@@ -151,6 +162,8 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 			},
 		}, nil
 	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserPayout : trace")
 
 	return &models.TotalIncentive{
 		HBB: &models.IndividualIncentive{

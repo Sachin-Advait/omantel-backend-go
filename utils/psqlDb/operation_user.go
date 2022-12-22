@@ -93,15 +93,15 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 	}
 
 	err := dbConn.Operation.QueryRowContext(ctx,
-		"select a.emp_id, a.name, a.usr_position, a.mobile_number, a.region, a.outlet, a.isAdmin, b.outlet_manager from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.emp_id=$1 and a.quarter=$2 and a.year=$3",
-		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.MobileNumber, &user.Region, &user.Outlet, &user.IsAdmin, &user.ManagerId)
+		"select emp_id, name, usr_position, mobile_number, region, outlet, isAdmin from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
+		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.MobileNumber, &user.Region, &user.Outlet, &user.IsAdmin)
 	if err != nil {
 		if strings.Contains(err.Error(), "no rows") {
 			return nil, &errors.Error{
 				StatusCode: http.StatusBadRequest,
 				Code:       errors.InvalidReqParameterCode,
 				Message:    errors.UserNotFound,
-				Details:    "FetchAgentUserDetails: no rows - " + err.Error(),
+				Details:    "FetchUserDetails: no rows - " + err.Error(),
 			}
 		}
 
@@ -109,11 +109,54 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
-			Details:    "FetchAgentUserDetails: err - " + err.Error(),
+			Details:    "FetchUserDetails: err - " + err.Error(),
 		}
 	}
 
-	dbConn.Operation.QueryRowContext(ctx, "select usr_position from user_master_table where a.emp_id=$1", user.ManagerId).Scan(&user.ManagerPosition)
+	var query string
+
+	switch {
+	case user.Position == constant.GeneralManager:
+		user.ManagerPosition = constant.VicePresident
+		query = "select vice_president from user_hierarchy_table where deleted IS NULL and general_manager= $1 and quarter=$2 and year=$3"
+	case user.Position == constant.SeniorManager:
+		user.ManagerPosition = constant.GeneralManager
+		query = "select general_manager from user_hierarchy_table where deleted IS NULL and senior_manager= $1 and quarter=$2 and year=$3"
+	case user.Position == constant.Manager:
+		user.ManagerPosition = constant.SeniorManager
+		query = "select senior_manager from user_hierarchy_table where deleted IS NULL and manager= $1 and quarter=$2 and year=$3"
+	case user.Position == constant.OutletManager:
+		user.ManagerPosition = constant.Manager
+		query = "select manager from user_hierarchy_table where deleted IS NULL and outlet_manager= $1 and quarter=$2 and year=$3"
+	case user.Position == constant.Promoter || user.Position == constant.CSR:
+		user.ManagerPosition = constant.OutletManager
+		query = "select outlet_manager from user_hierarchy_table where deleted IS NULL and emp_id= $1 and quarter=$2 and year=$3"
+	default:
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    "INVALID USER POSITION",
+			Details:    "FetchUserDetails: incorrect position - " + user.Position,
+		}
+	}
+
+	err = dbConn.Operation.QueryRowContext(ctx, query, user.UserId, quarter, year).Scan(&user.ManagerId)
+	if err != nil {
+		if strings.Contains(err.Error(), "no rows") {
+			return nil, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidReqParameterCode,
+				Message:    errors.UserNotFound,
+				Details:    "FetchUserDetails: no rows mngr - " + err.Error(),
+			}
+		}
+
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "FetchUserDetails: err mngr - " + err.Error(),
+		}
+	}
 
 	return user, nil
 }
@@ -157,7 +200,7 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 	var err error
 
 	if update {
-		_, err = dbConn.Operation.QueryContext(ctx, "UPDATE user_authentication_table SET user_active=$1, otp=$2, otp_resend_count=$3, otp_verify_failed_count=$4, otp_used=$5, otp_create_time=$6, otp_update_time=$7, last_login_time=$8, modified=$9, modified_reason=$10",
+		_, err = dbConn.Operation.QueryContext(ctx, "UPDATE user_authentication_table SET user_active=$1, otp=$2, otp_resend_count=$3, otp_verify_failed_count=$4, otp_used=$5, otp_create_time=$6, otp_update_time=$7, last_login_time=$8, modified=$9, comment=$10",
 			otpModel.IsActiveUser,
 			otpModel.OTP,
 			otpModel.OTPResendCount,
@@ -180,7 +223,7 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 		}
 
 	} else {
-		_, err = dbConn.Operation.QueryContext(ctx, "INSERT INTO user_authentication_table(emp_id, user_active, otp, otp_resend_count, otp_verify_failed_count, otp_used, otp_create_time, otp_update_time, last_login_time, created, modified, modified_reason) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);",
+		_, err = dbConn.Operation.QueryContext(ctx, "INSERT INTO user_authentication_table(emp_id, user_active, otp, otp_resend_count, otp_verify_failed_count, otp_used, otp_create_time, otp_update_time, last_login_time, created, modified, comment) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);",
 			otpModel.StaffID,
 			otpModel.IsActiveUser,
 			otpModel.OTP,

@@ -57,6 +57,7 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, userID str
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Interface("OM outletReport", outletResp).Msg("GetOutletTotalSalesCount : trace")
 				//TODO: test this out for struct assignment
 				outletReport = outletResp
 			}
@@ -106,6 +107,7 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, userID str
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Interface("OtherMngr outletReport", outletResp).Msg("GetOutletTotalSalesCount : trace")
 				//TODO: test this out for struct assignment
 				outletReport = outletResp
 			}

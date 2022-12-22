@@ -9,6 +9,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
 func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) ([]*models.SaleCountPerPlan, *errors.Error) {
@@ -61,11 +62,13 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product
 		} else {
 			if err != nil || (err == nil && userReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-				_, resp, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+				ind, resp, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
 				if err != nil {
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Str("agentReport", user.UserId).Str(constant.HBBCategory, ind.HBB.Error).Str(constant.HayyakCategory, ind.Hayyak.Error).
+					Str(constant.BaqatiCategory, ind.Baqati.Error).Str(constant.UpgradeCategory, ind.Upgrade.Error).Msg("GetSaleCountPerPlan : trace")
 				//TODO: test this out for struct assignment
 				userReport = resp
 			}
@@ -82,6 +85,10 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product
 			saleCountString = userReport.BaqatiSaleCountPerPlanArray
 		case constant.UpgradeCategory:
 			saleCountString = userReport.UpgradeSaleCountPerPlanArray
+		}
+
+		if saleCountString == "" {
+			return response, nil
 		}
 
 		if err := json.Unmarshal([]byte(saleCountString), &response); err != nil {
@@ -111,6 +118,7 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product
 				return nil, err
 			}
 
+			logger.FileLogger.CtxInfo(ctx).Interface("mngrReport", resp).Msg("GetSaleCountPerPlan : trace")
 			//TODO: test this out for struct assignment
 			mngrReport = resp
 		}
@@ -127,6 +135,10 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product
 		saleCountString = mngrReport.BaqatiSaleCountPerPlanArray
 	case constant.UpgradeCategory:
 		saleCountString = mngrReport.UpgradeSaleCountPerPlanArray
+	}
+
+	if saleCountString == "" {
+		return response, nil
 	}
 
 	if err := json.Unmarshal([]byte(saleCountString), &response); err != nil {

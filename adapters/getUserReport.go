@@ -18,27 +18,22 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if !((req.Month >= 1 && req.Month <= 12) || (req.Quarter >= 1 && req.Quarter <= 4)) {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("monthly and quarterly type is incorrect")).Msg("GetUserReport : incorrect client id")
+	isQuarterReport, err := validateUserReport(req, ctxHeader)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetUserReport : validation failed")
 		logger.LogChan <- &logger.Logging{
 			UserID:     ctxHeader.XUserId,
 			URL:        ctx.Request.URL.String(),
 			Type:       "error",
 			Msg:        "invalid req params",
-			Text:       "monthly and quarterly type is incorrect",
+			Text:       err.Error(),
 			CreateTime: time.Now().Local(),
 		}
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,
-			Message: "monthly and quarterly type is incorrect",
+			Message: err.Error(),
 		}
-	}
-
-	var isQuarterReport bool
-
-	if req.Quarter >= 1 && req.Quarter <= 4 {
-		isQuarterReport = true
 	}
 
 	response, errs := theProvider.GetUserReport(ctx, req.ClientId, isQuarterReport, req.Quarter, req.Month, time.Now().Year())
@@ -69,4 +64,28 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 	}
 
 	return http.StatusOK, response
+}
+
+func validateUserReport(req *models.UserReportRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, err error) {
+
+	if req.ClientId == "" {
+		err = errors.New("blank userId")
+		return
+	}
+
+	// if req.ClientId == "" || ctxHeader.XUserId != req.ClientId {
+	// 	err = errors.New("incorrect user token")
+	// 	return
+	// }
+
+	if !((req.Month >= 1 && req.Month <= 12) || (req.Quarter >= 1 && req.Quarter <= 4)) {
+		err = errors.New("monthly or quarterly type is incorrect")
+		return
+	}
+
+	if req.Quarter >= 1 && req.Quarter <= 4 {
+		isQuarterReport = true
+	}
+
+	return isQuarterReport, nil
 }

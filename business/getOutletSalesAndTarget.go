@@ -59,6 +59,7 @@ func (impl *IncentiveImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID stri
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Interface("OM outletReport", outletResp).Msg("GetOutletSalesAndTarget : trace")
 				//TODO: test this out for struct assignment
 				outletReport = outletResp
 			}
@@ -112,7 +113,7 @@ func (impl *IncentiveImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID stri
 	}
 
 	if len(allDistinctOM) == 0 {
-		logger.FileLogger.CtxError(ctx).Str("position", user.Position).Msg("GetOutletSalesAndTarget : no OM found")
+		logger.FileLogger.CtxError(ctx).Str("user", userID).Str("position", user.Position).Msg("GetOutletSalesAndTarget : no OM found")
 		return resp, nil
 	}
 
@@ -131,6 +132,7 @@ func (impl *IncentiveImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID stri
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Interface("OtherMngr outletReport", outletResp).Msg("GetOutletSalesAndTarget : trace")
 				//TODO: test this out for struct assignment
 				outletReport = outletResp
 			}

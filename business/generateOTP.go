@@ -130,7 +130,7 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, userID string) (map[str
 	// }
 
 	//TODO: generate random num as OTP
-	otpModel.OTP = generateOTP(6)
+	otpModel.OTP = 123456
 	otpModel.OTPUsed = false
 	otpModel.OtpCreateTime = time.Now()
 
@@ -146,14 +146,14 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, userID string) (map[str
 		return nil, err
 	}
 
-	if err := impl.callSOAPClientSteps(userID, user.MobileNumber, otpModel.OTP); err != nil {
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerError,
-			Message:    "SOAP CALL FAILED",
-			Details:    "sms call failed: " + err.Error(),
-		}
-	}
+	// if err := impl.callSOAPClientSteps(userID, user.MobileNumber, otpModel.OTP); err != nil {
+	// 	return nil, &errors.Error{
+	// 		StatusCode: http.StatusInternalServerError,
+	// 		Code:       errors.InternalServerError,
+	// 		Message:    "SOAP CALL FAILED",
+	// 		Details:    "sms call failed: " + err.Error(),
+	// 	}
+	// }
 
 	return map[string]string{"error": "nil", "position": userPosition}, nil
 }

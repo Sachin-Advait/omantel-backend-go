@@ -20,7 +20,7 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiv
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	isQuarterReport, quarter, month, year, err := validateTopTenSalesRequest(req)
+	isQuarterReport, quarter, month, year, err := validateTopTenSalesRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetTopTenEmpSalesAndTarget : validation failed")
 		logger.LogChan <- &logger.Logging{
@@ -68,7 +68,17 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiv
 	return http.StatusOK, response
 }
 
-func validateTopTenSalesRequest(req *models.SingleUserIncentiveRequest) (isQuarterReport bool, quarter, month, year int, err error) {
+func validateTopTenSalesRequest(req *models.SingleUserIncentiveRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, quarter, month, year int, err error) {
+
+	if req.ClientId == "" {
+		err = errors.New("blank userId")
+		return
+	}
+
+	// if req.ClientId == "" || ctxHeader.XUserId != req.ClientId {
+	// 	err = errors.New("incorrect user token")
+	// 	return
+	// }
 
 	var date time.Time
 

@@ -36,7 +36,7 @@ func (dbConn *DBImplementation) FetchOutletDetailsViaName(regionName, outletName
 
 	err := dbConn.Operation.QueryRowContext(ctx,
 		"SELECT outlet_code, outlet_name, region_code, region_name, latitude, longitude FROM outlets_table where deleted IS NULL and region_name=$1 and outlet_name=$2 and quarter=$3 and year=$4",
-		regionName, outletName, quarter, year).Scan(&outlet.OutletCode, &outlet.OutletName, &outlet.RegionCode, &outlet.RegionName, &outlet.Lat, &outlet.Lang, quarter, year)
+		regionName, outletName, quarter, year).Scan(&outlet.OutletCode, &outlet.OutletName, &outlet.RegionCode, &outlet.RegionName, &outlet.Lat, &outlet.Lang)
 	if err == nil {
 		return outlet, nil
 	}
@@ -124,11 +124,11 @@ func (dbConn *DBImplementation) FetchOutletSalesCount(region, outlet string, isQ
 
 	if isQuarterReport {
 		rows, sqlErr = dbConn.Operation.QueryContext(ctx,
-			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where deleted IS NULL and region=$1 and outlet=$2 and quarter=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY category, product_group",
+			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and quarter=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY category, product_group",
 			region, outlet, quarter, year)
 	} else {
 		rows, sqlErr = dbConn.Operation.QueryContext(ctx,
-			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where deleted IS NULL and region=$1 and outlet=$2 and EXTRACT('month' from b.sales_date)=$3 and EXTRACT('year' from b.sales_date)=$4 GROUP BY category, product_group",
+			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and EXTRACT('month' from b.sales_date)=$3 and EXTRACT('year' from b.sales_date)=$4 GROUP BY category, product_group",
 			region, outlet, month, year)
 	}
 
@@ -633,8 +633,6 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 	case constant.Manager:
 		query = "select distinct a.outlet_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
 	case constant.OutletManager:
-		query = "select distinct a.emp_id, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.outlet_manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
-	case constant.TeamLeader:
 		query = "select distinct a.emp_id, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.outlet_manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
 	}
 

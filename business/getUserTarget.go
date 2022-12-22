@@ -8,6 +8,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
 func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error) {
@@ -46,6 +47,8 @@ func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, userID string, isQuar
 				return nil, err
 			}
 
+			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserTarget : precalculated")
+
 			return &models.ChartDataResponse{
 				HBB: &models.TargetAchievementData{
 					SalesCount:         userReport.HBBSalesCount,
@@ -77,6 +80,8 @@ func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, userID string, isQuar
 				return nil, err
 			}
 
+			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserTarget : updated")
+
 			return &models.ChartDataResponse{
 				HBB: &models.TargetAchievementData{
 					SalesCount:         resp.HBBSalesCount,
@@ -100,6 +105,8 @@ func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, userID string, isQuar
 				},
 			}, nil
 		}
+
+		logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserTarget : trace")
 
 		return &models.ChartDataResponse{
 			HBB: &models.TargetAchievementData{
@@ -133,6 +140,8 @@ func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, userID string, isQuar
 			return nil, err
 		}
 
+		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserTarget : precalculated")
+
 		return &models.ChartDataResponse{
 			HBB: &models.TargetAchievementData{
 				SalesCount:         mngrReport.HBBSalesCount,
@@ -164,6 +173,8 @@ func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, userID string, isQuar
 			return nil, err
 		}
 
+		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserTarget : updated")
+
 		return &models.ChartDataResponse{
 			HBB: &models.TargetAchievementData{
 				SalesCount:         resp.HBBSalesCount,
@@ -187,6 +198,8 @@ func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, userID string, isQuar
 			},
 		}, nil
 	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserTarget : trace")
 
 	return &models.ChartDataResponse{
 		HBB: &models.TargetAchievementData{

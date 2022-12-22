@@ -30,7 +30,7 @@ func NewIncentiveService(config *configs.IncentiveConfig, dbConfig *models.DbCli
 	}
 }
 
-func (impl *IncentiveImpl) getValueOfPoint(year int, grp string, achievedPercent float64) (float64, error) {
+func (impl *IncentiveImpl) getValueOfPoint(quarter, year int, grp string, achievedPercent float64) (float64, error) {
 	models.ValOfPoint.Mutex.RLock()
 	defer models.ValOfPoint.Mutex.RUnlock()
 
@@ -38,27 +38,31 @@ func (impl *IncentiveImpl) getValueOfPoint(year int, grp string, achievedPercent
 		return 0, errors.New("VOP YEAR INVALID - " + fmt.Sprintf("%v", year))
 	}
 
-	if models.ValOfPoint.VopMap[grp] == nil {
+	if models.ValOfPoint.VopMap[quarter] == nil {
+		return 0, errors.New("VOP QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
+	}
+
+	if models.ValOfPoint.VopMap[quarter][grp] == nil {
 		return 0, errors.New("VOP GROUP INVALID - " + grp)
 	}
 
 	switch {
 	case achievedPercent < 75:
-		return models.ValOfPoint.VopMap[grp][75].Point, nil
+		return models.ValOfPoint.VopMap[quarter][grp][75].Point, nil
 	case achievedPercent < 96:
-		return models.ValOfPoint.VopMap[grp][95].Point, nil
+		return models.ValOfPoint.VopMap[quarter][grp][95].Point, nil
 	case achievedPercent <= 111:
-		return models.ValOfPoint.VopMap[grp][110].Point, nil
+		return models.ValOfPoint.VopMap[quarter][grp][110].Point, nil
 	case achievedPercent < 140:
-		return models.ValOfPoint.VopMap[grp][139].Point, nil
+		return models.ValOfPoint.VopMap[quarter][grp][139].Point, nil
 	case achievedPercent >= 140:
-		return models.ValOfPoint.VopMap[grp][140].Point, nil
+		return models.ValOfPoint.VopMap[quarter][grp][140].Point, nil
 	}
 
 	return 0, errors.New("VOP ACHIEVEMENT PERCENT INVALID")
 }
 
-func (impl *IncentiveImpl) getExtraPay(year int, grp string, achievedPercent float64) (float64, error) {
+func (impl *IncentiveImpl) getExtraPay(quarter, year int, grp string, achievedPercent float64) (float64, error) {
 	models.ValOfPoint.Mutex.RLock()
 	defer models.ValOfPoint.Mutex.RUnlock()
 
@@ -66,27 +70,31 @@ func (impl *IncentiveImpl) getExtraPay(year int, grp string, achievedPercent flo
 		return 0, errors.New("VOEP YEAR INVALID - " + fmt.Sprintf("%v", year))
 	}
 
-	if models.ValOfPoint.VopMap[grp] == nil {
+	if models.ValOfPoint.VopMap[quarter] == nil {
+		return 0, errors.New("VOEP QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
+	}
+
+	if models.ValOfPoint.VopMap[quarter][grp] == nil {
 		return 0, errors.New("VOEP GROUP INVALID - " + grp)
 	}
 
 	switch {
 	case achievedPercent >= 141 && achievedPercent < 160:
-		return models.ValOfPoint.VopMap[grp][159].ExtraPay, nil
+		return models.ValOfPoint.VopMap[quarter][grp][159].ExtraPay, nil
 	case achievedPercent >= 160 && achievedPercent < 180:
-		return models.ValOfPoint.VopMap[grp][179].ExtraPay, nil
+		return models.ValOfPoint.VopMap[quarter][grp][179].ExtraPay, nil
 	case achievedPercent >= 180 && achievedPercent < 190:
-		return models.ValOfPoint.VopMap[grp][189].ExtraPay, nil
+		return models.ValOfPoint.VopMap[quarter][grp][189].ExtraPay, nil
 	case achievedPercent >= 190 && achievedPercent < 200:
-		return models.ValOfPoint.VopMap[grp][199].ExtraPay, nil
+		return models.ValOfPoint.VopMap[quarter][grp][199].ExtraPay, nil
 	case achievedPercent >= 200:
-		return models.ValOfPoint.VopMap[grp][200].ExtraPay, nil
+		return models.ValOfPoint.VopMap[quarter][grp][200].ExtraPay, nil
 	}
 
 	return 0, nil
 }
 
-func (impl *IncentiveImpl) getSIPRatePlan(year int, planName string) (float64, error) {
+func (impl *IncentiveImpl) getSIPRatePlan(quarter, year int, planName string) (float64, error) {
 
 	planID := ""
 
@@ -97,7 +105,11 @@ func (impl *IncentiveImpl) getSIPRatePlan(year int, planName string) (float64, e
 		return 0, errors.New("PLAN-NAME YEAR INVALID - " + fmt.Sprintf("%v", year))
 	}
 
-	for id, v := range models.PlanRates.PlanRateMap {
+	if models.PlanRates.PlanRateMap[quarter] == nil {
+		return 0, errors.New("PLAN-NAME QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
+	}
+
+	for id, v := range models.PlanRates.PlanRateMap[quarter] {
 		if v.PlanName == planName {
 			planID = id
 			break
@@ -105,7 +117,7 @@ func (impl *IncentiveImpl) getSIPRatePlan(year int, planName string) (float64, e
 	}
 
 	if planID != "" {
-		return models.PlanRates.PlanRateMap[planID].SIPRatePlan, nil
+		return models.PlanRates.PlanRateMap[quarter][planID].SIPRatePlan, nil
 	}
 
 	return 0, errors.New("PLAN-NAME INVALID - " + planName)
@@ -199,15 +211,19 @@ func (impl *IncentiveImpl) getSaleTargetPerOutlet(year, month, quarter int, isQu
 	return 0, errors.New("TARGET GROUP INVALID - " + grp)
 }
 
-func (impl *IncentiveImpl) getMaxPayout(year int, grp string) (float64, error) {
+func (impl *IncentiveImpl) getMaxPayout(quarter, year int, grp string) (float64, error) {
 	models.MaxPay.Mutex.RLock()
 	defer models.MaxPay.Mutex.RUnlock()
 
-	if year != models.SalesTrgt.Year {
+	if year != models.MaxPay.Year {
 		return 0, errors.New("MAX PAYOUT YEAR INVALID - " + fmt.Sprintf("%v", year))
 	}
 
-	val, ok := models.MaxPay.Payoutmap[grp]
+	if models.MaxPay.Payoutmap[quarter] == nil {
+		return 0, errors.New("MAX PAYOUT QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
+	}
+
+	val, ok := models.MaxPay.Payoutmap[quarter][grp]
 	if !ok {
 		return 0, errors.New("MAX PAYOUT GROUP INVALID - " + grp)
 	}
@@ -403,21 +419,21 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 			achieved := float64(totalActive[grp]) * 100 / float64(targetPerEmp)
 
-			vop, internalErr := impl.getValueOfPoint(year, grp, achieved)
+			vop, internalErr := impl.getValueOfPoint(quarter, year, grp, achieved)
 			if internalErr != nil {
 				ind.Error = internalErr.Error()
 				resp.HBB = ind
 				break
 			}
 
-			extraPayout, internalErr := impl.getExtraPay(year, grp, achieved)
+			extraPayout, internalErr := impl.getExtraPay(quarter, year, grp, achieved)
 			if internalErr != nil {
 				ind.Error = internalErr.Error()
 				resp.HBB = ind
 				break
 			}
 
-			maxPayAllowed, internalErr := impl.getMaxPayout(year, grp)
+			maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, grp)
 			if internalErr != nil {
 				ind.Error = internalErr.Error()
 				resp.HBB = ind
@@ -439,7 +455,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 			for plan, qty := range plans {
 				saleCount = append(saleCount, &models.SaleCountPerPlan{CurrentPlan: plan, Quantity: qty})
-				rate, internalErr := impl.getSIPRatePlan(year, plan)
+				rate, internalErr := impl.getSIPRatePlan(quarter, year, plan)
 				if internalErr != nil {
 					ind.Error = internalErr.Error()
 					resp.HBB = ind
@@ -487,21 +503,21 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 			achieved := float64(totalActive[grp]) * 100 / float64(targetPerEmp)
 
-			vop, internalErr := impl.getValueOfPoint(year, grp, achieved)
+			vop, internalErr := impl.getValueOfPoint(quarter, year, grp, achieved)
 			if internalErr != nil {
 				ind.Error = internalErr.Error()
 				resp.Hayyak = ind
 				break
 			}
 
-			extraPayout, internalErr := impl.getExtraPay(year, grp, achieved)
+			extraPayout, internalErr := impl.getExtraPay(quarter, year, grp, achieved)
 			if internalErr != nil {
 				ind.Error = internalErr.Error()
 				resp.Hayyak = ind
 				break
 			}
 
-			maxPayAllowed, internalErr := impl.getMaxPayout(year, grp)
+			maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, grp)
 			if internalErr != nil {
 				ind.Error = internalErr.Error()
 				resp.Hayyak = ind
@@ -523,7 +539,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 			for plan, qty := range plans {
 				saleCount = append(saleCount, &models.SaleCountPerPlan{CurrentPlan: plan, Quantity: qty})
-				rate, internalErr := impl.getSIPRatePlan(year, plan)
+				rate, internalErr := impl.getSIPRatePlan(quarter, year, plan)
 				if internalErr != nil {
 					ind.Error = internalErr.Error()
 					resp.Hayyak = ind
@@ -571,21 +587,21 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 			achieved := float64(totalActive[grp]) * 100 / float64(targetPerEmp)
 
-			vop, internalErr := impl.getValueOfPoint(year, grp, achieved)
+			vop, internalErr := impl.getValueOfPoint(quarter, year, grp, achieved)
 			if internalErr != nil {
 				ind.Error = internalErr.Error()
 				resp.Baqati = ind
 				break
 			}
 
-			extraPayout, internalErr := impl.getExtraPay(year, grp, achieved)
+			extraPayout, internalErr := impl.getExtraPay(quarter, year, grp, achieved)
 			if internalErr != nil {
 				ind.Error = internalErr.Error()
 				resp.Baqati = ind
 				break
 			}
 
-			maxPayAllowed, internalErr := impl.getMaxPayout(year, grp)
+			maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, grp)
 			if internalErr != nil {
 				ind.Error = internalErr.Error()
 				resp.Baqati = ind
@@ -607,7 +623,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 			for plan, qty := range plans {
 				saleCount = append(saleCount, &models.SaleCountPerPlan{CurrentPlan: plan, Quantity: qty})
-				rate, internalErr := impl.getSIPRatePlan(year, plan)
+				rate, internalErr := impl.getSIPRatePlan(quarter, year, plan)
 				if internalErr != nil {
 					ind.Error = internalErr.Error()
 					resp.Baqati = ind
@@ -671,21 +687,21 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 	achieved := float64(totalActiveUpgrade) * 100 / float64(targetPerEmp)
 
-	vop, internalErr := impl.getValueOfPoint(year, constant.UpgradeCategory, achieved)
+	vop, internalErr := impl.getValueOfPoint(quarter, year, constant.UpgradeCategory, achieved)
 	if internalErr != nil {
 		ind.Error = internalErr.Error()
 		resp.Upgrade = ind
 		return resp, report, nil
 	}
 
-	extraPayout, internalErr := impl.getExtraPay(year, constant.UpgradeCategory, achieved)
+	extraPayout, internalErr := impl.getExtraPay(quarter, year, constant.UpgradeCategory, achieved)
 	if internalErr != nil {
 		ind.Error = internalErr.Error()
 		resp.Upgrade = ind
 		return resp, report, nil
 	}
 
-	maxPayAllowed, internalErr := impl.getMaxPayout(year, constant.UpgradeCategory)
+	maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, constant.UpgradeCategory)
 	if internalErr != nil {
 		ind.Error = internalErr.Error()
 		resp.Baqati = ind
@@ -709,14 +725,14 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		eachPlanSale := &models.SaleCountPerPlan{CurrentPlan: currPlan}
 		for prevPln, qty := range prevPlansMap {
 			eachPlanSale.Quantity += qty
-			currPlanRate, internalErr := impl.getSIPRatePlan(year, currPlan)
+			currPlanRate, internalErr := impl.getSIPRatePlan(quarter, year, currPlan)
 			if internalErr != nil {
 				ind.Error = "CURRENT:" + internalErr.Error()
 				resp.Upgrade = ind
 				return resp, report, nil
 			}
 
-			prevPlanRate, internalErr := impl.getSIPRatePlan(year, prevPln)
+			prevPlanRate, internalErr := impl.getSIPRatePlan(quarter, year, prevPln)
 			if internalErr != nil {
 				ind.Error = "PREVIOUS:" + internalErr.Error()
 				resp.Upgrade = ind
@@ -850,15 +866,8 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	}
 
 	if len(userAgents) == 0 {
-
+		logger.FileLogger.CtxError(ctx).Str("manger", omngr.UserId).Msg("updateOutletManagerReport : no Agent found")
 		return report, nil
-
-		// return nil, &errors.Error{
-		// 	StatusCode: http.StatusBadRequest,
-		// 	Code:       errors.InvalidDetailsCode,
-		// 	Message:    "NO AGENTS FOUND FOR OM - " + omngr.UserId,
-		// 	Details:    "no agents found for OM - " + omngr.UserId,
-		// }
 	}
 
 	hbbSaleMap := make(map[string]int, 0)
@@ -876,10 +885,13 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 		} else {
 			if err != nil || (err == nil && agentReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-				_, resp, err := impl.updateAgentUserReport(ctx, eachAgent, isQuarterReport, quarter, month, year)
+				ind, resp, err := impl.updateAgentUserReport(ctx, eachAgent, isQuarterReport, quarter, month, year)
 				if err != nil {
 					return nil, err
 				}
+
+				logger.FileLogger.CtxInfo(ctx).Str("agentReport", eachAgent.UserId).Str(constant.HBBCategory, ind.HBB.Error).Str(constant.HayyakCategory, ind.Hayyak.Error).
+					Str(constant.BaqatiCategory, ind.Baqati.Error).Str(constant.UpgradeCategory, ind.Upgrade.Error).Msg("updateOutletManagerReport : trace")
 
 				//TODO: test this out for struct assignment
 				agentReport = resp
@@ -1093,6 +1105,7 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 	}
 
 	if len(allDistinctOM) == 0 {
+		logger.FileLogger.CtxError(ctx).Str("position", mngr.Position).Msg("updateManagerReport : no OM found")
 		return report, nil
 
 		// return nil, &errors.Error{
@@ -1123,6 +1136,7 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Interface("OM Report", resp).Msg("updateManagerReport : trace")
 				//TODO: test this out for struct assignment
 				omReport = resp
 			}
@@ -1415,6 +1429,7 @@ func (impl *IncentiveImpl) updateRegionReport(ctx *gin.Context, regionName strin
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Interface("outletReport", outletResp).Msg("updateRegionReport : trace")
 				//TODO: test this out for struct assignment
 				outletReport = outletResp
 			}

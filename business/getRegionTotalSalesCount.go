@@ -57,6 +57,7 @@ func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userID str
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Interface("M regionReport", regionResp).Msg("GetRegionTotalSalesCount : trace")
 				//TODO: test this out for struct assignment
 				regionReport = regionResp
 			}
@@ -104,6 +105,7 @@ func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userID str
 					return nil, err
 				}
 
+				logger.FileLogger.CtxInfo(ctx).Interface("OtherMngr regionReport", regionResp).Msg("GetRegionTotalSalesCount : trace")
 				//TODO: test this out for struct assignment
 				regionReport = regionResp
 			}
