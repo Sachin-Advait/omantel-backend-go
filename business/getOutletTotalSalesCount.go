@@ -39,10 +39,13 @@ func (impl *IncentiveImpl) GetOutletTotalSalesCount(ctx *gin.Context, userID str
 		needUpdate = true
 	}
 
+	//TODO: remove at last
+	needUpdate = true
+
 	resp := make([]*models.ProductWiseSalesCountPerOutlet, 0)
 
 	// for oulletManager and teamLeader
-	if user.Position == constant.OutletManager || user.Position == constant.TeamLeader {
+	if user.Position == constant.OutletManager { //|| user.Position == constant.TeamLeader
 
 		outletReport, err := impl.PsqlDb.FetchOutletReport(user.Outlet, isQuarterReport, quarter, month, year)
 		if !needUpdate {

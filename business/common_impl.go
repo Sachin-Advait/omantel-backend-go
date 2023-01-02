@@ -34,29 +34,29 @@ func (impl *IncentiveImpl) getValueOfPoint(quarter, year int, grp string, achiev
 	models.ValOfPoint.Mutex.RLock()
 	defer models.ValOfPoint.Mutex.RUnlock()
 
-	if year != models.ValOfPoint.Year {
+	if models.ValOfPoint.VopMap[year] == nil {
 		return 0, errors.New("VOP YEAR INVALID - " + fmt.Sprintf("%v", year))
 	}
 
-	if models.ValOfPoint.VopMap[quarter] == nil {
+	if models.ValOfPoint.VopMap[year][quarter] == nil {
 		return 0, errors.New("VOP QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
 	}
 
-	if models.ValOfPoint.VopMap[quarter][grp] == nil {
+	if models.ValOfPoint.VopMap[year][quarter][grp] == nil {
 		return 0, errors.New("VOP GROUP INVALID - " + grp)
 	}
 
 	switch {
 	case achievedPercent < 75:
-		return models.ValOfPoint.VopMap[quarter][grp][75].Point, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][75].Point, nil
 	case achievedPercent < 96:
-		return models.ValOfPoint.VopMap[quarter][grp][95].Point, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][95].Point, nil
 	case achievedPercent <= 111:
-		return models.ValOfPoint.VopMap[quarter][grp][110].Point, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][110].Point, nil
 	case achievedPercent < 140:
-		return models.ValOfPoint.VopMap[quarter][grp][139].Point, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][139].Point, nil
 	case achievedPercent >= 140:
-		return models.ValOfPoint.VopMap[quarter][grp][140].Point, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][140].Point, nil
 	}
 
 	return 0, errors.New("VOP ACHIEVEMENT PERCENT INVALID")
@@ -66,29 +66,29 @@ func (impl *IncentiveImpl) getExtraPay(quarter, year int, grp string, achievedPe
 	models.ValOfPoint.Mutex.RLock()
 	defer models.ValOfPoint.Mutex.RUnlock()
 
-	if year != models.ValOfPoint.Year {
+	if models.ValOfPoint.VopMap[year] == nil {
 		return 0, errors.New("VOEP YEAR INVALID - " + fmt.Sprintf("%v", year))
 	}
 
-	if models.ValOfPoint.VopMap[quarter] == nil {
+	if models.ValOfPoint.VopMap[year][quarter] == nil {
 		return 0, errors.New("VOEP QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
 	}
 
-	if models.ValOfPoint.VopMap[quarter][grp] == nil {
+	if models.ValOfPoint.VopMap[year][quarter][grp] == nil {
 		return 0, errors.New("VOEP GROUP INVALID - " + grp)
 	}
 
 	switch {
 	case achievedPercent >= 141 && achievedPercent < 160:
-		return models.ValOfPoint.VopMap[quarter][grp][159].ExtraPay, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][159].ExtraPay, nil
 	case achievedPercent >= 160 && achievedPercent < 180:
-		return models.ValOfPoint.VopMap[quarter][grp][179].ExtraPay, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][179].ExtraPay, nil
 	case achievedPercent >= 180 && achievedPercent < 190:
-		return models.ValOfPoint.VopMap[quarter][grp][189].ExtraPay, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][189].ExtraPay, nil
 	case achievedPercent >= 190 && achievedPercent < 200:
-		return models.ValOfPoint.VopMap[quarter][grp][199].ExtraPay, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][199].ExtraPay, nil
 	case achievedPercent >= 200:
-		return models.ValOfPoint.VopMap[quarter][grp][200].ExtraPay, nil
+		return models.ValOfPoint.VopMap[year][quarter][grp][200].ExtraPay, nil
 	}
 
 	return 0, nil
@@ -101,15 +101,15 @@ func (impl *IncentiveImpl) getSIPRatePlan(quarter, year int, planName string) (f
 	models.PlanRates.Mutex.RLock()
 	defer models.PlanRates.Mutex.RUnlock()
 
-	if year != models.PlanRates.Year {
+	if models.PlanRates.PlanRateMap[year] == nil {
 		return 0, errors.New("PLAN-NAME YEAR INVALID - " + fmt.Sprintf("%v", year))
 	}
 
-	if models.PlanRates.PlanRateMap[quarter] == nil {
+	if models.PlanRates.PlanRateMap[year][quarter] == nil {
 		return 0, errors.New("PLAN-NAME QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
 	}
 
-	for id, v := range models.PlanRates.PlanRateMap[quarter] {
+	for id, v := range models.PlanRates.PlanRateMap[year][quarter] {
 		if v.PlanName == planName {
 			planID = id
 			break
@@ -117,7 +117,7 @@ func (impl *IncentiveImpl) getSIPRatePlan(quarter, year int, planName string) (f
 	}
 
 	if planID != "" {
-		return models.PlanRates.PlanRateMap[quarter][planID].SIPRatePlan, nil
+		return models.PlanRates.PlanRateMap[year][quarter][planID].SIPRatePlan, nil
 	}
 
 	return 0, errors.New("PLAN-NAME INVALID - " + planName)
@@ -152,11 +152,11 @@ func (impl *IncentiveImpl) getSaleTargetPerOutlet(year, month, quarter int, isQu
 	models.SalesTrgt.Mutex.RLock()
 	defer models.SalesTrgt.Mutex.RUnlock()
 
-	if year != models.SalesTrgt.Year {
+	if models.SalesTrgt.SaleTargetMap[year] == nil {
 		return 0, errors.New("TARGET YEAR INVALID - " + fmt.Sprintf("%v", year))
 	}
 
-	rMap, ok := models.SalesTrgt.SaleTargetMap[region]
+	rMap, ok := models.SalesTrgt.SaleTargetMap[year][region]
 	if !ok {
 		return 0, errors.New("TARGET REGION NOT FOUND - " + region)
 	}
@@ -171,25 +171,25 @@ func (impl *IncentiveImpl) getSaleTargetPerOutlet(year, month, quarter int, isQu
 		switch grp {
 		case constant.HBBCategory:
 			for i := start - 1; i < end; i++ {
-				result += models.SalesTrgt.SaleTargetMap[region][outlet][i].HBB
+				result += models.SalesTrgt.SaleTargetMap[year][region][outlet][i].HBB
 			}
 			return result, nil
 
 		case constant.HayyakCategory:
 			for i := start - 1; i < end; i++ {
-				result += models.SalesTrgt.SaleTargetMap[region][outlet][i].Hayyak
+				result += models.SalesTrgt.SaleTargetMap[year][region][outlet][i].Hayyak
 			}
 			return result, nil
 
 		case constant.BaqatiCategory:
 			for i := start - 1; i < end; i++ {
-				result += models.SalesTrgt.SaleTargetMap[region][outlet][i].Baqati
+				result += models.SalesTrgt.SaleTargetMap[year][region][outlet][i].Baqati
 			}
 			return result, nil
 
 		case constant.UpgradeCategory:
 			for i := start - 1; i < end; i++ {
-				result += models.SalesTrgt.SaleTargetMap[region][outlet][i].Upgrade
+				result += models.SalesTrgt.SaleTargetMap[year][region][outlet][i].Upgrade
 			}
 			return result, nil
 
@@ -198,13 +198,13 @@ func (impl *IncentiveImpl) getSaleTargetPerOutlet(year, month, quarter int, isQu
 		//month target
 		switch grp {
 		case constant.HBBCategory:
-			return models.SalesTrgt.SaleTargetMap[region][outlet][month-1].HBB, nil
+			return models.SalesTrgt.SaleTargetMap[year][region][outlet][month-1].HBB, nil
 		case constant.HayyakCategory:
-			return models.SalesTrgt.SaleTargetMap[region][outlet][month-1].Hayyak, nil
+			return models.SalesTrgt.SaleTargetMap[year][region][outlet][month-1].Hayyak, nil
 		case constant.BaqatiCategory:
-			return models.SalesTrgt.SaleTargetMap[region][outlet][month-1].Baqati, nil
+			return models.SalesTrgt.SaleTargetMap[year][region][outlet][month-1].Baqati, nil
 		case constant.UpgradeCategory:
-			return models.SalesTrgt.SaleTargetMap[region][outlet][month-1].Upgrade, nil
+			return models.SalesTrgt.SaleTargetMap[year][region][outlet][month-1].Upgrade, nil
 		}
 	}
 
@@ -215,15 +215,15 @@ func (impl *IncentiveImpl) getMaxPayout(quarter, year int, grp string) (float64,
 	models.MaxPay.Mutex.RLock()
 	defer models.MaxPay.Mutex.RUnlock()
 
-	if year != models.MaxPay.Year {
+	if models.MaxPay.Payoutmap[year] == nil {
 		return 0, errors.New("MAX PAYOUT YEAR INVALID - " + fmt.Sprintf("%v", year))
 	}
 
-	if models.MaxPay.Payoutmap[quarter] == nil {
+	if models.MaxPay.Payoutmap[year][quarter] == nil {
 		return 0, errors.New("MAX PAYOUT QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
 	}
 
-	val, ok := models.MaxPay.Payoutmap[quarter][grp]
+	val, ok := models.MaxPay.Payoutmap[year][quarter][grp]
 	if !ok {
 		return 0, errors.New("MAX PAYOUT GROUP INVALID - " + grp)
 	}
@@ -804,7 +804,7 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 		}
 	}
 
-	if !(omngr.Position == constant.OutletManager || omngr.Position == constant.TeamLeader) {
+	if omngr.Position != constant.OutletManager { //!(omngr.Position == constant.OutletManager || omngr.Position == constant.TeamLeader)
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    omngr.UserId + ": INCORRECT OUTLET MANAGER POSITION - " + omngr.Position,
@@ -832,6 +832,9 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
 		needUpdate = true
 	}
+
+	//TODO: remove at last
+	needUpdate = true
 
 	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(omngr.Region, omngr.Outlet, quarter, year)
 	if err != nil {
@@ -876,6 +879,8 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	upgradeSaleMap := make(map[string]int, 0)
 
 	for _, eachAgent := range userAgents {
+
+		//logger.FileLogger.CtxInfo(ctx).Str("agent", eachAgent.UserId).Interface("Report", eachAgent).Msg("delete")
 
 		agentReport, err := impl.PsqlDb.FetchAgentUserReport(eachAgent.UserId, isQuarterReport, quarter, month, year)
 		if !needUpdate {
@@ -1052,7 +1057,7 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 	}
 
 	//for outlet manager and team lead only
-	if mngr.Position == constant.OutletManager || mngr.Position == constant.TeamLeader {
+	if mngr.Position == constant.OutletManager { // || mngr.Position == constant.TeamLeader
 		report, err := impl.updateOutletManagerReport(ctx, mngr, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
@@ -1081,6 +1086,9 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
 		needUpdate = true
 	}
+
+	//TODO: remove at last
+	needUpdate = true
 
 	report := &models.UserReportDB{
 		UserId:          mngr.UserId,
@@ -1393,6 +1401,9 @@ func (impl *IncentiveImpl) updateRegionReport(ctx *gin.Context, regionName strin
 	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
 		needUpdate = true
 	}
+
+	//TODO: remove at last
+	needUpdate = true
 
 	allOutlets, err := impl.PsqlDb.FetchAllOutletNames(regionName, quarter, year)
 	if err != nil {

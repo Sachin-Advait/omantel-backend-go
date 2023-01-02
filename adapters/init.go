@@ -30,10 +30,7 @@ func InitIncentiveCron() {
 		logger.FileLogger.Fatal().Err(err).Msg("LoadMaxPayFromDB: load maxPay failed")
 	}
 
-	logger.FileLogger.Info().Interface("planRate", models.PlanRates.PlanRateMap).Msg("LoadPlansFromDB: load planRate success")
-	logger.FileLogger.Info().Interface("target", models.SalesTrgt.SaleTargetMap).Msg("LoadTargetFromDB: load target success")
-	logger.FileLogger.Info().Interface("VOP", models.ValOfPoint.VopMap).Msg("LoadScaleOrderFromDB: load VOP success")
-	logger.FileLogger.Info().Interface("maxPay", models.MaxPay.Payoutmap).Msg("LoadMaxPayFromDB: load maxPay success")
+	theProvider.PrintAllInMemData()
 
 	////////
 

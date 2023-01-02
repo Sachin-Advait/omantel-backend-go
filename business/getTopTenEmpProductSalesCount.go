@@ -40,10 +40,13 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userI
 		needUpdate = true
 	}
 
+	//TODO: remove at last
+	needUpdate = true
+
 	resp := make([]*models.ProductWiseSalesCountPerStaff, 0)
 
 	// for oulletManager and teamLeader
-	if user.Position == constant.OutletManager || user.Position == constant.TeamLeader {
+	if user.Position == constant.OutletManager { //|| user.Position == constant.TeamLeader
 
 		agentList, err := impl.PsqlDb.FetchAllAgentsUserOfOM(userID, quarter, year)
 		if err != nil {

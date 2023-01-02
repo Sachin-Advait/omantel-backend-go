@@ -205,16 +205,16 @@ const (
 	GeneralManager = "GM"
 	SeniorManager  = "SM"
 	Manager        = "MANAGER"
-	TeamLeader     = "TL"
-	OutletManager  = "OUTLET MANAGER"
-	Promoter       = "PROMOTER"
-	CSR            = "CSR"
+	//TeamLeader     = "TL"
+	OutletManager = "OUTLET MANAGER"
+	Promoter      = "PROMOTER"
+	CSR           = "CSR"
 )
 
 var (
 	ManagerMap = map[string]string{
-		OutletManager:  "outlet_manager",
-		TeamLeader:     "team_lead",
+		OutletManager: "outlet_manager",
+		//TeamLeader:     "team_lead",
 		Manager:        "manager",
 		SeniorManager:  "senior_manager",
 		GeneralManager: "general_manager",
@@ -224,10 +224,10 @@ var (
 
 var (
 	EmployeePositionMap = map[string]string{
-		Promoter:       "A",
-		CSR:            "A",
-		OutletManager:  "OM",
-		TeamLeader:     "TL",
+		Promoter:      "A",
+		CSR:           "A",
+		OutletManager: "OM",
+		//TeamLeader:     "TL",
 		Manager:        "M",
 		SeniorManager:  "SM",
 		GeneralManager: "GM",

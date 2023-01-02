@@ -11,6 +11,8 @@ type IncentiveProvider interface {
 	LoadScaleOrderFromDB(printLogs bool) error
 	LoadMaxPayFromDB(printLogs bool) error
 
+	PrintAllInMemData()
+
 	GenerateOTP(ctx *gin.Context, id string) (map[string]string, *errors.Error)
 	VerifyOTP(ctx *gin.Context, req *VerifyOTP) (*VerifyOTPResponse, *errors.Error)
 	CaptchaVerification(ctx *gin.Context, req *CaptchRequest) (interface{}, *errors.Error)

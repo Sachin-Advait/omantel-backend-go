@@ -50,6 +50,9 @@ func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product
 		needUpdate = true
 	}
 
+	//TODO: remove at last
+	needUpdate = true
+
 	response := make([]*models.SaleCountPerPlan, 0)
 
 	if user.Position == constant.Promoter || user.Position == constant.CSR {

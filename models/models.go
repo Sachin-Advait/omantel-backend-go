@@ -423,14 +423,12 @@ type ProductPlans struct {
 
 type SaleTarget struct {
 	Mutex         sync.RWMutex
-	Year          int
-	SaleTargetMap map[string]map[string][12]*ProductGrpTarget
+	SaleTargetMap map[int]map[string]map[string][12]*ProductGrpTarget
 }
 
 type PlanRate struct {
 	Mutex       sync.RWMutex
-	Year        int
-	PlanRateMap map[int]map[string]*ProductPlans
+	PlanRateMap map[int]map[int]map[string]*ProductPlans
 }
 
 type Calculator struct {
@@ -445,14 +443,12 @@ type VOP struct {
 
 type ValueOfPoint struct {
 	Mutex  sync.RWMutex
-	Year   int
-	VopMap map[int]map[string]map[int]*VOP
+	VopMap map[int]map[int]map[string]map[int]*VOP
 }
 
 type MaxPayout struct {
 	Mutex     sync.RWMutex
-	Year      int
-	Payoutmap map[int]map[string]float64
+	Payoutmap map[int]map[int]map[string]float64
 }
 
 type OtpModel struct {

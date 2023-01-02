@@ -19,7 +19,7 @@ func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userID str
 	}
 
 	mangerPosition, ok := constant.ManagerMap[user.Position]
-	if !ok || user.Position == constant.Promoter || user.Position == constant.CSR || user.Position == constant.OutletManager || user.Position == constant.TeamLeader {
+	if !ok || user.Position == constant.Promoter || user.Position == constant.CSR || user.Position == constant.OutletManager { //|| user.Position == constant.TeamLeader
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    user.UserId + ": INCORRECT MANAGER POSITION - " + user.Position,
@@ -38,6 +38,9 @@ func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userID str
 	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
 		needUpdate = true
 	}
+
+	//TODO: remove at last
+	needUpdate = true
 
 	resp := make([]*models.ProductWiseSalesCountPerOutlet, 0)
 

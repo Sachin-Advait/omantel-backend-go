@@ -324,7 +324,8 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string, q
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := dbConn.Operation.QueryContext(ctx, "select distinct emp_id from user_hierarchy_table where deleted IS NULL and outlet_manager=$1 and team_lead=$2 and quarter=$3 and year=$4", outletManagerID, outletManagerID, quarter, year)
+	//rows, err := dbConn.Operation.QueryContext(ctx, "select distinct emp_id from user_hierarchy_table where deleted IS NULL and outlet_manager=$1 and team_lead=$2 and quarter=$3 and year=$4", outletManagerID, outletManagerID, quarter, year)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select distinct emp_id from user_hierarchy_table where deleted IS NULL and outlet_manager=$1 and quarter=$2 and year=$3", outletManagerID, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -350,19 +351,23 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string, q
 			}
 		}
 
-		if userId != "" {
+		if userId != "" && userId != outletManagerID {
 			userIds = append(userIds, userId)
 		}
+
 		userId = ""
 	}
 
 	response := make([]*models.UserBasicDetailsDB, 0)
 
 	for _, eachUser := range userIds {
-		userRecord, err := dbConn.FetchUserDetails(eachUser, quarter, year)
+		userRecord, err := dbConn.FetchUserBasicDetails(eachUser, quarter, year)
 		if err != nil {
 			return nil, err
 		}
+
+		userRecord.ManagerId = outletManagerID
+		userRecord.ManagerPosition = constant.OutletManager
 
 		response = append(response, userRecord)
 	}
@@ -425,16 +430,20 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 			}
 		}
 
+		if outletManager == managerID {
+			continue
+		}
+
 		if response[outletManager] == nil {
 			response[outletManager] = &models.UserBasicDetailsDB{}
 		}
 
-		if response[teamLead] == nil {
-			response[teamLead] = &models.UserBasicDetailsDB{}
-		}
+		// if response[teamLead] == nil {
+		// 	response[teamLead] = &models.UserBasicDetailsDB{}
+		// }
 	}
 
-	for eachUser, _ := range response {
+	for eachUser := range response {
 		userRecord, err := dbConn.FetchUserDetails(eachUser, quarter, year)
 		if err != nil {
 			return nil, err
@@ -496,6 +505,10 @@ func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPositio
 				Message:    errors.InternalServerError,
 				Details:    "FetchAllManagerReportingToGivenManager: scan failed - " + err.Error(),
 			}
+		}
+
+		if manager == managerID {
+			continue
 		}
 
 		if manager != "" {
@@ -582,6 +595,10 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 			}
 		}
 
+		if manager == managerID {
+			continue
+		}
+
 		if manager != "" {
 			managerArray = append(managerArray, manager)
 		}
@@ -663,39 +680,43 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 			}
 		}
 
+		if usr.ID == managerID {
+			continue
+		}
+
 		array = append(array, usr)
 	}
 
-	if managerPosition == constant.Manager {
+	// if managerPosition == constant.Manager {
 
-		rows, err := dbConn.Operation.QueryContext(ctx,
-			"select distinct a.team_lead, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5",
-			managerID, quarter, year, quarter, year)
-		if err != nil {
-			return nil, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerErrorCode,
-				Message:    errors.InternalServerError,
-				Details:    "FetchAllEmpReportingToGivenManagerRole: tl query failed - " + err.Error(),
-			}
-		}
+	// 	rows, err := dbConn.Operation.QueryContext(ctx,
+	// 		"select distinct a.team_lead, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5",
+	// 		managerID, quarter, year, quarter, year)
+	// 	if err != nil {
+	// 		return nil, &errors.Error{
+	// 			StatusCode: http.StatusInternalServerError,
+	// 			Code:       errors.InternalServerErrorCode,
+	// 			Message:    errors.InternalServerError,
+	// 			Details:    "FetchAllEmpReportingToGivenManagerRole: tl query failed - " + err.Error(),
+	// 		}
+	// 	}
 
-		for rows.Next() {
+	// 	for rows.Next() {
 
-			usr := &models.ReportingStaffIDAndName{}
+	// 		usr := &models.ReportingStaffIDAndName{}
 
-			if err := rows.Scan(&usr.ID, &usr.Position, &usr.Name); err != nil {
-				return nil, &errors.Error{
-					StatusCode: http.StatusInternalServerError,
-					Code:       errors.InternalServerErrorCode,
-					Message:    errors.InternalServerError,
-					Details:    "FetchAllEmpReportingToGivenManagerRole: tl scan failed - " + err.Error(),
-				}
-			}
+	// 		if err := rows.Scan(&usr.ID, &usr.Position, &usr.Name); err != nil {
+	// 			return nil, &errors.Error{
+	// 				StatusCode: http.StatusInternalServerError,
+	// 				Code:       errors.InternalServerErrorCode,
+	// 				Message:    errors.InternalServerError,
+	// 				Details:    "FetchAllEmpReportingToGivenManagerRole: tl scan failed - " + err.Error(),
+	// 			}
+	// 		}
 
-			array = append(array, usr)
-		}
-	}
+	// 		array = append(array, usr)
+	// 	}
+	// }
 
 	return array, nil
 }

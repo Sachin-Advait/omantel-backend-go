@@ -23,7 +23,7 @@ func (impl *IncentiveImpl) GetUsersReportingToManager(ctx *gin.Context, managerI
 
 	for index, eachOM := range response {
 
-		if eachOM.ID == "" || eachOM.Name == "" || !(eachOM.Position == constant.OutletManager || eachOM.Position == constant.TeamLeader) {
+		if eachOM.ID == "" || eachOM.Name == "" || eachOM.Position != constant.OutletManager { //!(eachOM.Position == constant.OutletManager || eachOM.Position == constant.TeamLeader)
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InvalidDetailsCode,

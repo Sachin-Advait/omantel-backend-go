@@ -79,7 +79,7 @@ func (dbConn *DBImplementation) FetchUserBasicDetails(userID string, quarter, ye
 	}
 }
 
-//TODO: FetchUserDetails - for basic user info and outlet-manger of agent
+//TODO: FetchUserDetails - for basic user info and manger of that user
 func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year int) (*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchAgentUserDetails start")
@@ -88,9 +88,7 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	user := &models.UserBasicDetailsDB{
-		ManagerPosition: constant.OutletManager,
-	}
+	user := &models.UserBasicDetailsDB{}
 
 	err := dbConn.Operation.QueryRowContext(ctx,
 		"select emp_id, name, usr_position, mobile_number, region, outlet, isAdmin from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",

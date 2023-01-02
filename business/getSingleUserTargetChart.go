@@ -39,6 +39,9 @@ func (impl *IncentiveImpl) GetSingleUserTargetChart(ctx *gin.Context, userID str
 		needUpdate = true
 	}
 
+	//TODO: remove at last
+	needUpdate = true
+
 	if user.Position == constant.Promoter || user.Position == constant.CSR {
 
 		userReport, err := impl.PsqlDb.FetchAgentUserReport(user.UserId, isQuarterReport, quarter, month, year)

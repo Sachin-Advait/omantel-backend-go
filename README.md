@@ -347,5 +347,11 @@ And port 8090 is routed on http://omantel.moheoman.live/
 https://stackoverflow.com/questions/38822764/how-to-send-a-https-request-with-a-certificate-golang
 
 
+./incentive_calculator --port 8090 --env uat
+
 ssh root@93.115.22.132
 WNfytZu4TZDvdUS7!
+
+NEW
+ssh root@86.105.252.94
+pZ9WzHCaf8JrnP

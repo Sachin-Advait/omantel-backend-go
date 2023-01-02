@@ -9,7 +9,7 @@ otpUrl: https://10.64.163.150:17862/services/SendNotification
 shortCode: "OMSIP"
 requestorChannelId: "ZONE"
 psqlDB:
-  host: 93.115.18.236
+  host: 86.105.252.94
   port: 5432
   dbName: postgres
   user: gpadmin
@@ -19,7 +19,7 @@ psqlDB:
   connMaxLifetimeInHour: 24
   connMaxIdleTimeInMinute: 48
 logPsqlDB:
-  host: 93.115.18.236
+  host: 86.105.252.94
   port: 5432
   dbName: postgres
   user: gpadmin
