@@ -15,6 +15,10 @@ import (
 //GetOutletSalesAndTarget: userID should be a manager
 func (impl *IncentiveImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error) {
 
+	if !isQuarterReport {
+		quarter = impl.getQuarterFromMonth(month)
+	}
+
 	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err

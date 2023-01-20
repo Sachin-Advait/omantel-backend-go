@@ -14,6 +14,10 @@ import (
 
 func (impl *IncentiveImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) ([]*models.SaleCountPerPlan, *errors.Error) {
 
+	if !isQuarterReport {
+		quarter = impl.getQuarterFromMonth(month)
+	}
+
 	_, ok := constant.ProductGroupMap[product]
 	if !ok {
 		return nil, &errors.Error{

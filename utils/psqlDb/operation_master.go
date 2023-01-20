@@ -10,7 +10,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
 /////////////////////// OUTLET TABLE ///////////////////////////
@@ -124,11 +124,11 @@ func (dbConn *DBImplementation) FetchOutletSalesCount(region, outlet string, isQ
 
 	if isQuarterReport {
 		rows, sqlErr = dbConn.Operation.QueryContext(ctx,
-			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and quarter=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY category, product_group",
+			"select transaction_type, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and quarter=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY transaction_type, product_group",
 			region, outlet, quarter, year)
 	} else {
 		rows, sqlErr = dbConn.Operation.QueryContext(ctx,
-			"select category, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and EXTRACT('month' from b.sales_date)=$3 and EXTRACT('year' from b.sales_date)=$4 GROUP BY category, product_group",
+			"select transaction_type, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and EXTRACT('month' from sales_date)=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY transaction_type, product_group",
 			region, outlet, month, year)
 	}
 
@@ -142,15 +142,15 @@ func (dbConn *DBImplementation) FetchOutletSalesCount(region, outlet string, isQ
 		return
 	}
 
-	var (
-		category      string
-		productGroup  string
-		quantityTotal int
-	)
-
 	for rows.Next() {
 
-		if scanErr := rows.Scan(&category, &productGroup, &quantityTotal); scanErr != nil {
+		var (
+			transactionType string
+			productGroup    string
+			quantityTotal   int
+		)
+
+		if scanErr := rows.Scan(&transactionType, &productGroup, &quantityTotal); scanErr != nil {
 			err = &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerError,
@@ -161,7 +161,7 @@ func (dbConn *DBImplementation) FetchOutletSalesCount(region, outlet string, isQ
 		}
 
 		switch {
-		case category == constant.UpgradeCategory:
+		case transactionType == constant.UpgradeCategory:
 			upgradeSales += quantityTotal
 		case productGroup == constant.HBBCategory || strings.Contains(productGroup, "FIXED"):
 			hbbSales += quantityTotal
@@ -190,10 +190,10 @@ func (dbConn *DBImplementation) FetchActiveUserSales(userID string, region strin
 	)
 
 	if isQuarterReport {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select prev_product, curr_product, quantity, product_group, category, subcategory, sales_date, inactive_date from sale_transaction_table where emp_id=$1 and region=$2 and outlet=$3 and quarter=$4 and EXTRACT('year' from sales_date)=$5",
+		rows, err = dbConn.Operation.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and region=$2 and outlet=$3 and quarter=$4 and EXTRACT('year' from sales_date)=$5",
 			userID, region, outlet, quarter, year)
 	} else {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select prev_product, curr_product, quantity, product_group, category, subcategory, sales_date, inactive_date from sale_transaction_table where emp_id=$1 and region=$2 and outlet=$3 and EXTRACT('month' from sales_date)=$4 and EXTRACT('year' from b.sales_date)=$5",
+		rows, err = dbConn.Operation.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and region=$2 and outlet=$3 and EXTRACT('month' from sales_date)=$4 and EXTRACT('year' from sales_date)=$5",
 			userID, region, outlet, month, year)
 	}
 
@@ -206,25 +206,28 @@ func (dbConn *DBImplementation) FetchActiveUserSales(userID string, region strin
 		}
 	}
 
-	var (
-		prev_product  string
-		curr_product  string
-		quantity      int
-		product_group string
-		category      string
-		subcategory   interface{}
-		salesDate     time.Time
-		inactiveDate  time.Time
-	)
-
 	trx := &models.SaleTransaction{}
 	trx.SaleRecords = make(map[string][]*models.SaleRecord)
 
 	count := 0
 
 	for rows.Next() {
+
+		var (
+			id              int
+			prevPlan        string
+			currPlan        string
+			quantity        int
+			productGroup    string
+			transactionType string
+			subCategory     interface{}
+			salesDate       time.Time
+			terminateDate   time.Time
+		)
+
 		count++
-		if err := rows.Scan(&prev_product, &curr_product, &quantity, &product_group, &category, &subcategory, &salesDate, &inactiveDate); err != nil {
+
+		if err := rows.Scan(&id, &prevPlan, &currPlan, &quantity, &productGroup, &transactionType, &subCategory, &salesDate, &terminateDate); err != nil {
 			return trx, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
@@ -238,45 +241,58 @@ func (dbConn *DBImplementation) FetchActiveUserSales(userID string, region strin
 		trx.Region = region
 
 		switch {
-		case strings.Contains(product_group, "FIXED") || product_group == constant.HBBCategory:
-			product_group = constant.HBBCategory
+		case strings.Contains(productGroup, "FIXED") || productGroup == constant.HBBCategory:
+			productGroup = constant.HBBCategory
 
-		case strings.Contains(product_group, "PREPAID") || product_group == constant.HayyakCategory:
-			product_group = constant.HayyakCategory
+		case strings.Contains(productGroup, "PREPAID") || productGroup == constant.HayyakCategory:
+			productGroup = constant.HayyakCategory
 
-		case strings.Contains(product_group, "POSTPAID") || product_group == constant.BaqatiCategory:
-			product_group = constant.BaqatiCategory
+		case strings.Contains(productGroup, "POSTPAID") || productGroup == constant.BaqatiCategory:
+			productGroup = constant.BaqatiCategory
 
 		default:
-			return trx, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerErrorCode,
-				Message:    errors.InternalServerError,
-				Details:    "FetchUserSales: invalid productGrp - " + product_group,
-			}
+			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: incorrect productGroup")
+			// return trx, &errors.Error{
+			// 	StatusCode: http.StatusInternalServerError,
+			// 	Code:       errors.InternalServerErrorCode,
+			// 	Message:    errors.InternalServerError,
+			// 	Details:    "FetchUserSales: invalid productGrp - " + productGroup,
+			// }
 		}
 
-		lapsedSecs := salesDate.Sub(inactiveDate).Seconds()
+		if !(productGroup == constant.HBBCategory || productGroup == constant.HayyakCategory || productGroup == constant.BaqatiCategory) {
+			continue
+		}
 
-		if objecthelper.RoundTime(lapsedSecs/2600640) < 3 { //Months<3
-			if !strings.Contains(subcategory.(string), "INVOLUNTARY DEACTIVATION") {
-				//TODO: terminated logs
+		if terminateDate.Before(salesDate) {
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: saleDate-terminateDate incorrect")
+		}
+
+		expiryDate := salesDate.Add(90 * 24 * time.Hour)
+
+		if terminateDate.Sub(expiryDate) <= 0 { //Months<3
+			if !strings.Contains(subCategory.(string), "INVOLUNTARY DEACTIVATION") {
+				logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
+					Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
 				continue
 			}
 		}
 
 		rcrd := &models.SaleRecord{
+			TrxId:           id,
 			Quantity:        quantity,
-			Category:        category,
-			PreviousProduct: prev_product,
-			CurrentProduct:  curr_product,
+			Category:        transactionType,
+			PreviousProduct: prevPlan,
+			CurrentProduct:  currPlan,
 		}
 
-		if trx.SaleRecords[product_group] == nil {
-			trx.SaleRecords[product_group] = make([]*models.SaleRecord, 0)
+		if trx.SaleRecords[productGroup] == nil {
+			trx.SaleRecords[productGroup] = make([]*models.SaleRecord, 0)
 		}
 
-		trx.SaleRecords[product_group] = append(trx.SaleRecords[product_group], rcrd)
+		trx.SaleRecords[productGroup] = append(trx.SaleRecords[productGroup], rcrd)
 	}
 
 	return trx, nil
@@ -325,7 +341,7 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string, q
 	defer cancel()
 
 	//rows, err := dbConn.Operation.QueryContext(ctx, "select distinct emp_id from user_hierarchy_table where deleted IS NULL and outlet_manager=$1 and team_lead=$2 and quarter=$3 and year=$4", outletManagerID, outletManagerID, quarter, year)
-	rows, err := dbConn.Operation.QueryContext(ctx, "select distinct emp_id from user_hierarchy_table where deleted IS NULL and outlet_manager=$1 and quarter=$2 and year=$3", outletManagerID, quarter, year)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select distinct a.emp_id from user_hierarchy_table a inner join user_master_table b on a.emp_id = b.emp_id and a.quarter = b.quarter and a.year = b.year where a.deleted IS NULL and b.deleted is null and a.outlet_manager=$1 and b.isactive=true and a.quarter=$2 and a.year=$3", outletManagerID, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,

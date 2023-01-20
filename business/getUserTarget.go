@@ -13,6 +13,10 @@ import (
 
 func (impl *IncentiveImpl) GetUserTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error) {
 
+	if !isQuarterReport {
+		quarter = impl.getQuarterFromMonth(month)
+	}
+
 	user, err := impl.PsqlDb.FetchUserDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err

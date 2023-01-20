@@ -15,6 +15,10 @@ import (
 
 func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error) {
 
+	if !isQuarterReport {
+		quarter = impl.getQuarterFromMonth(month)
+	}
+
 	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err

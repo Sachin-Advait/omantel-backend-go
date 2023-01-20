@@ -281,6 +281,7 @@ type Employee struct {
 }
 
 type SaleRecord struct {
+	TrxId           int
 	PreviousProduct string
 	CurrentProduct  string
 	Quantity        int

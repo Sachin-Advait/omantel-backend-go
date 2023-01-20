@@ -182,19 +182,25 @@ func (impl *IncentiveImpl) LoadMaxPayFromDB(printLog bool) error {
 
 func (impl *IncentiveImpl) PrintAllInMemData() {
 
-	for year, val := range models.PlanRates.PlanRateMap {
-		logger.FileLogger.Info().Int("year", year).Interface("planRate", val).Msg("LoadPlansFromDB: load planRate success")
+	for year, yearVal := range models.PlanRates.PlanRateMap {
+		for quarter, val := range yearVal {
+			logger.FileLogger.Info().Int("year", year).Int("quarter", quarter).Interface("planRate", val).Msg("LoadPlansFromDB: load planRate success")
+		}
 	}
 
 	for year, val := range models.SalesTrgt.SaleTargetMap {
 		logger.FileLogger.Info().Int("year", year).Interface("target", val).Msg("LoadTargetFromDB: load target success")
 	}
 
-	for year, val := range models.ValOfPoint.VopMap {
-		logger.FileLogger.Info().Int("year", year).Interface("VOP", val).Msg("LoadScaleOrderFromDB: load VOP success")
+	for year, yearVal := range models.ValOfPoint.VopMap {
+		for quarter, val := range yearVal {
+			logger.FileLogger.Info().Int("year", year).Int("quarter", quarter).Interface("VOP", val).Msg("LoadScaleOrderFromDB: load VOP success")
+		}
 	}
 
-	for year, val := range models.MaxPay.Payoutmap {
-		logger.FileLogger.Info().Int("year", year).Interface("maxPay", val).Msg("LoadMaxPayFromDB: load maxPay success")
+	for year, yearVal := range models.MaxPay.Payoutmap {
+		for quarter, val := range yearVal {
+			logger.FileLogger.Info().Int("year", year).Int("quarter", quarter).Interface("maxPay", val).Msg("LoadMaxPayFromDB: load maxPay success")
+		}
 	}
 }
