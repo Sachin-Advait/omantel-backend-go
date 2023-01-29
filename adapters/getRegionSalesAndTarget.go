@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -53,6 +54,14 @@ func GetRegionSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiveRe
 		return errs.StatusCode, &models.APIFailureResponse{
 			Error: errs.Message,
 		}
+	}
+
+	for index, val := range response {
+		response[index].BaqatiAchievedPercentage = math.Round(val.BaqatiAchievedPercentage*1000) / 1000
+		response[index].HBBAchievedPercentage = math.Round(val.HBBAchievedPercentage*1000) / 1000
+		response[index].HayyakAchievedPercentage = math.Round(val.HayyakAchievedPercentage*1000) / 1000
+		response[index].UpgradeAchievedPercentage = math.Round(val.UpgradeAchievedPercentage*1000) / 1000
+		response[index].TotalAchievedPercentage = math.Round(val.TotalAchievedPercentage*1000) / 1000
 	}
 
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetRegionSalesAndTarget : success")

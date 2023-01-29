@@ -201,7 +201,7 @@ const (
 )
 
 const (
-	VicePresident  = "VICE PRESIDENT"
+	VicePresident  = "VP"
 	GeneralManager = "GM"
 	SeniorManager  = "SM"
 	Manager        = "MANAGER"

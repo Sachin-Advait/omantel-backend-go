@@ -76,6 +76,15 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, userID string) (map[str
 		return nil, err
 	}
 
+	if !user.IsActive {
+		return nil, &errors.Error{
+			StatusCode: http.StatusUnauthorized,
+			Code:       errors.UnauthorizedUserCode,
+			Message:    "YOU ARE NOT AUTHORIZED TO VIEW REPORTS",
+			Details:    "position:" + user.Position + "contact:" + user.MobileNumber,
+		}
+	}
+
 	userPosition, ok := constant.EmployeePositionMap[user.Position]
 	if !ok || user.MobileNumber == "" {
 		return nil, &errors.Error{

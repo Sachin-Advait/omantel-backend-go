@@ -349,8 +349,10 @@ https://stackoverflow.com/questions/38822764/how-to-send-a-https-request-with-a-
 
 ./incentive_calculator --port 8090 --env uat
 
+scp ./incentive_calculator root@93.115.22.132:/root/go/src/gitlab.com/rendezvousPoint/incentive_calculator
+
 ssh root@93.115.22.132
-WNfytZu4TZDvdUS7!
+sseLbscK3xZ9AE2P!
 
 NEW
 ssh root@86.105.252.94

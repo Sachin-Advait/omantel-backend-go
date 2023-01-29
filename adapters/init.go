@@ -30,6 +30,10 @@ func InitIncentiveCron() {
 		logger.FileLogger.Fatal().Err(err).Msg("LoadMaxPayFromDB: load maxPay failed")
 	}
 
+	if err := theProvider.LoadMaxExtraPayFromDB(false); err != nil {
+		logger.FileLogger.Fatal().Err(err).Msg("LoadMaxExtraPayFromDB: load maxExtraPay failed")
+	}
+
 	theProvider.PrintAllInMemData()
 
 	////////

@@ -1,0 +1,127 @@
+Manager: 33220
+Quarter: 3
+Year:    2022
+
+Outlet Managers:            50795, 69852, 69924, 65288, 68843, 69486, 69925
+Active OutletManagers:      50795, 69852, 69924, 65288, 68843, 69486, 69925
+InActive OutletManagers:    0
+
+
+HBB
+    Sales Count:        1860        (294+231+115+249+70+244+657)
+    Target:             1335        (200+73+104+183+79+301+395)
+    Achieved Percent:   139.326
+    VOP:                0.45
+    Payout:             11184.0813
+    MaxPayout:          656.25
+    Plan Sales:
+        Name                                                        Rate        Qty         Pay                     CumulativePay
+        WIRELESS UNLIMITED DATA - 8 MBPS - 25 RO                    12.5        683         3841.8750000000005
+        WIRELESS UNLIMITED 50MBPS - 30 OMR                          15          345         2328.75
+        100 MBPS PREMIUM                                            15          211         1424.25
+        WIRELESS 20MBPS - 25 OMR                                    12.5        184         1035
+        WIRELESS UNLIMITED DATA - 16 MBPS - 28 RO                   14          102         642.6
+        HOME BROADBAND UNLIMITED M / FIXED                          12.5        65          365.625
+        WIRELESS UNLIMITED DATA - 4 MBPS - 20 RO                    10          64          288
+        ULTRA-FAST PREMIUM M                                        17.5        46          362.25
+        HOME BROADBAND UNLIMITED S / FIXED                          6.667       42          126.00630000000001
+        WIRELESS 600 GB                                             15          25          168.75
+        ULTRA-FAST PREMIUM L                                        20          20          180
+        WIRELESS 300 GB                                             12.5        17          95.625
+        PSTN RENTAL 2.9                                             0           12          0
+        WIRELESS UNLIMITED 100MBPS - 35 OMR                         17.5        10          78.75
+        HOME BROADBAND UNLIMITED L / FIXED                          14          9           56.699999999999996
+        WIRELESS UNLIMITED 250MBPS - 40 OMR                         20          8           72
+        200 MBPS PREMIUM                                            17.5        4           31.5
+        ULTRA-FAST PREMIUM S                                        15          3           20.25
+        WIRELESS 800 GB                                             17.5        3           23.625
+        150 FREE LOCAL MINUTES                                      0           3           0
+        HOME BROADBAND PREMIUM S - 30 MBPS                          15          2           13.5
+        HOME BROADBAND PREMIUM S / FIXED                            15          1           6.75
+        WIRELESS UNLIMITED 1GBPS - 99 OMR                           49.5        1           22.275000000000002
+
+
+
+
+HAYYAK
+    Sales Count:        15111       (1809+1141+408+3293+2711+1821+3928)
+    Target:             7650        (982+245+294+1622+687+1608+2212)
+    Achieved Percent:   197.529
+    VOP:                0.75
+    Payout:             22973.856750000003
+    MaxPayout:          412.5
+    Plan Sales:
+        Name                                                        Rate        Qty         Pay                     CumulativePay
+        HAYYAK PLUS BASIC                                           0.5         5518        2069.25
+        HAYYAK PLUS 4                                               0.667       3133        1567.2832500000002
+        HAYYAK PLUS 5                                               0.833       1316        822.1709999999999
+        TOURIST-UNLIMITED                                           10          842         6315
+        HAYYAK PLUS 9                                               3           823         1851.75
+        HAYYAK STANDARD                                             0.2         773         115.95
+        HAYYAK PLUS 12                                              6           597         2686.5
+        HAYYAK PLUS 18                                              9           566         3820.5
+        HAYYAK PLUS 6                                               2           398         597
+        TOURIST-5                                                   0.833       365         228.03375
+        TOURIST-10                                                  3.333       295         737.4262500000001
+        HAYYAK DATA ONLY 150 GB 25 RO                               12.5        171         1603.125
+        HAYYAK VOICE ONLY                                           2.333       149         260.71275
+        HAYYAK DATA ONLY 10 RO                                      3.333       81          202.47975000000002
+        HAYYAK PLUS 2                                               0.2         41          6.15
+        <BLANK NAME>                                                0           25          0
+        HAYYAK LONG VALIDITY - 12 WEEKS                             7.5         16          90
+        HAYYAK DATA ONLY 2 GB 3 RO                                  0.2         1           0.15000000000000002
+        HAYYAK PLUS 3 RO MONTHLY                                    0.5         1           0.375
+
+
+
+
+BAQATI
+    Sales Count:        3587        (494+274+158+776+141+506+1238)
+    Target:             3283        (489+138+146+672+187+734+917)
+    Achieved Percent:   109.26
+    VOP:                0.25
+    Payout:             4833.4655
+    MaxPayout:          656.25
+    Plan Sales: 
+        Name                                                        Rate        Qty         Pay                     CumulativePay
+        BAQATI BLUE 10 OR - NO CONTRACT                             3.333       2453        2043.96225
+        BAQATI SILVER  - 12 MONTHS                                  10          427         1067.5
+        BAQATI BRONZE - 12 MONTHS                                   7.5         293         549.375
+        BAQATI DATA ONLY 25 RO - 5G 200GB                           12.5        121         378.125
+        BAQATI GOLD - 12 MONTHS                                     12.5        89          278.125
+        BAQATI BRONZE-NO CONTRACT                                   5.667       45          63.75375
+        BAQATI DATA ONLY 30 RO - 5G 300 GB                          15          36          135
+        BAQATI SILVER - NO CONTRACT                                 8           33          66
+        BAQATI BLUE(14GB)                                           3           28          21
+        BAQATI DATA ONLY 40 RO - 5G 600 GB                          20          22          110
+        BAQATI BLUE 10 OR                                           3.333       10          8.3325
+        BAQATI DATA ONLY 35 RO - 5G 400 GB                          17.5        7           30.625
+        BAQATI BASIC                                                0.5         7           0.875
+        BAQATI GOLD - NO CONTRACT                                   9.667       5           12.08375
+        BAQATI PLATINUM - 12 MONTHS                                 17.5        4           17.5
+        BAQATI AL UFUQ - 12 MONTHS                                  49.5        3           37.125
+        BAQATI SILVER                                               10          1           2.5
+        BAQATI BLUE                                                 3           1           0.75
+        NAMA BLUE + 2021                                            3.333       1           0.83325
+        BAQATI AL-UFUQ - NO CONTRACT                                40          1           10
+
+
+
+
+UPGRADE
+    Sales Count:        0           (0+0+0+0+0+0+0)
+    Target:             901         (161+61+68+157+33+187+234)
+    Achieved Percent:   0
+    VOP:                0
+    Payout:             0
+    MaxPayout:          150
+    Plan Sales: 
+        Name                                                        Rate        Qty         Pay                     CumulativePay
+
+
+
+Total Pay:          1725            (656.25 + 412.5 + 656.25 + 0)
+
+
+
+

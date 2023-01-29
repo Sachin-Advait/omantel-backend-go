@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -54,6 +55,8 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.SingleUserIncentiv
 			Error: errs.Message,
 		}
 	}
+
+	validateTopTenSalesResponse(response)
 
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetTopTenEmpSalesAndTarget : success")
 	logger.LogChan <- &logger.Logging{
@@ -131,4 +134,20 @@ func validateTopTenSalesRequest(req *models.SingleUserIncentiveRequest, ctxHeade
 	}
 
 	return
+}
+
+func validateTopTenSalesResponse(res []*models.ProductWiseSalesTargetPerStaff) {
+
+	for index, val := range res {
+		res[index].HBBTarget = math.Round(val.HBBTarget*1000) / 1000
+		res[index].HBBAchievedPercent = math.Round(val.HBBAchievedPercent*1000) / 1000
+		res[index].HayyakTarget = math.Round(val.HayyakTarget*1000) / 1000
+		res[index].HayyakAchievedPercent = math.Round(val.HayyakAchievedPercent*1000) / 1000
+		res[index].BaqatiTarget = math.Round(val.BaqatiTarget*1000) / 1000
+		res[index].BaqatiAchievedPercent = math.Round(val.BaqatiAchievedPercent*1000) / 1000
+		res[index].UpgradeTarget = math.Round(val.UpgradeTarget*1000) / 1000
+		res[index].UpgradeAchievedPercent = math.Round(val.UpgradeAchievedPercent*1000) / 1000
+		res[index].TotalTarget = math.Round(val.TotalTarget*1000) / 1000
+		res[index].TotalAchievedPercentage = math.Round(val.TotalAchievedPercentage*1000) / 1000
+	}
 }

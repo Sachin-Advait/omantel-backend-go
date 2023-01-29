@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -54,6 +55,8 @@ func GetUserPayout(ctx *gin.Context, req *models.SingleUserIncentiveRequest) (in
 			Error: errs.Message,
 		}
 	}
+
+	validateUserPayoutResponse(ctx, response)
 
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserPayout : success")
 	logger.LogChan <- &logger.Logging{
@@ -131,4 +134,57 @@ func validateUserPayoutRequest(req *models.SingleUserIncentiveRequest, ctxHeader
 	}
 
 	return
+}
+
+func validateUserPayoutResponse(ctx *gin.Context, res *models.TotalIncentive) {
+
+	var achievedCount int
+
+	if res.HBB.Payout != 0 {
+		achievedCount++
+	} else {
+		logger.FileLogger.CtxTrace(ctx).Str("HBB", "not achieved").Msg("GetUserPayout : response validation")
+	}
+
+	if res.Hayyak.Payout != 0 {
+		achievedCount++
+	} else {
+		logger.FileLogger.CtxTrace(ctx).Str("HAYYAK", "not achieved").Msg("GetUserPayout : response validation")
+	}
+
+	if res.Baqati.Payout != 0 {
+		achievedCount++
+	} else {
+		logger.FileLogger.CtxTrace(ctx).Str("BAQATI", "not achieved").Msg("GetUserPayout : response validation")
+	}
+
+	if res.Upgrade.Payout != 0 {
+		achievedCount++
+	} else {
+		logger.FileLogger.CtxTrace(ctx).Str("UPGRADE", "not achieved").Msg("GetUserPayout : response validation")
+	}
+
+	if achievedCount < 3 {
+		res.TotalPay = 0
+		res.HBB.Payout = 0
+		res.HBB.ExtraPayout = 0
+		res.Hayyak.Payout = 0
+		res.Hayyak.ExtraPayout = 0
+		res.Baqati.Payout = 0
+		res.Baqati.ExtraPayout = 0
+		res.Upgrade.Payout = 0
+		res.Upgrade.ExtraPayout = 0
+
+		return
+	}
+
+	res.TotalPay = math.Round(res.TotalPay*1000) / 1000
+	res.HBB.Payout = math.Round(res.HBB.Payout*1000) / 1000
+	res.HBB.ExtraPayout = math.Round(res.HBB.ExtraPayout*1000) / 1000
+	res.Hayyak.Payout = math.Round(res.Hayyak.Payout*1000) / 1000
+	res.Hayyak.ExtraPayout = math.Round(res.Hayyak.ExtraPayout*1000) / 1000
+	res.Baqati.Payout = math.Round(res.Baqati.Payout*1000) / 1000
+	res.Baqati.ExtraPayout = math.Round(res.Baqati.ExtraPayout*1000) / 1000
+	res.Upgrade.Payout = math.Round(res.Upgrade.Payout*1000) / 1000
+	res.Upgrade.ExtraPayout = math.Round(res.Upgrade.ExtraPayout*1000) / 1000
 }

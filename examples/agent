@@ -1,0 +1,122 @@
+Agent: 		69963
+Quarter: 	3
+Year:    	2022
+
+Total Agents Per Outlet:		12 		(active+non-active)
+Total Active Promoters: 		9
+Total InActive Promoters: 		3
+Total Group Count: 				3 		(HBB+Hayyak+Baqati)
+Total Raw Sales Count: 			747 	(active+terminated)
+Total Failed Sales Count: 		36
+Total Success Sales Count: 		711
+HBB Active Sales Count: 		90
+HAYYAK Active Sales Count: 		475
+BAQATI Active Sales Count: 		146
+UPGRADE Active Sales Count: 	0
+
+
+HBB
+	Target Per Outlet: 		200
+	Target Per Employee: 	22.22222222222222
+	Sales Count: 			90
+	Achieved Percent:		405
+	Vop:					0.75
+	ExtraPayout:			87.5
+	MaxExtraPaypout:		88
+	Payout:					881.625
+	MaxPayout: 				350
+	Plans:
+		Name 											Rate 		Qty 		Pay 			CumulativePay
+		HOME BROADBAND UNLIMITED M / FIXED  			12.5 		10 			93.75 			93.75
+		100 MBPS PREMIUM 								15 			12 			135 			228.75
+		PSTN RENTAL 2.9 								0 			2 			0 				228.75
+		WIRELESS 20MBPS - 25 OMR 						12.5 		8 			75 				303.75
+		WIRELESS UNLIMITED DATA - 16 MBPS - 28 RO 		14 			2 			21 				324.75
+		WIRELESS 600 GB 								15 			1 			11.25 			336
+		WIRELESS UNLIMITED DATA - 8 MBPS - 25 RO 		12.5 		39 			365.625 		701.625
+		WIRELESS UNLIMITED 50MBPS - 30 OMR 				15 			16 			180 			881.625
+
+
+
+HAYYAK
+	Target Per Outlet: 		982
+	Target Per Employee: 	109.11111111111111
+	Sales Count: 			475
+	Achieved Percent:		435.33604887983705
+	Vop:					0.75
+	ExtraPayout:			55
+	MaxExtraPaypout:		55
+	Payout:					521.7517499999999
+	MaxPayout: 				220
+	Plans:
+		Name 											Rate 		Qty 		Pay 				CumulativePay
+		HAYYAK VOICE ONLY 								2.333 		4  			6.999 				6.999
+		HAYYAK PLUS 4 									0.667 		151 		75.53775 			82.53675
+		HAYYAK DATA ONLY 150 GB 25 RO 					12.5 		2 			18.75 				101.28675
+		HAYYAK PLUS 5 									0.833 		37 			23.11575 			124.4025
+		HAYYAK PLUS 9 									3 			23 			51.75 				176.1525
+		TOURIST-UNLIMITED 								10 			5 			37.5 				213.6525
+		TOURIST-5 										0.833		2 			1.2494999999999998 	214.90200000000002
+		HAYYAK PLUS 6 									2 			16 			24 					238.90200000000002
+		HAYYAK PLUS 18 									9 			19 			185.25 				367.15200000000004
+		HAYYAK PLUS 3 RO MONTHLY 						0.5 		1 			0.375 				367.52700000000004
+		HAYYAK DATA ONLY 10 RO 							3.333 		1 			2.49975 			370.02675000000005
+		HAYYAK PLUS BASIC 								0.5			185 		69.375 				439.40175000000005
+		***<BLANK>*** 									0			2 			0 					439.40175000000005
+		HAYYAK PLUS 2 									0.2 		1 			0.15000000000000002 439.55175
+		HAYYAK PLUS 12 									6 			18 			81 					520.5517500000001
+		HAYYAK STANDARD 								0.2 		8 			1.2000000000000002 	521.7517499999999
+
+
+
+BAQATI
+	Target Per Outlet: 		489
+	Target Per Employee: 	54.333333333333336
+	Sales Count: 			146
+	Achieved Percent:		268.71165644171776
+	Vop:					0.75
+	ExtraPayout:			87.5
+	MaxExtraPaypout:		88
+	Payout:					684.4830000000001
+	MaxPayout: 				350
+	Plans:
+		Name 											Rate 		Qty 		Pay 				CumulativePay
+		BAQATI DATA ONLY 35 RO - 5G 400 GB 				17.5 		2 			26.25 				26.25
+		BAQATI DATA ONLY 30 RO - 5G 300 GB 				15 			1 			11.25 				37.5
+		BAQATI GOLD - NO CONTRACT 						9.667 		1 			7.250249999999999 	44.75025
+		BAQATI BLUE(14GB) 								3 			4 			9 					53.75025
+		BAQATI BLUE 10 OR - NO CONTRACT 				3.333 		73 			182.48175 			236.232
+		BAQATI BRONZE - 12 MONTHS 						7.5 		16 			90 					326.23199999999997
+		BAQATI SILVER  - 12 MONTHS 						10 			33 			247.5 				573.732
+		BAQATI SILVER - NO CONTRACT 					8 			2 			12 					585.732
+		BAQATI BRONZE-NO CONTRACT 						5.667 		5 			21.25125 			606.98325
+		BAQATI GOLD - 12 MONTHS							12.5 		8 			75 					681.98325
+		BAQATI BLUE 10 OR 								3.333 		1 			2.49975 			684.483
+
+
+
+UPGRADE
+	Target Per Outlet: 		161
+	Target Per Employee: 	17.88888888888889
+	Sales Count: 			0
+	Achieved Percent:		0
+	Vop:					0
+	ExtraPayout:			0
+	MaxExtraPaypout:		20
+	Payout:					0
+	MaxPayout: 				80
+	Plans:
+		Name 											Rate 		Qty 		Pay 				CumulativePay
+
+
+
+
+Total Pay:          1150                pay(350 + 220 + 350 + 0)	+	extraPay(87.5 + 55 + 87.5 + 0)
+
+
+
+
+
+
+
+

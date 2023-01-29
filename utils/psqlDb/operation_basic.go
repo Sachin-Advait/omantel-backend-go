@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
@@ -408,22 +409,97 @@ func (dbConn *DBImplementation) FetchMaxPayout(year int) *errors.Error {
 	defer models.MaxPay.Mutex.Unlock()
 
 	if models.MaxPay.Payoutmap == nil {
-		models.MaxPay.Payoutmap = make(map[int]map[int]map[string]float64)
+		models.MaxPay.Payoutmap = make(map[int]map[int]map[string]map[string]float64)
 	}
 
 	if models.MaxPay.Payoutmap[year] == nil {
-		models.MaxPay.Payoutmap[year] = make(map[int]map[string]float64)
+		models.MaxPay.Payoutmap[year] = make(map[int]map[string]map[string]float64)
 	}
 
 	for quarter := 1; quarter <= 4; quarter++ {
 		if models.MaxPay.Payoutmap[year][quarter] == nil {
-			models.MaxPay.Payoutmap[year][quarter] = make(map[string]float64)
+			models.MaxPay.Payoutmap[year][quarter] = make(map[string]map[string]float64)
 		}
 
-		models.MaxPay.Payoutmap[year][quarter]["HBB"] = 350
-		models.MaxPay.Payoutmap[year][quarter]["BAQATI"] = 350
-		models.MaxPay.Payoutmap[year][quarter]["HAYYAK"] = 220
-		models.MaxPay.Payoutmap[year][quarter]["UPGRADE"] = 80
+		if models.MaxPay.Payoutmap[year][quarter][constant.Promoter] == nil {
+			models.MaxPay.Payoutmap[year][quarter][constant.Promoter] = make(map[string]float64)
+		}
+
+		if models.MaxPay.Payoutmap[year][quarter][constant.OutletManager] == nil {
+			models.MaxPay.Payoutmap[year][quarter][constant.OutletManager] = make(map[string]float64)
+		}
+
+		if models.MaxPay.Payoutmap[year][quarter][constant.Manager] == nil {
+			models.MaxPay.Payoutmap[year][quarter][constant.Manager] = make(map[string]float64)
+		}
+
+		if models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager] == nil {
+			models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager] = make(map[string]float64)
+		}
+
+		models.MaxPay.Payoutmap[year][quarter][constant.Promoter]["HBB"] = 350
+		models.MaxPay.Payoutmap[year][quarter][constant.Promoter]["BAQATI"] = 350
+		models.MaxPay.Payoutmap[year][quarter][constant.Promoter]["HAYYAK"] = 220
+		models.MaxPay.Payoutmap[year][quarter][constant.Promoter]["UPGRADE"] = 80
+
+		models.MaxPay.Payoutmap[year][quarter][constant.OutletManager]["HBB"] = 420
+		models.MaxPay.Payoutmap[year][quarter][constant.OutletManager]["BAQATI"] = 420
+		models.MaxPay.Payoutmap[year][quarter][constant.OutletManager]["HAYYAK"] = 264
+		models.MaxPay.Payoutmap[year][quarter][constant.OutletManager]["UPGRADE"] = 96
+
+		models.MaxPay.Payoutmap[year][quarter][constant.Manager]["HBB"] = 656.25
+		models.MaxPay.Payoutmap[year][quarter][constant.Manager]["BAQATI"] = 656.25
+		models.MaxPay.Payoutmap[year][quarter][constant.Manager]["HAYYAK"] = 412.5
+		models.MaxPay.Payoutmap[year][quarter][constant.Manager]["UPGRADE"] = 150
+
+		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager]["HBB"] = 985
+		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager]["BAQATI"] = 985
+		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager]["HAYYAK"] = 619
+		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager]["UPGRADE"] = 225
+	}
+
+	return nil
+}
+
+// FetchMaxExtraPayout loads the gloabal variable MaxExtraPay with the maximum extra payout limit
+func (dbConn *DBImplementation) FetchMaxExtraPayout(year int) *errors.Error {
+
+	models.MaxExtraPay.Mutex.Lock()
+	defer models.MaxExtraPay.Mutex.Unlock()
+
+	if models.MaxExtraPay.ExtraPayoutmap == nil {
+		models.MaxExtraPay.ExtraPayoutmap = make(map[int]map[int]map[string]map[string]float64)
+	}
+
+	if models.MaxExtraPay.ExtraPayoutmap[year] == nil {
+		models.MaxExtraPay.ExtraPayoutmap[year] = make(map[int]map[string]map[string]float64)
+	}
+
+	for quarter := 1; quarter <= 4; quarter++ {
+		if models.MaxExtraPay.ExtraPayoutmap[year][quarter] == nil {
+			models.MaxExtraPay.ExtraPayoutmap[year][quarter] = make(map[string]map[string]float64)
+		}
+
+		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter] == nil {
+			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter] = make(map[string]float64)
+		}
+
+		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.OutletManager] == nil {
+			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.OutletManager] = make(map[string]float64)
+		}
+
+		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Manager] == nil {
+			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Manager] = make(map[string]float64)
+		}
+
+		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.SeniorManager] == nil {
+			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.SeniorManager] = make(map[string]float64)
+		}
+
+		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["HBB"] = 88
+		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["BAQATI"] = 88
+		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["HAYYAK"] = 55
+		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["UPGRADE"] = 20
 	}
 
 	return nil

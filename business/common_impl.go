@@ -211,7 +211,7 @@ func (impl *IncentiveImpl) getSaleTargetPerOutlet(year, month, quarter int, isQu
 	return 0, errors.New("TARGET GROUP INVALID - " + grp)
 }
 
-func (impl *IncentiveImpl) getMaxPayout(quarter, year int, grp string) (float64, error) {
+func (impl *IncentiveImpl) getMaxPayout(quarter, year int, position, grp string) (float64, error) {
 	models.MaxPay.Mutex.RLock()
 	defer models.MaxPay.Mutex.RUnlock()
 
@@ -223,9 +223,37 @@ func (impl *IncentiveImpl) getMaxPayout(quarter, year int, grp string) (float64,
 		return 0, errors.New("MAX PAYOUT QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
 	}
 
-	val, ok := models.MaxPay.Payoutmap[year][quarter][grp]
+	if models.MaxPay.Payoutmap[year][quarter][position] == nil {
+		return 0, errors.New("MAX PAYOUT POSITION INVALID - " + fmt.Sprintf("%v", position))
+	}
+
+	val, ok := models.MaxPay.Payoutmap[year][quarter][position][grp]
 	if !ok {
 		return 0, errors.New("MAX PAYOUT GROUP INVALID - " + grp)
+	}
+
+	return val, nil
+}
+
+func (impl *IncentiveImpl) getMaxExtraPayout(quarter, year int, position, grp string) (float64, error) {
+	models.MaxExtraPay.Mutex.RLock()
+	defer models.MaxExtraPay.Mutex.RUnlock()
+
+	if models.MaxExtraPay.ExtraPayoutmap[year] == nil {
+		return 0, errors.New("MAX EXTRA PAYOUT YEAR INVALID - " + fmt.Sprintf("%v", year))
+	}
+
+	if models.MaxExtraPay.ExtraPayoutmap[year][quarter] == nil {
+		return 0, errors.New("MAX EXTRA PAYOUT QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
+	}
+
+	if models.MaxExtraPay.ExtraPayoutmap[year][quarter][position] == nil {
+		return 0, errors.New("MAX EXTRA PAYOUT POSITION INVALID - " + fmt.Sprintf("%v", position))
+	}
+
+	val, ok := models.MaxExtraPay.ExtraPayoutmap[year][quarter][position][grp]
+	if !ok {
+		return 0, errors.New("MAX EXTRA PAYOUT GROUP INVALID - " + grp)
 	}
 
 	return val, nil
@@ -254,6 +282,8 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 	if user == nil || user.UserId == "" || user.ManagerId == "" || user.ManagerPosition == "" {
 		if user == nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", "").Str("region", "").Str("outlet", "").Bool("isQuarter", isQuarterReport).Int("quarter", quarter).
+				Int("month", month).Int("year", year).Msg("AReport : nil info")
 			return nil, nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
@@ -261,6 +291,9 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 				Details:    "invalid agent details",
 			}
 		}
+
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("AReport : invalid info")
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
@@ -270,9 +303,10 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 	}
 
 	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
-		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("update AgentUser Report")
+		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("AReport : info")
 
 	if !(user.Position == constant.Promoter || user.Position == constant.CSR) {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("position", user.Position).Msg("AReport : invalid position")
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    user.UserId + ": INCORRECT AGENT POSITION - " + user.Position,
@@ -281,6 +315,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 	}
 
 	if user.Region == "" || user.Outlet == "" {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Msg("AReport : invalid outlet info")
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
@@ -289,12 +324,17 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		}
 	}
 
+	logger.FileLogger.CtxTrace(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
+		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("AReport : info")
+
 	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(user.Region, user.Outlet, quarter, year)
 	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(err).Msg("AReport : fetch outlet info failed")
 		return nil, nil, err
 	}
 
 	if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Msg("AReport : outlet co-ordinates invalid")
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
@@ -303,13 +343,20 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		}
 	}
 
-	allUserSales, err := impl.PsqlDb.FetchActiveUserSales(user.UserId, user.Region, user.Outlet, isQuarterReport, quarter, month, year)
+	totalEmp, err := impl.PsqlDb.FetchTotalNonManagerialEmployees(user.Region, user.Outlet, quarter, year)
 	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(err).Msg("AReport : fetch empCount failed")
 		return nil, nil, err
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Int("count", len(allUserSales.SaleRecords)).
-		Msg("sale count")
+	allUserSales, err := impl.PsqlDb.FetchActiveUserSales(user.UserId, user.Region, user.Outlet, isQuarterReport, quarter, month, year)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(err).Msg("AReport : fetch sales failed")
+		return nil, nil, err
+	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("agentCount", totalEmp).Int("saleGroupCount", len(allUserSales.SaleRecords)).
+		Msg("AReport : total agents and salesGroup")
 
 	resp := &models.TotalIncentive{}
 	report := &models.UserReportDB{
@@ -334,13 +381,6 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		return resp, report, nil
 	}
 
-	totalEmp, err := impl.PsqlDb.FetchTotalNonManagerialEmployees(user.Region, user.Outlet, quarter, year)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Int("count", totalEmp).Msg("total employee")
-
 	if totalEmp == 0 {
 		ind := &models.IndividualIncentive{Error: "NO AGENT FOUND FOR OUTLET - " + user.Outlet}
 		resp.HBB = ind
@@ -358,9 +398,6 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 	totalActiveUpgrade := 0
 
 	for grp, rcds := range allUserSales.SaleRecords {
-
-		//only 3 groups for now Hayyak, Hbb, Baqati
-		logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("category", grp).Int("grpSaleCount", len(rcds)).Msg("group sales")
 
 		for _, v := range rcds {
 
@@ -381,10 +418,16 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		}
 	}
 
+	for grp, qty := range totalActive {
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("category", grp).Int("count", qty).Msg("AReport : sale count")
+	}
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Int("count", totalActiveUpgrade).Msg("AReport : sale count")
+
 	for grp, plans := range grpPlans {
 
 		targetPerOutlet, internalErr := impl.getSaleTargetPerOutlet(year, month, quarter, isQuarterReport, grp, user.Region, user.Outlet)
 		if internalErr != nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Err(internalErr).Msg("AReport : fetch target failed")
 			return nil, nil, &errors.Error{
 				StatusCode: http.StatusBadRequest,
 				Code:       errors.InvalidDetailsCode,
@@ -393,7 +436,8 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			}
 		}
 
-		if targetPerOutlet == 0 {
+		if targetPerOutlet <= 0 {
+			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Msg("AReport : zero target found")
 			ind := &models.IndividualIncentive{Error: "NO TARGET FOUND FOR OUTLET - " + user.Outlet}
 			resp.HBB = ind
 			resp.Baqati = ind
@@ -422,31 +466,38 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			*/
 
 			targetPerEmp := float64(targetPerOutlet) / float64(totalEmp)
-			if targetPerEmp <= 0 {
-				ind.Error = fmt.Sprintf("OUTLET-%v, PER EMPLOYEE HBB TARGET-%v", user, targetPerEmp)
-				resp.HBB = ind
-				logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("GetSingleUserIncentive : HBB sales error")
-				break
-			}
-
 			achieved := float64(totalActive[grp]) * 100 / float64(targetPerEmp)
+			// if targetPerEmp <= 0 {
+			// 	ind.Error = fmt.Sprintf("OUTLET-%v, PER EMPLOYEE HBB TARGET-%v", user, targetPerEmp)
+			// 	resp.HBB = ind
+			// 	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("GetSingleUserIncentive : HBB sales error")
+			// 	break
+			// }
 
 			vop, internalErr := impl.getValueOfPoint(quarter, year, grp, achieved)
 			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Float64("achieved", achieved).Err(internalErr).Msg("AReport : HBB fetch vop failed")
 				ind.Error = internalErr.Error()
 				resp.HBB = ind
 				break
 			}
-
 			extraPayout, internalErr := impl.getExtraPay(quarter, year, grp, achieved)
 			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Float64("achieved", achieved).Err(internalErr).Msg("AReport : HBB fetch extraPayout failed")
 				ind.Error = internalErr.Error()
 				resp.HBB = ind
 				break
 			}
-
-			maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, grp)
+			maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, constant.Promoter, grp)
 			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : HBB fetch maxPay failed")
+				ind.Error = internalErr.Error()
+				resp.HBB = ind
+				break
+			}
+			maxExtraPayAllowed, internalErr := impl.getMaxExtraPayout(quarter, year, constant.Promoter, grp)
+			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : HBB fetch maxExtraPay failed")
 				ind.Error = internalErr.Error()
 				resp.HBB = ind
 				break
@@ -456,28 +507,21 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			report.HBBSalesCount = totalActive[grp]
 			report.HBBAchievedPercentage = achieved
 			ind.ExtraPayout = math.Round(extraPayout*100) / 100
-			totalPay += ind.ExtraPayout
+			if ind.ExtraPayout > maxExtraPayAllowed {
+				ind.ExtraPayout = maxExtraPayAllowed
+			}
 
-			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("outlet", user.Outlet).Str("region", user.Region).
-				Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
-				Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).
-				Float64("extraPay", extraPayout).Msg("GetSingleUserIncentive : HBB sales info")
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
+				Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).Float64("extraPay", extraPayout).
+				Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Msg("AReport : HBB sales info")
 
 			saleCount := make([]*models.SaleCountPerPlan, 0)
-
 			for plan, qty := range plans {
 				saleCount = append(saleCount, &models.SaleCountPerPlan{CurrentPlan: plan, Quantity: qty})
-				rate, internalErr := impl.getSIPRatePlan(quarter, year, plan)
-				if internalErr != nil {
-					// ind.Error = internalErr.Error()
-					// resp.HBB = ind
-					// break
-				}
-
+				rate, _ := impl.getSIPRatePlan(quarter, year, plan)
 				ind.Payout += float64(qty) * vop * rate
-
 				logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("planName", plan).Float64("planRate", rate).
-					Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("totalPay", ind.Payout).Msg("GetSingleUserIncentive : HBB plans info")
+					Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", ind.Payout).Msg("AReport : HBB per plan info")
 			}
 
 			if ind.Error != "" {
@@ -487,16 +531,16 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			sort.Slice(saleCount, func(i, j int) bool {
 				return saleCount[i].Quantity > saleCount[j].Quantity
 			})
-
 			hBBSaleCountPerPlanArray, _ := json.Marshal(saleCount)
 			report.HBBSaleCountPerPlanArray = string(hBBSaleCountPerPlanArray)
 
+			ind.Payout = math.Round(ind.Payout*100) / 100
 			if ind.Payout > maxPayAllowed {
 				ind.Payout = maxPayAllowed
 			}
 
-			ind.Payout = math.Round(ind.Payout*100) / 100
 			totalPay += ind.Payout
+			totalPay += ind.ExtraPayout
 
 			resp.HBB = ind
 			report.HBBPayout = ind.Payout
@@ -507,33 +551,40 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			ind := &models.IndividualIncentive{}
 
 			targetPerEmp := float64(targetPerOutlet) / float64(totalEmp)
-			if targetPerEmp <= 0 {
-				ind.Error = fmt.Sprintf("OUTLET-%v, PER EMPLOYEE HAYYAK TARGET-%v", user, targetPerEmp)
-				resp.Hayyak = ind
-				logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("GetSingleUserIncentive : HAYYAK sales error")
-				break
-			}
-
 			achieved := float64(totalActive[grp]) * 100 / float64(targetPerEmp)
+			// if targetPerEmp <= 0 {
+			// 	ind.Error = fmt.Sprintf("OUTLET-%v, PER EMPLOYEE HAYYAK TARGET-%v", user, targetPerEmp)
+			// 	resp.Hayyak = ind
+			// 	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("GetSingleUserIncentive : HAYYAK sales error")
+			// 	break
+			// }
 
 			vop, internalErr := impl.getValueOfPoint(quarter, year, grp, achieved)
 			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Float64("achieved", achieved).Err(internalErr).Msg("AReport : HAYYAK fetch vop failed")
 				ind.Error = internalErr.Error()
 				resp.Hayyak = ind
 				break
 			}
-
 			extraPayout, internalErr := impl.getExtraPay(quarter, year, grp, achieved)
 			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Float64("achieved", achieved).Err(internalErr).Msg("AReport : HAYYAK fetch extraPayout failed")
 				ind.Error = internalErr.Error()
 				resp.Hayyak = ind
 				break
 			}
-
-			maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, grp)
+			maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, constant.Promoter, grp)
 			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : HAYYAK fetch maxPay failed")
 				ind.Error = internalErr.Error()
 				resp.Hayyak = ind
+				break
+			}
+			maxExtraPayAllowed, internalErr := impl.getMaxExtraPayout(quarter, year, constant.Promoter, grp)
+			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : HAYYAK fetch maxExtraPay failed")
+				ind.Error = internalErr.Error()
+				resp.HBB = ind
 				break
 			}
 
@@ -541,28 +592,21 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			report.HayyakSalesCount = totalActive[grp]
 			report.HayyakAchievedPercentage = achieved
 			ind.ExtraPayout = math.Round(extraPayout*100) / 100
-			totalPay += ind.ExtraPayout
+			if ind.ExtraPayout > maxExtraPayAllowed {
+				ind.ExtraPayout = maxExtraPayAllowed
+			}
 
-			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("outlet", user.Outlet).Str("region", user.Region).
-				Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
-				Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).
-				Float64("extraPay", extraPayout).Msg("GetSingleUserIncentive : HAYYAK sales info")
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
+				Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).Float64("extraPay", extraPayout).
+				Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Msg("AReport : HAYYAK sales info")
 
 			saleCount := make([]*models.SaleCountPerPlan, 0)
-
 			for plan, qty := range plans {
 				saleCount = append(saleCount, &models.SaleCountPerPlan{CurrentPlan: plan, Quantity: qty})
-				rate, internalErr := impl.getSIPRatePlan(quarter, year, plan)
-				if internalErr != nil {
-					// ind.Error = internalErr.Error()
-					// resp.Hayyak = ind
-					// break
-				}
-
+				rate, _ := impl.getSIPRatePlan(quarter, year, plan)
 				ind.Payout += float64(qty) * vop * rate
-
 				logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("planName", plan).Float64("planRate", rate).
-					Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("totalPay", ind.Payout).Msg("GetSingleUserIncentive : HAYYAK plans info")
+					Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", ind.Payout).Msg("AReport : HAYYAK per plan info")
 			}
 
 			if ind.Error != "" {
@@ -572,16 +616,16 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			sort.Slice(saleCount, func(i, j int) bool {
 				return saleCount[i].Quantity > saleCount[j].Quantity
 			})
-
 			hayyakSaleCountPerPlanArray, _ := json.Marshal(saleCount)
 			report.HayyakSaleCountPerPlanArray = string(hayyakSaleCountPerPlanArray)
 
+			ind.Payout = math.Round(ind.Payout*100) / 100
 			if ind.Payout > maxPayAllowed {
 				ind.Payout = maxPayAllowed
 			}
 
-			ind.Payout = math.Round(ind.Payout*100) / 100
 			totalPay += ind.Payout
+			totalPay += ind.ExtraPayout
 
 			resp.Hayyak = ind
 			report.HayyakPayout = ind.Payout
@@ -592,33 +636,40 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			ind := &models.IndividualIncentive{}
 
 			targetPerEmp := float64(targetPerOutlet) / float64(totalEmp)
-			if targetPerEmp <= 0 {
-				ind.Error = fmt.Sprintf("OUTLET-%v, PER EMPLOYEE BAQATI TARGET-%v", user, targetPerEmp)
-				resp.Baqati = ind
-				logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("BAQATI sales error")
-				break
-			}
-
 			achieved := float64(totalActive[grp]) * 100 / float64(targetPerEmp)
+			// if targetPerEmp <= 0 {
+			// 	ind.Error = fmt.Sprintf("OUTLET-%v, PER EMPLOYEE BAQATI TARGET-%v", user, targetPerEmp)
+			// 	resp.Baqati = ind
+			// 	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("BAQATI sales error")
+			// 	break
+			// }
 
 			vop, internalErr := impl.getValueOfPoint(quarter, year, grp, achieved)
 			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Float64("achieved", achieved).Err(internalErr).Msg("AReport : BAQATI fetch vop failed")
 				ind.Error = internalErr.Error()
 				resp.Baqati = ind
 				break
 			}
-
 			extraPayout, internalErr := impl.getExtraPay(quarter, year, grp, achieved)
 			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Float64("achieved", achieved).Err(internalErr).Msg("AReport : BAQATI fetch extraPayout failed")
 				ind.Error = internalErr.Error()
 				resp.Baqati = ind
 				break
 			}
-
-			maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, grp)
+			maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, constant.Promoter, grp)
 			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : BAQATI fetch maxPay failed")
 				ind.Error = internalErr.Error()
 				resp.Baqati = ind
+				break
+			}
+			maxExtraPayAllowed, internalErr := impl.getMaxExtraPayout(quarter, year, constant.Promoter, grp)
+			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : BAQATI fetch maxExtraPay failed")
+				ind.Error = internalErr.Error()
+				resp.HBB = ind
 				break
 			}
 
@@ -626,28 +677,22 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			report.BaqatiSalesCount = totalActive[grp]
 			report.BaqatiAchievedPercentage = achieved
 			ind.ExtraPayout = math.Round(extraPayout*100) / 100
-			totalPay += ind.ExtraPayout
+			if ind.ExtraPayout > maxExtraPayAllowed {
+				ind.ExtraPayout = maxExtraPayAllowed
+			}
 
-			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("outlet", user.Outlet).Str("region", user.Region).
-				Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
-				Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).
-				Float64("extraPay", extraPayout).Msg("BAQATI sales info")
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
+				Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).Float64("extraPay", extraPayout).
+				Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Msg("AReport : BAQATI sales info")
 
 			saleCount := make([]*models.SaleCountPerPlan, 0)
 
 			for plan, qty := range plans {
 				saleCount = append(saleCount, &models.SaleCountPerPlan{CurrentPlan: plan, Quantity: qty})
-				rate, internalErr := impl.getSIPRatePlan(quarter, year, plan)
-				if internalErr != nil {
-					// ind.Error = internalErr.Error()
-					// resp.Baqati = ind
-					// break
-				}
-
+				rate, _ := impl.getSIPRatePlan(quarter, year, plan)
 				ind.Payout += float64(qty) * vop * rate
-
 				logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("planName", plan).Float64("planRate", rate).
-					Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("totalPay", ind.Payout).Msg("BAQATI plans info")
+					Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", ind.Payout).Msg("AReport : BAQATI per plan info")
 			}
 
 			if ind.Error != "" {
@@ -657,16 +702,15 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			sort.Slice(saleCount, func(i, j int) bool {
 				return saleCount[i].Quantity > saleCount[j].Quantity
 			})
-
 			baqatiSaleCountPerPlanArray, _ := json.Marshal(saleCount)
 			report.BaqatiSaleCountPerPlanArray = string(baqatiSaleCountPerPlanArray)
-
+			ind.Payout = math.Round(ind.Payout*100) / 100
 			if ind.Payout > maxPayAllowed {
 				ind.Payout = maxPayAllowed
 			}
 
-			ind.Payout = math.Round(ind.Payout*100) / 100
 			totalPay += ind.Payout
+			totalPay += ind.ExtraPayout
 
 			resp.Baqati = ind
 			report.BaqatiPayout = ind.Payout
@@ -678,6 +722,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 	targetPerOutlet, internalErr := impl.getSaleTargetPerOutlet(year, month, quarter, isQuarterReport, constant.UpgradeCategory, user.Region, user.Outlet)
 	if internalErr != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Err(internalErr).Msg("AReport : fetch target failed")
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
@@ -686,40 +731,48 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		}
 	}
 
-	if targetPerOutlet == 0 {
+	if targetPerOutlet <= 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Msg("AReport : zero target found")
 		ind.Error = "NO TARGET FOUND FOR OUTLET - " + user.Outlet
 		resp.Upgrade = ind
 		return resp, report, nil
 	}
 
 	targetPerEmp := float64(targetPerOutlet) / float64(totalEmp)
-	if targetPerEmp <= 0 {
-		ind.Error = fmt.Sprintf("OUTLET-%v, PER EMPLOYEE UPGRADE TARGET-%v", user, targetPerEmp)
-		resp.Upgrade = ind
-		logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("UPGRADE sales error")
-		return resp, report, nil
-	}
-
 	achieved := float64(totalActiveUpgrade) * 100 / float64(targetPerEmp)
+	// if targetPerEmp <= 0 {
+	// 	ind.Error = fmt.Sprintf("OUTLET-%v, PER EMPLOYEE UPGRADE TARGET-%v", user, targetPerEmp)
+	// 	resp.Upgrade = ind
+	// 	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Msg("UPGRADE sales error")
+	// 	return resp, report, nil
+	// }
 
 	vop, internalErr := impl.getValueOfPoint(quarter, year, constant.UpgradeCategory, achieved)
 	if internalErr != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Float64("achieved", achieved).Err(internalErr).Msg("AReport : UPGRADE fetch vop failed")
 		ind.Error = internalErr.Error()
 		resp.Upgrade = ind
 		return resp, report, nil
 	}
-
 	extraPayout, internalErr := impl.getExtraPay(quarter, year, constant.UpgradeCategory, achieved)
 	if internalErr != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Float64("achieved", achieved).Err(internalErr).Msg("AReport : UPGRADE fetch extraPayout failed")
 		ind.Error = internalErr.Error()
 		resp.Upgrade = ind
 		return resp, report, nil
 	}
-
-	maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, constant.UpgradeCategory)
+	maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, constant.Promoter, constant.UpgradeCategory)
 	if internalErr != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : UPGRADE fetch maxPay failed")
 		ind.Error = internalErr.Error()
-		resp.Baqati = ind
+		resp.Upgrade = ind
+		return resp, report, nil
+	}
+	maxExtraPayAllowed, internalErr := impl.getMaxExtraPayout(quarter, year, constant.Promoter, constant.UpgradeCategory)
+	if internalErr != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : UPGRADE fetch maxExtraPay failed")
+		ind.Error = internalErr.Error()
+		resp.Upgrade = ind
 		return resp, report, nil
 	}
 
@@ -727,41 +780,27 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 	report.UpgradeSalesCount = totalActiveUpgrade
 	report.UpradeAchievedPercentage = achieved
 	ind.ExtraPayout = math.Round(extraPayout*100) / 100
-	totalPay += ind.ExtraPayout
+	if ind.ExtraPayout > maxExtraPayAllowed {
+		ind.ExtraPayout = maxExtraPayAllowed
+	}
 
-	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("outlet", user.Outlet).Str("region", user.Region).
-		Int("totalEmp", totalEmp).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
-		Int("achievedCount", totalActiveUpgrade).Float64("achievedPercent", achieved).Float64("vop", vop).
-		Float64("extraPay", extraPayout).Msg("GetSingleUserIncentive : UPGRADE sales info")
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
+		Int("achievedCount", totalActiveUpgrade).Float64("achievedPercent", achieved).Float64("vop", vop).Float64("extraPay", extraPayout).
+		Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Msg("AReport : UPGRADE sales info")
 
 	saleCount := make([]*models.SaleCountPerPlan, 0)
-
 	for currPlan, prevPlansMap := range upgradedPlans {
 		eachPlanSale := &models.SaleCountPerPlan{CurrentPlan: currPlan}
 		for prevPln, qty := range prevPlansMap {
 			eachPlanSale.Quantity += qty
-			currPlanRate, internalErr := impl.getSIPRatePlan(quarter, year, currPlan)
-			if internalErr != nil {
-				// ind.Error = "CURRENT:" + internalErr.Error()
-				// resp.Upgrade = ind
-				// return resp, report, nil
-			}
-
-			prevPlanRate, internalErr := impl.getSIPRatePlan(quarter, year, prevPln)
-			if internalErr != nil {
-				// ind.Error = "PREVIOUS:" + internalErr.Error()
-				// resp.Upgrade = ind
-				// return resp, report, nil
-			}
-
+			currPlanRate, _ := impl.getSIPRatePlan(quarter, year, currPlan)
+			prevPlanRate, _ := impl.getSIPRatePlan(quarter, year, prevPln)
 			rate := currPlanRate - prevPlanRate
-
 			ind.Payout += float64(qty) * vop * rate
-
 			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("currPlanName", currPlan).Str("prevPlanName", prevPln).
 				Float64("currPlanRate", currPlanRate).Float64("prevPlanRate", prevPlanRate).
-				Float64("rate", rate).Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("totalPay", ind.Payout).
-				Msg("GetSingleUserIncentive : UPGRADE plans info")
+				Float64("netPlanRate", rate).Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", ind.Payout).
+				Msg("AReport : UPGRADE per plan info")
 		}
 
 		saleCount = append(saleCount, eachPlanSale)
@@ -770,16 +809,16 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 	sort.Slice(saleCount, func(i, j int) bool {
 		return saleCount[i].Quantity > saleCount[j].Quantity
 	})
-
 	upgradeSaleCountPerPlanArray, _ := json.Marshal(saleCount)
 	report.UpgradeSaleCountPerPlanArray = string(upgradeSaleCountPerPlanArray)
 
+	ind.Payout = math.Round(ind.Payout*100) / 100
 	if ind.Payout > maxPayAllowed {
 		ind.Payout = maxPayAllowed
 	}
 
-	ind.Payout = math.Round(ind.Payout*100) / 100
 	totalPay += ind.Payout
+	totalPay += ind.ExtraPayout
 
 	resp.Upgrade = ind
 	report.UpgradePayout = ind.Payout
@@ -794,7 +833,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		}
 
 		if err := impl.PsqlDb.InsertAgentUserReport(user, isQuarterReport, month, year, quarter); err != nil {
-			logger.FileLogger.CtxWarn(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("updateUserReport: force report update")
+			logger.FileLogger.CtxWarn(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("AReport : force report update")
 		}
 	}(report)
 
@@ -808,7 +847,10 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	}
 
 	if omngr == nil || omngr.UserId == "" || omngr.ManagerId == "" || omngr.ManagerPosition == "" {
+
 		if omngr == nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", "").Str("region", "").Str("outlet", "").Bool("isQuarter", isQuarterReport).Int("quarter", quarter).
+				Int("month", month).Int("year", year).Msg("OMReport : nil info")
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
@@ -816,6 +858,9 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 				Details:    "invalid omngr details",
 			}
 		}
+
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("OMReport : invalid info")
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
@@ -824,10 +869,8 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
-		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("update Outlet Manager Report")
-
 	if omngr.Position != constant.OutletManager { //!(omngr.Position == constant.OutletManager || omngr.Position == constant.TeamLeader)
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("position", omngr.Position).Msg("OMReport : invalid position")
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    omngr.UserId + ": INCORRECT OUTLET MANAGER POSITION - " + omngr.Position,
@@ -836,6 +879,7 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	}
 
 	if omngr.Region == "" || omngr.Outlet == "" {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Msg("OMReport : invalid outlet info")
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
@@ -843,6 +887,9 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 			Details:    "agent blank region or outlet - userId: " + omngr.UserId + " region:" + omngr.Region + " outlet:" + omngr.Outlet,
 		}
 	}
+
+	logger.FileLogger.CtxTrace(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
+		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("OMReport : info")
 
 	var needUpdate bool
 
@@ -861,16 +908,24 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 
 	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(omngr.Region, omngr.Outlet, quarter, year)
 	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Err(err).Msg("OMReport : fetch outlet info failed")
 		return nil, err
 	}
 
 	if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Msg("OMReport : outlet co-ordinates invalid")
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
 			Message:    omngr.UserId + ": OUTLET MANAGER INVALID OUTLET CO-ORDINATES - region:" + omngr.Region + " outlet:" + omngr.Outlet,
 			Details:    omngr.UserId + ": OUTLET MANAGER invalid outlet co-ordintaes - region:" + omngr.Region + " outlet:" + omngr.Outlet,
 		}
+	}
+
+	userAgents, err := impl.PsqlDb.FetchAllAgentsUserOfOM(omngr.UserId, quarter, year)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Err(err).Msg("OMReport : fetch agents failed")
+		return nil, err
 	}
 
 	report := &models.UserReportDB{
@@ -886,22 +941,11 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 		ModifiedAt:      time.Now(),
 	}
 
-	userAgents, err := impl.PsqlDb.FetchAllAgentsUserOfOM(omngr.UserId, quarter, year)
-	if err != nil {
-		return nil, err
-	}
-
-	agentIds := make([]string, 0)
-
-	for _, v := range userAgents {
-		agentIds = append(agentIds, v.UserId)
-	}
-
-	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Interface("agents", agentIds).Msg("agents reporting to Outlet Manager")
-
 	if len(userAgents) == 0 {
-		logger.FileLogger.CtxError(ctx).Str("manger", omngr.UserId).Msg("updateOutletManagerReport : no Agent found")
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Msg("OMReport : zero agents")
 		return report, nil
+	} else {
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("agentCount", len(userAgents)).Msg("OMReport : total agents")
 	}
 
 	hbbSaleMap := make(map[string]int, 0)
@@ -911,11 +955,10 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 
 	for _, eachAgent := range userAgents {
 
-		//logger.FileLogger.CtxInfo(ctx).Str("agent", eachAgent.UserId).Interface("Report", eachAgent).Msg("delete")
-
 		agentReport, err := impl.PsqlDb.FetchAgentUserReport(eachAgent.UserId, isQuarterReport, quarter, month, year)
 		if !needUpdate {
 			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMReport : cache failed")
 				return nil, err
 			}
 		} else {
@@ -923,13 +966,14 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 
 				ind, resp, err := impl.updateAgentUserReport(ctx, eachAgent, isQuarterReport, quarter, month, year)
 				if err != nil {
+					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMReport : agent report failed")
 					return nil, err
 				}
 
-				logger.FileLogger.CtxInfo(ctx).Str("agentReport", eachAgent.UserId).Str(constant.HBBCategory, ind.HBB.Error).Str(constant.HayyakCategory, ind.Hayyak.Error).
-					Str(constant.BaqatiCategory, ind.Baqati.Error).Str(constant.UpgradeCategory, ind.Upgrade.Error).Msg("updateOutletManagerReport : trace")
-
-				//TODO: test this out for struct assignment
+				rawIncentiveReport, _ := json.Marshal(ind)
+				rawUserReport, _ := json.Marshal(resp)
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("incentive", string(rawIncentiveReport)).
+					Str("record", string(rawUserReport)).Msg("OMReport : agent log")
 				agentReport = resp
 			}
 		}
@@ -939,129 +983,217 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 		report.BaqatiSalesCount += agentReport.BaqatiSalesCount
 		report.UpgradeSalesCount += agentReport.UpgradeSalesCount
 
-		report.HayyakTargetCount += agentReport.HayyakTargetCount
-		report.HBBTargetCount += agentReport.HBBTargetCount
-		report.BaqatiTargetCount += agentReport.BaqatiTargetCount
-		report.UpgradeTargetCount += agentReport.UpgradeTargetCount
-
-		report.HayyakAchievedPercentage += agentReport.HayyakAchievedPercentage
-		report.HBBAchievedPercentage += agentReport.HBBAchievedPercentage
-		report.BaqatiAchievedPercentage += agentReport.BaqatiAchievedPercentage
-		report.UpradeAchievedPercentage += agentReport.UpradeAchievedPercentage
-
-		report.HayyakPayout += agentReport.HayyakPayout
-		report.HBBPayout += agentReport.HBBPayout
-		report.BaqatiPayout += agentReport.BaqatiPayout
-		report.UpgradePayout += agentReport.UpgradePayout
-
-		report.HayyakExtraPayout += agentReport.HayyakExtraPayout
-		report.HBBExtraPayout += agentReport.HBBExtraPayout
-		report.BaqatiExtraPayout += agentReport.BaqatiExtraPayout
-		report.UpgradeExtraPayout += agentReport.UpgradeExtraPayout
-
-		report.TotalPayout += report.TotalPayout
-
 		saleCount := make([]*models.SaleCountPerPlan, 0)
 		if err := json.Unmarshal([]byte(agentReport.HBBSaleCountPerPlanArray), &saleCount); err == nil {
 			for _, sale := range saleCount {
 				hbbSaleMap[sale.CurrentPlan] += sale.Quantity
 			}
-
-			saleCount = saleCount[:0]
 		}
 
+		saleCount = make([]*models.SaleCountPerPlan, 0)
 		if err := json.Unmarshal([]byte(agentReport.HayyakSaleCountPerPlanArray), &saleCount); err == nil {
 			for _, sale := range saleCount {
 				hayyakSaleMap[sale.CurrentPlan] += sale.Quantity
 			}
-			saleCount = saleCount[:0]
 		}
 
+		saleCount = make([]*models.SaleCountPerPlan, 0)
 		if err := json.Unmarshal([]byte(agentReport.BaqatiSaleCountPerPlanArray), &saleCount); err == nil {
 			for _, sale := range saleCount {
 				baqatiSaleMap[sale.CurrentPlan] += sale.Quantity
 			}
-			saleCount = saleCount[:0]
 		}
 
+		saleCount = make([]*models.SaleCountPerPlan, 0)
 		if err := json.Unmarshal([]byte(agentReport.UpgradeSaleCountPerPlanArray), &saleCount); err == nil {
 			for _, sale := range saleCount {
 				upgradeSaleMap[sale.CurrentPlan] += sale.Quantity
 			}
-			saleCount = saleCount[:0]
 		}
 	}
 
-	report.HayyakAchievedPercentage = report.HayyakAchievedPercentage / float64(len(userAgents))
-	report.HBBAchievedPercentage = report.HBBAchievedPercentage / float64(len(userAgents))
-	report.BaqatiAchievedPercentage = report.BaqatiAchievedPercentage / float64(len(userAgents))
-	report.UpradeAchievedPercentage = report.UpradeAchievedPercentage / float64(len(userAgents))
-	report.HayyakPayout = report.HayyakPayout / float64(len(userAgents))
-	report.HBBPayout = report.HBBPayout / float64(len(userAgents))
-	report.BaqatiPayout = report.BaqatiPayout / float64(len(userAgents))
-	report.UpgradePayout = report.UpgradePayout / float64(len(userAgents))
-	report.HayyakExtraPayout = report.HayyakExtraPayout / float64(len(userAgents))
-	report.HBBExtraPayout = report.HBBExtraPayout / float64(len(userAgents))
-	report.BaqatiExtraPayout = report.BaqatiExtraPayout / float64(len(userAgents))
-	report.UpgradeExtraPayout = report.UpgradeExtraPayout / float64(len(userAgents))
-	report.TotalPayout += report.TotalPayout / float64(len(userAgents))
+	/*
+		HBB Updates
+	*/
+	target, tarErr := impl.getSaleTargetPerOutlet(year, month, quarter, isQuarterReport, constant.HBBCategory, omngr.Region, omngr.Outlet)
+	if tarErr != nil || target == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Err(tarErr).Msg("OMReport : HBB target not found")
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "HBB TARGET NOT FOUND",
+			Details:    fmt.Errorf("hbb target errr - %v", tarErr),
+		}
+	}
 
+	achieved := float64(report.HBBSalesCount) * 100 / float64(target)
+	vop, _ := impl.getValueOfPoint(quarter, year, constant.HBBCategory, achieved)
+	maxPayAllowed, _ := impl.getMaxPayout(quarter, year, constant.OutletManager, constant.HBBCategory)
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("target", target).Int("achievedCount", report.HBBSalesCount).Float64("achievedPercent", achieved).
+		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("OMReport : HBB sales info")
+
+	for plan, qty := range hbbSaleMap {
+		rate, _ := impl.getSIPRatePlan(quarter, year, plan)
+		report.HBBPayout += float64(qty) * vop * rate
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("planName", plan).Float64("planRate", rate).
+			Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", report.HBBPayout).Msg("OMReport : HBB per plan info")
+	}
+
+	report.HBBTargetCount = float64(target)
+	report.HBBAchievedPercentage = achieved
+	if report.HBBPayout > maxPayAllowed {
+		report.HBBPayout = maxPayAllowed
+	}
 	//hbb sales count per plan
 	saleArray := make([]*models.SaleCountPerPlan, 0)
 	for key, val := range hbbSaleMap {
 		saleArray = append(saleArray, &models.SaleCountPerPlan{CurrentPlan: key, Quantity: val})
 	}
-
 	sort.Slice(saleArray, func(i, j int) bool {
 		return saleArray[i].Quantity > saleArray[j].Quantity
 	})
-
 	hbbSaleCountPerPlanArray, _ := json.Marshal(saleArray)
 	report.HBBSaleCountPerPlanArray = string(hbbSaleCountPerPlanArray)
-	saleArray = saleArray[:0]
 
+	/*
+		HAYYAK Updates
+	*/
+	target, tarErr = impl.getSaleTargetPerOutlet(year, month, quarter, isQuarterReport, constant.HayyakCategory, omngr.Region, omngr.Outlet)
+	if tarErr != nil || target == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Err(tarErr).Msg("OMReport : HAYYAK target not found")
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "HAYYAK TARGET NOT FOUND",
+			Details:    fmt.Errorf("hayyak target errr - %v", tarErr),
+		}
+	}
+
+	achieved = float64(report.HayyakSalesCount) * 100 / float64(target)
+	vop, _ = impl.getValueOfPoint(quarter, year, constant.HayyakCategory, achieved)
+	maxPayAllowed, _ = impl.getMaxPayout(quarter, year, constant.OutletManager, constant.HayyakCategory)
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("target", target).Int("achievedCount", report.HayyakSalesCount).Float64("achievedPercent", achieved).
+		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("OMReport : HAYYAK sales info")
+
+	for plan, qty := range hayyakSaleMap {
+		rate, _ := impl.getSIPRatePlan(quarter, year, plan)
+		report.HayyakPayout += float64(qty) * vop * rate
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("planName", plan).Float64("planRate", rate).
+			Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", report.HayyakPayout).Msg("OMReport : HAYYAK per plan info")
+	}
+
+	report.HayyakTargetCount = float64(target)
+	report.HayyakAchievedPercentage = achieved
+	if report.HayyakPayout > maxPayAllowed {
+		report.HayyakPayout = maxPayAllowed
+	}
 	//hayyak sales count per plan
+	saleArray = make([]*models.SaleCountPerPlan, 0)
 	for key, val := range hayyakSaleMap {
 		saleArray = append(saleArray, &models.SaleCountPerPlan{CurrentPlan: key, Quantity: val})
 	}
-
 	sort.Slice(saleArray, func(i, j int) bool {
 		return saleArray[i].Quantity > saleArray[j].Quantity
 	})
-
 	hayyakSaleCountPerPlanArray, _ := json.Marshal(saleArray)
 	report.HayyakSaleCountPerPlanArray = string(hayyakSaleCountPerPlanArray)
-	saleArray = saleArray[:0]
 
+	/*
+		BAQATI Updates
+	*/
+	target, tarErr = impl.getSaleTargetPerOutlet(year, month, quarter, isQuarterReport, constant.BaqatiCategory, omngr.Region, omngr.Outlet)
+	if tarErr != nil || target == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Err(tarErr).Msg("OMReport : BAQATI target not found")
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "BAQATI TARGET NOT FOUND",
+			Details:    fmt.Errorf("baqati target errr - %v", tarErr),
+		}
+	}
+
+	achieved = float64(report.BaqatiSalesCount) * 100 / float64(target)
+	vop, _ = impl.getValueOfPoint(quarter, year, constant.BaqatiCategory, achieved)
+	maxPayAllowed, _ = impl.getMaxPayout(quarter, year, constant.OutletManager, constant.BaqatiCategory)
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("target", target).Int("achievedCount", report.BaqatiSalesCount).Float64("achievedPercent", achieved).
+		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("OMReport : BAQATI sales info")
+
+	for plan, qty := range baqatiSaleMap {
+		rate, _ := impl.getSIPRatePlan(quarter, year, plan)
+		report.BaqatiPayout += float64(qty) * vop * rate
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("planName", plan).Float64("planRate", rate).
+			Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", report.BaqatiPayout).Msg("OMReport : BAQATI per plan info")
+	}
+
+	report.BaqatiTargetCount = float64(target)
+	report.BaqatiAchievedPercentage = achieved
+	if report.BaqatiPayout > maxPayAllowed {
+		report.BaqatiPayout = maxPayAllowed
+	}
 	//baqati sales count per plan
+	saleArray = make([]*models.SaleCountPerPlan, 0)
 	for key, val := range baqatiSaleMap {
 		saleArray = append(saleArray, &models.SaleCountPerPlan{CurrentPlan: key, Quantity: val})
 	}
-
 	sort.Slice(saleArray, func(i, j int) bool {
 		return saleArray[i].Quantity > saleArray[j].Quantity
 	})
-
 	baqatiSaleCountPerPlanArray, _ := json.Marshal(saleArray)
 	report.BaqatiSaleCountPerPlanArray = string(baqatiSaleCountPerPlanArray)
-	saleArray = saleArray[:0]
 
+	/*
+		UPGRADE Updates
+	*/
+	target, tarErr = impl.getSaleTargetPerOutlet(year, month, quarter, isQuarterReport, constant.UpgradeCategory, omngr.Region, omngr.Outlet)
+	if tarErr != nil || target == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Err(tarErr).Msg("OMReport : UPGRADE target not found")
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "UPGRADE TARGET NOT FOUND",
+			Details:    fmt.Errorf("upgrade target errr - %v", tarErr),
+		}
+	}
+
+	achieved = float64(report.UpgradeSalesCount) * 100 / float64(target)
+	vop, _ = impl.getValueOfPoint(quarter, year, constant.UpgradeCategory, achieved)
+	maxPayAllowed, _ = impl.getMaxPayout(quarter, year, constant.OutletManager, constant.UpgradeCategory)
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("target", target).Int("achievedCount", report.UpgradeSalesCount).Float64("achievedPercent", achieved).
+		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("OMReport : UPGRADE sales info")
+
+	for plan, qty := range upgradeSaleMap {
+		rate, _ := impl.getSIPRatePlan(quarter, year, plan)
+		report.UpgradePayout += float64(qty) * vop * rate
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("planName", plan).Float64("planRate", rate).
+			Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", report.UpgradePayout).Msg("OMReport : UPGRADE per plan info")
+	}
+
+	report.UpgradeTargetCount = float64(target)
+	report.UpradeAchievedPercentage = achieved
+	if report.UpgradePayout > maxPayAllowed {
+		report.UpgradePayout = maxPayAllowed
+	}
 	//upgrade sales count per plan
+	saleArray = make([]*models.SaleCountPerPlan, 0)
 	for key, val := range upgradeSaleMap {
 		saleArray = append(saleArray, &models.SaleCountPerPlan{CurrentPlan: key, Quantity: val})
 	}
-
 	sort.Slice(saleArray, func(i, j int) bool {
 		return saleArray[i].Quantity > saleArray[j].Quantity
 	})
-
 	upgradeSaleCountPerPlanArray, _ := json.Marshal(saleArray)
 	report.UpgradeSaleCountPerPlanArray = string(upgradeSaleCountPerPlanArray)
+
+	report.TotalPayout = report.HBBPayout + report.HayyakPayout + report.BaqatiPayout + report.UpgradePayout
 
 	go func(user *models.UserReportDB) {
 
 		if err := impl.PsqlDb.InsertManagerReport(user, isQuarterReport, month, year, quarter); err != nil {
-			logger.FileLogger.CtxWarn(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("updateOMReport: force report update")
+			logger.FileLogger.CtxWarn(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("OMReport : force report update")
 		}
 	}(report)
 
@@ -1075,6 +1207,8 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 	}
 
 	if mngr == nil || mngr.UserId == "" {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("region", mngr.Region).Str("outlet", mngr.Outlet).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("MngrReport : invalid info")
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
@@ -1084,6 +1218,7 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 	}
 
 	if _, ok := constant.ManagerMap[mngr.Position]; !ok {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Msg("MngrReport : invalid position")
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    mngr.UserId + ": INCORRECT MANAGER POSITION - " + mngr.Position,
@@ -1091,8 +1226,8 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("region", mngr.Region).Str("outlet", mngr.Outlet).Bool("isQuarter", isQuarterReport).
-		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("update Manager Report")
+	logger.FileLogger.CtxTrace(ctx).Str("clientID", mngr.UserId).Str("region", mngr.Region).Str("outlet", mngr.Outlet).Bool("isQuarter", isQuarterReport).
+		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("MngrReport : info")
 
 	//for outlet manager and team lead only
 	if mngr.Position == constant.OutletManager { // || mngr.Position == constant.TeamLeader
@@ -1105,6 +1240,7 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 	}
 
 	if mngr.Position != constant.VicePresident && (mngr.ManagerId == "" || mngr.ManagerPosition == "") {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Msg("MngrReport : user's manager info missing")
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
@@ -1147,19 +1283,15 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 
 	allDistinctOM, err := impl.PsqlDb.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
 	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Err(err).Msg("MngrReport : fetch om failed")
 		return nil, err
 	}
 
 	if len(allDistinctOM) == 0 {
-		logger.FileLogger.CtxError(ctx).Str("position", mngr.Position).Msg("updateManagerReport : no OM found")
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Msg("MngrReport : zero om")
 		return report, nil
-
-		// return nil, &errors.Error{
-		// 	StatusCode: http.StatusBadRequest,
-		// 	Code:       errors.InvalidDetailsCode,
-		// 	Message:    "NO OM FOUND FOR MANAGER - " + mngr.UserId,
-		// 	Details:    "no om found for manager - " + mngr.UserId,
-		// }
+	} else {
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Int("omCount", len(allDistinctOM)).Msg("MngrReport : total om")
 	}
 
 	hbbSaleMap := make(map[string]int, 0)
@@ -1167,11 +1299,15 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 	baqatiSaleMap := make(map[string]int, 0)
 	upgradeSaleMap := make(map[string]int, 0)
 
+	inactiveOM := make([]string, 0)
+	emptyTarget := make(map[string][]string, 0)
+
 	for _, om := range allDistinctOM {
 
 		omReport, err := impl.PsqlDb.FetchManagerReport(om.UserId, isQuarterReport, quarter, month, year)
 		if !needUpdate {
 			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", om.UserId).Err(err).Msg("MngrReport : cache failed")
 				return nil, err
 			}
 		} else {
@@ -1179,142 +1315,227 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 
 				resp, err := impl.updateOutletManagerReport(ctx, om, isQuarterReport, quarter, month, year)
 				if err != nil {
+					logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("om", om.UserId).Err(err).Msg("MngrReport : om report failed")
 					return nil, err
 				}
 
-				logger.FileLogger.CtxInfo(ctx).Interface("OM Report", resp).Msg("updateManagerReport : trace")
-				//TODO: test this out for struct assignment
+				rawUserReport, _ := json.Marshal(resp)
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", om.UserId).Str("record", string(rawUserReport)).Msg("OMReport : agent log")
 				omReport = resp
 			}
 		}
 
-		report.HayyakSalesCount += omReport.HayyakSalesCount
 		report.HBBSalesCount += omReport.HBBSalesCount
+		report.HayyakSalesCount += omReport.HayyakSalesCount
 		report.BaqatiSalesCount += omReport.BaqatiSalesCount
 		report.UpgradeSalesCount += omReport.UpgradeSalesCount
 
-		report.HayyakTargetCount += omReport.HayyakTargetCount
-		report.HBBTargetCount += omReport.HBBTargetCount
-		report.BaqatiTargetCount += omReport.BaqatiTargetCount
-		report.UpgradeTargetCount += omReport.UpgradeTargetCount
+		if omReport.HBBTargetCount == 0 {
+			if emptyTarget[constant.HBBCategory] == nil {
+				emptyTarget[constant.HBBCategory] = []string{omReport.UserId}
+			} else {
+				emptyTarget[constant.HBBCategory] = append(emptyTarget[constant.HBBCategory], omReport.UserId)
+			}
+		} else if omReport.HayyakTargetCount == 0 {
+			if emptyTarget[constant.HayyakCategory] == nil {
+				emptyTarget[constant.HayyakCategory] = []string{omReport.UserId}
+			} else {
+				emptyTarget[constant.HayyakCategory] = append(emptyTarget[constant.HayyakCategory], omReport.UserId)
+			}
+		} else if omReport.BaqatiTargetCount == 0 {
+			if emptyTarget[constant.BaqatiCategory] == nil {
+				emptyTarget[constant.BaqatiCategory] = []string{omReport.UserId}
+			} else {
+				emptyTarget[constant.BaqatiCategory] = append(emptyTarget[constant.BaqatiCategory], omReport.UserId)
+			}
+		} else if omReport.UpgradeTargetCount == 0 {
+			if emptyTarget[constant.UpgradeCategory] == nil {
+				emptyTarget[constant.UpgradeCategory] = []string{omReport.UserId}
+			} else {
+				emptyTarget[constant.UpgradeCategory] = append(emptyTarget[constant.UpgradeCategory], omReport.UserId)
+			}
+		}
 
-		report.HayyakAchievedPercentage += omReport.HayyakAchievedPercentage
-		report.HBBAchievedPercentage += omReport.HBBAchievedPercentage
-		report.BaqatiAchievedPercentage += omReport.BaqatiAchievedPercentage
-		report.UpradeAchievedPercentage += omReport.UpradeAchievedPercentage
-
-		report.HayyakPayout += omReport.HayyakPayout
-		report.HBBPayout += omReport.HBBPayout
-		report.BaqatiPayout += omReport.BaqatiPayout
-		report.UpgradePayout += omReport.UpgradePayout
-
-		report.HayyakExtraPayout += omReport.HayyakExtraPayout
-		report.HBBExtraPayout += omReport.HBBExtraPayout
-		report.BaqatiExtraPayout += omReport.BaqatiExtraPayout
-		report.UpgradeExtraPayout += omReport.UpgradeExtraPayout
-
-		report.TotalPayout += report.TotalPayout
+		if om.IsActive {
+			report.HayyakTargetCount += omReport.HayyakTargetCount
+			report.HBBTargetCount += omReport.HBBTargetCount
+			report.BaqatiTargetCount += omReport.BaqatiTargetCount
+			report.UpgradeTargetCount += omReport.UpgradeTargetCount
+		} else {
+			inactiveOM = append(inactiveOM, om.UserId)
+		}
 
 		saleCount := make([]*models.SaleCountPerPlan, 0)
 		if err := json.Unmarshal([]byte(omReport.HBBSaleCountPerPlanArray), &saleCount); err == nil {
 			for _, sale := range saleCount {
 				hbbSaleMap[sale.CurrentPlan] += sale.Quantity
 			}
-
-			saleCount = saleCount[:0]
 		}
 
+		saleCount = make([]*models.SaleCountPerPlan, 0)
 		if err := json.Unmarshal([]byte(omReport.HayyakSaleCountPerPlanArray), &saleCount); err == nil {
 			for _, sale := range saleCount {
 				hayyakSaleMap[sale.CurrentPlan] += sale.Quantity
 			}
-			saleCount = saleCount[:0]
 		}
 
+		saleCount = make([]*models.SaleCountPerPlan, 0)
 		if err := json.Unmarshal([]byte(omReport.BaqatiSaleCountPerPlanArray), &saleCount); err == nil {
 			for _, sale := range saleCount {
 				baqatiSaleMap[sale.CurrentPlan] += sale.Quantity
 			}
-			saleCount = saleCount[:0]
 		}
 
+		saleCount = make([]*models.SaleCountPerPlan, 0)
 		if err := json.Unmarshal([]byte(omReport.UpgradeSaleCountPerPlanArray), &saleCount); err == nil {
 			for _, sale := range saleCount {
 				upgradeSaleMap[sale.CurrentPlan] += sale.Quantity
 			}
-			saleCount = saleCount[:0]
 		}
 	}
 
-	report.HayyakAchievedPercentage = report.HayyakAchievedPercentage / float64(len(allDistinctOM))
-	report.HBBAchievedPercentage = report.HBBAchievedPercentage / float64(len(allDistinctOM))
-	report.BaqatiAchievedPercentage = report.BaqatiAchievedPercentage / float64(len(allDistinctOM))
-	report.UpradeAchievedPercentage = report.UpradeAchievedPercentage / float64(len(allDistinctOM))
-	report.HayyakPayout = report.HayyakPayout / float64(len(allDistinctOM))
-	report.HBBPayout = report.HBBPayout / float64(len(allDistinctOM))
-	report.BaqatiPayout = report.BaqatiPayout / float64(len(allDistinctOM))
-	report.UpgradePayout = report.UpgradePayout / float64(len(allDistinctOM))
-	report.HayyakExtraPayout = report.HayyakExtraPayout / float64(len(allDistinctOM))
-	report.HBBExtraPayout = report.HBBExtraPayout / float64(len(allDistinctOM))
-	report.BaqatiExtraPayout = report.BaqatiExtraPayout / float64(len(allDistinctOM))
-	report.UpgradeExtraPayout = report.UpgradeExtraPayout / float64(len(allDistinctOM))
-	report.TotalPayout += report.TotalPayout / float64(len(allDistinctOM))
+	logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Interface("inactive", inactiveOM).Interface("blank", emptyTarget).Msg("MngrReport : om target defaulters")
 
+	/*
+		HBB Updates
+	*/
+	if report.HBBTargetCount == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Msg("MngrReport : HBB target not found")
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "HBB TARGET NOT FOUND",
+			Details:    "mngr hbb target not found",
+		}
+	}
+	achieved := float64(report.HBBSalesCount) * 100 / float64(report.HBBTargetCount)
+	report.HBBAchievedPercentage = achieved
 	//hbb sales count per plan
 	saleArray := make([]*models.SaleCountPerPlan, 0)
 	for key, val := range hbbSaleMap {
 		saleArray = append(saleArray, &models.SaleCountPerPlan{CurrentPlan: key, Quantity: val})
 	}
-
 	sort.Slice(saleArray, func(i, j int) bool {
 		return saleArray[i].Quantity > saleArray[j].Quantity
 	})
-
 	hbbSaleCountPerPlanArray, _ := json.Marshal(saleArray)
 	report.HBBSaleCountPerPlanArray = string(hbbSaleCountPerPlanArray)
-	saleArray = saleArray[:0]
 
+	/*
+		HAYYAK Updates
+	*/
+	achieved = float64(report.HayyakSalesCount) * 100 / float64(report.HayyakTargetCount)
+	report.HayyakAchievedPercentage = achieved
 	//hayyak sales count per plan
+	saleArray = make([]*models.SaleCountPerPlan, 0)
 	for key, val := range hayyakSaleMap {
 		saleArray = append(saleArray, &models.SaleCountPerPlan{CurrentPlan: key, Quantity: val})
 	}
-
 	sort.Slice(saleArray, func(i, j int) bool {
 		return saleArray[i].Quantity > saleArray[j].Quantity
 	})
-
 	hayyakSaleCountPerPlanArray, _ := json.Marshal(saleArray)
 	report.HayyakSaleCountPerPlanArray = string(hayyakSaleCountPerPlanArray)
-	saleArray = saleArray[:0]
 
+	/*
+		BAQATI Updates
+	*/
+	achieved = float64(report.BaqatiSalesCount) * 100 / float64(report.BaqatiTargetCount)
+	report.BaqatiAchievedPercentage = achieved
 	//baqati sales count per plan
+	saleArray = make([]*models.SaleCountPerPlan, 0)
 	for key, val := range baqatiSaleMap {
 		saleArray = append(saleArray, &models.SaleCountPerPlan{CurrentPlan: key, Quantity: val})
 	}
-
 	sort.Slice(saleArray, func(i, j int) bool {
 		return saleArray[i].Quantity > saleArray[j].Quantity
 	})
-
 	baqatiSaleCountPerPlanArray, _ := json.Marshal(saleArray)
 	report.BaqatiSaleCountPerPlanArray = string(baqatiSaleCountPerPlanArray)
-	saleArray = saleArray[:0]
 
+	/*
+		UPGRADE Updates
+	*/
+	achieved = float64(report.UpgradeSalesCount) * 100 / float64(report.UpgradeTargetCount)
+	report.UpradeAchievedPercentage = achieved
 	//upgrade sales count per plan
+	saleArray = make([]*models.SaleCountPerPlan, 0)
 	for key, val := range upgradeSaleMap {
 		saleArray = append(saleArray, &models.SaleCountPerPlan{CurrentPlan: key, Quantity: val})
 	}
-
 	sort.Slice(saleArray, func(i, j int) bool {
 		return saleArray[i].Quantity > saleArray[j].Quantity
 	})
-
 	upgradeSaleCountPerPlanArray, _ := json.Marshal(saleArray)
 	report.UpgradeSaleCountPerPlanArray = string(upgradeSaleCountPerPlanArray)
 
+	if mngr.Position == constant.Manager || mngr.Position == constant.SeniorManager {
+		//HBB
+		vop, _ := impl.getValueOfPoint(quarter, year, constant.HBBCategory, report.HBBAchievedPercentage)
+		maxPayAllowed, _ := impl.getMaxPayout(quarter, year, mngr.Position, constant.HBBCategory)
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Float64("target", report.HBBTargetCount).Int("achievedCount", report.HBBSalesCount).
+			Float64("achievedPercent", report.HBBAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("MngrReport : HBB sales info")
+		for plan, qty := range hbbSaleMap {
+			rate, _ := impl.getSIPRatePlan(quarter, year, plan)
+			report.HBBPayout += float64(qty) * vop * rate
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("planName", plan).Float64("planRate", rate).
+				Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", report.HBBPayout).Msg("MngrReport : HBB per plan info")
+		}
+		if report.HBBPayout > maxPayAllowed {
+			report.HBBPayout = maxPayAllowed
+		}
+
+		//HAYYAK
+		vop, _ = impl.getValueOfPoint(quarter, year, constant.HayyakCategory, report.HayyakAchievedPercentage)
+		maxPayAllowed, _ = impl.getMaxPayout(quarter, year, mngr.Position, constant.HayyakCategory)
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Float64("target", report.HayyakTargetCount).Int("achievedCount", report.HayyakSalesCount).
+			Float64("achievedPercent", report.HayyakAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("MngrReport : HAYYAK sales info")
+		for plan, qty := range hayyakSaleMap {
+			rate, _ := impl.getSIPRatePlan(quarter, year, plan)
+			report.HayyakPayout += float64(qty) * vop * rate
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("planName", plan).Float64("planRate", rate).
+				Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", report.HayyakPayout).Msg("MngrReport : HAYYAK per plan info")
+		}
+		if report.HayyakPayout > maxPayAllowed {
+			report.HayyakPayout = maxPayAllowed
+		}
+
+		//BAQATI
+		vop, _ = impl.getValueOfPoint(quarter, year, constant.BaqatiCategory, report.BaqatiAchievedPercentage)
+		maxPayAllowed, _ = impl.getMaxPayout(quarter, year, mngr.Position, constant.BaqatiCategory)
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Float64("target", report.BaqatiTargetCount).Int("achievedCount", report.BaqatiSalesCount).
+			Float64("achievedPercent", report.BaqatiAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("MngrReport : BAQATI sales info")
+		for plan, qty := range baqatiSaleMap {
+			rate, _ := impl.getSIPRatePlan(quarter, year, plan)
+			report.BaqatiPayout += float64(qty) * vop * rate
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("planName", plan).Float64("planRate", rate).
+				Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", report.BaqatiPayout).Msg("MngrReport : BAQATI per plan info")
+		}
+		if report.BaqatiPayout > maxPayAllowed {
+			report.BaqatiPayout = maxPayAllowed
+		}
+
+		//UPGRADE
+		vop, _ = impl.getValueOfPoint(quarter, year, constant.UpgradeCategory, report.UpradeAchievedPercentage)
+		maxPayAllowed, _ = impl.getMaxPayout(quarter, year, mngr.Position, constant.UpgradeCategory)
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Float64("target", report.UpgradeTargetCount).Int("achievedCount", report.UpgradeSalesCount).
+			Float64("achievedPercent", report.UpradeAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("MngrReport : UPGRADE sales info")
+		for plan, qty := range upgradeSaleMap {
+			rate, _ := impl.getSIPRatePlan(quarter, year, plan)
+			report.UpgradePayout += float64(qty) * vop * rate
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("planName", plan).Float64("planRate", rate).
+				Int("qty", qty).Float64("pay", float64(qty)*vop*rate).Float64("cumulativePay", report.UpgradePayout).Msg("MngrReport : UPGRADE per plan info")
+		}
+		if report.UpgradePayout > maxPayAllowed {
+			report.UpgradePayout = maxPayAllowed
+		}
+
+		report.TotalPayout = report.HBBPayout + report.HayyakPayout + report.BaqatiPayout + report.UpgradePayout
+	}
+
 	go func(user *models.UserReportDB) {
 		if err := impl.PsqlDb.InsertManagerReport(user, isQuarterReport, month, year, quarter); err != nil {
-			logger.FileLogger.CtxWarn(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("updateMngrReport: force report update")
+			logger.FileLogger.CtxWarn(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("MngrReport : force report update")
 		}
 	}(report)
 

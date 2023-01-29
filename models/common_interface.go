@@ -10,6 +10,7 @@ type IncentiveProvider interface {
 	LoadTargetFromDB(printLogs bool) error
 	LoadScaleOrderFromDB(printLogs bool) error
 	LoadMaxPayFromDB(printLogs bool) error
+	LoadMaxExtraPayFromDB(printLog bool) error
 
 	PrintAllInMemData()
 

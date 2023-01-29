@@ -94,6 +94,15 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*
 		return nil, err
 	}
 
+	if !user.IsActive {
+		return nil, &errors.Error{
+			StatusCode: http.StatusUnauthorized,
+			Code:       errors.UnauthorizedUserCode,
+			Message:    "YOU ARE NOT AUTHORIZED TO VIEW REPORTS",
+			Details:    "position:" + user.Position + "contact:" + user.MobileNumber,
+		}
+	}
+
 	//store OTP in db
 	if err := impl.PsqlDb.InsertStaffOTP(true, otpModel); err != nil {
 		return nil, err

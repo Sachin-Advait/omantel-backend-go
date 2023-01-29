@@ -1,12 +1,14 @@
 package business
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
@@ -16,6 +18,16 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, userID strin
 
 	if !isQuarterReport {
 		quarter = impl.getQuarterFromMonth(month)
+	}
+
+	cRH, _ := ctx.Get(constant.HeaderInContext)
+	ctxHeader, _ := (cRH).(context.ContextHeader)
+	if ctxHeader.IsAdmin {
+		vps, err := impl.PsqlDb.FetchVP(quarter, year)
+		if err != nil {
+			return nil, err
+		}
+		userID = vps[0]
 	}
 
 	user, err := impl.PsqlDb.FetchUserDetails(userID, quarter, year)
@@ -74,6 +86,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, userID strin
 					Payout:      userReport.UpgradePayout,
 					ExtraPayout: userReport.UpgradeExtraPayout,
 				},
+				TotalPay: userReport.TotalPayout,
 			}, nil
 		}
 
@@ -84,7 +97,8 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, userID strin
 				return nil, err
 			}
 
-			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetSingleUserIncentive : updated")
+			val, _ := json.Marshal(resp)
+			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Str("report", string(val)).Msg("GetSingleUserIncentive : updated")
 
 			return resp, nil
 		}
@@ -108,6 +122,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, userID strin
 				Payout:      userReport.UpgradePayout,
 				ExtraPayout: userReport.UpgradeExtraPayout,
 			},
+			TotalPay: userReport.TotalPayout,
 		}, nil
 	}
 
@@ -138,6 +153,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, userID strin
 				Payout:      mngrReport.UpgradePayout,
 				ExtraPayout: mngrReport.UpgradeExtraPayout,
 			},
+			TotalPay: mngrReport.TotalPayout,
 		}, nil
 	}
 
@@ -148,7 +164,8 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, userID strin
 			return nil, err
 		}
 
-		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetSingleUserIncentive : updated")
+		val, _ := json.Marshal(mngrReport)
+		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Str("report", string(val)).Msg("GetSingleUserIncentive : updated")
 
 		return &models.TotalIncentive{
 			HBB: &models.IndividualIncentive{
@@ -167,6 +184,7 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, userID strin
 				Payout:      mngrReport.UpgradePayout,
 				ExtraPayout: mngrReport.UpgradeExtraPayout,
 			},
+			TotalPay: mngrReport.TotalPayout,
 		}, nil
 	}
 
@@ -189,5 +207,6 @@ func (impl *IncentiveImpl) GetSingleUserIncentive(ctx *gin.Context, userID strin
 			Payout:      mngrReport.UpgradePayout,
 			ExtraPayout: mngrReport.UpgradeExtraPayout,
 		},
+		TotalPay: mngrReport.TotalPayout,
 	}, nil
 }

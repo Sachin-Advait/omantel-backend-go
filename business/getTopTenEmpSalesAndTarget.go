@@ -1,6 +1,7 @@
 package business
 
 import (
+	"encoding/json"
 	"math"
 	"net/http"
 	"sort"
@@ -9,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
@@ -17,6 +19,16 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 
 	if !isQuarterReport {
 		quarter = impl.getQuarterFromMonth(month)
+	}
+
+	cRH, _ := ctx.Get(constant.HeaderInContext)
+	ctxHeader, _ := (cRH).(context.ContextHeader)
+	if ctxHeader.IsAdmin {
+		vps, err := impl.PsqlDb.FetchVP(quarter, year)
+		if err != nil {
+			return nil, err
+		}
+		userID = vps[0]
 	}
 
 	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
@@ -78,8 +90,8 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 						return nil, err
 					}
 
-					logger.FileLogger.CtxInfo(ctx).Str("agentReport", agent.UserId).Str(constant.HBBCategory, ind.HBB.Error).Str(constant.HayyakCategory, ind.Hayyak.Error).
-						Str(constant.BaqatiCategory, ind.Baqati.Error).Str(constant.UpgradeCategory, ind.Upgrade.Error).Msg("GetTopTenEmpSalesAndTarget : trace")
+					rawValue, _ := json.Marshal(ind)
+					logger.FileLogger.CtxInfo(ctx).Str("agentReport", agent.UserId).Str("record", string(rawValue)).Msg("GetTopTenEmpSalesAndTarget : trace")
 					//TODO: test this out for struct assignment
 					agentReport = resp
 				}
@@ -129,7 +141,7 @@ func (impl *IncentiveImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID s
 
 	/////// for all other non-outlet managers
 
-	allDistinctMngr, err := impl.PsqlDb.FetchAllMngrReportingToManagerRole(user.Position, userID, quarter, year)
+	allDistinctMngr, err := impl.PsqlDb.FetchAllMngrReportingToManagerRole(userID, user.Position, quarter, year)
 	if err != nil {
 		return nil, err
 	}

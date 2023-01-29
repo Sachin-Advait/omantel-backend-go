@@ -180,6 +180,35 @@ func (impl *IncentiveImpl) LoadMaxPayFromDB(printLog bool) error {
 	return nil
 }
 
+func (impl *IncentiveImpl) LoadMaxExtraPayFromDB(printLog bool) error {
+
+	currTime := time.Now()
+	currYear, _, _ := currTime.Date()
+
+	if err := impl.PsqlDb.FetchMaxExtraPayout(currYear); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear).Err(errors.New(err.Details.(string))).Msg("LoadMaxExtraPayFromDB : maxExtraPayout fetching failed")
+		}
+		return errors.New(err.Details.(string))
+	}
+
+	if err := impl.PsqlDb.FetchMaxExtraPayout(currYear - 1); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear-1).Err(errors.New(err.Details.(string))).Msg("LoadMaxExtraPayFromDB : maxExtraPayout fetching failed")
+		}
+		return errors.New(err.Details.(string))
+	}
+
+	if err := impl.PsqlDb.FetchMaxExtraPayout(currYear + 1); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear+1).Err(errors.New(err.Details.(string))).Msg("LoadMaxExtraPayFromDB : maxExtraPayout fetching failed")
+		}
+		return errors.New(err.Details.(string))
+	}
+
+	return nil
+}
+
 func (impl *IncentiveImpl) PrintAllInMemData() {
 
 	for year, yearVal := range models.PlanRates.PlanRateMap {
@@ -199,8 +228,18 @@ func (impl *IncentiveImpl) PrintAllInMemData() {
 	}
 
 	for year, yearVal := range models.MaxPay.Payoutmap {
-		for quarter, val := range yearVal {
-			logger.FileLogger.Info().Int("year", year).Int("quarter", quarter).Interface("maxPay", val).Msg("LoadMaxPayFromDB: load maxPay success")
+		for quarter, quarterVal := range yearVal {
+			for position, val := range quarterVal {
+				logger.FileLogger.Info().Int("year", year).Int("quarter", quarter).Str("position", position).Interface("maxPay", val).Msg("LoadMaxPayFromDB: load maxPay success")
+			}
+		}
+	}
+
+	for year, yearVal := range models.MaxExtraPay.ExtraPayoutmap {
+		for quarter, quarterVal := range yearVal {
+			for position, val := range quarterVal {
+				logger.FileLogger.Info().Int("year", year).Int("quarter", quarter).Str("position", position).Interface("maxExtraPay", val).Msg("LoadMaxExtraPayFromDB: load maxExtraPay success")
+			}
 		}
 	}
 }

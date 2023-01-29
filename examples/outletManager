@@ -1,0 +1,104 @@
+OutletManager:  50795
+Quarter:        3
+Year:           2022
+
+Agents:             12
+Active Agents:      9 (5041704 ,6916375 ,69963 ,5598487 ,5973224 ,8097225 ,14266244 ,23234691 ,3526079)
+Inactive Agents:    3 (10271572, 19268884, 18529964)
+
+HBB
+    Sales Count:        294     (0+0+90+0+0+84+0+56+57+0+7+0)
+    Target:             200
+    Achieved Percent:   147
+    VOP:                0.75
+    Payout:             2734.875
+    MaxPayout:          420
+    Plan Sales: 
+        Name                                                        Rate        Qty         Pay                     CumulativePay
+        WIRELESS UNLIMITED DATA - 8 MBPS - 25 RO                    12.5        102         956.25    
+        WIRELESS UNLIMITED 50MBPS - 30 OMR                          15          81          911.25     
+        100 MBPS PREMIUM                                            15          32          360     
+        WIRELESS 20MBPS - 25 OMR                                    12.5        28          262.5    
+        HOME BROADBAND UNLIMITED M / FIXED                          12.5        18          168.75     
+        WIRELESS UNLIMITED DATA - 16 MBPS - 28 RO                   14          14          147
+        ULTRA-FAST PREMIUM M                                        17.5        5           65.625     
+        PSTN RENTAL 2.9                                             0           3           0
+        ULTRA-FAST PREMIUM S                                        15          3           33.75      
+        WIRELESS 300 GB                                             12.5        2           18.75      
+        HOME BROADBAND UNLIMITED L / FIXED                          14          2           21     
+        WIRELESS UNLIMITED 100MBPS - 35 OMR                         17.5        2           26.25      
+        WIRELESS 600 GB                                             15          1           11.25     
+        ULTRA-FAST PREMIUM L                                        20          1           15     
+
+
+HAYYAK
+    Sales Count:        1809    (0+0+475+0+0+360+5+355+454+0+160+0)
+    Target:             982
+    Achieved Percent:   184.21588594704684
+    VOP:                0.75
+    Payout:             2536.4894999999997
+    MaxPayout:          264
+    Plan Sales: 
+        Name                                                        Rate        Qty         Pay                     CumulativePay
+        HAYYAK PLUS BASIC                                           0.5         664         249
+        HAYYAK PLUS 4                                               0.667       483         241.62075000000002
+        HAYYAK PLUS 5                                               0.833       128         79.96799999999999
+        HAYYAK PLUS 9                                               3           116         261
+        HAYYAK PLUS 12                                              6           74          333
+        HAYYAK PLUS 18                                              9           71          479.25
+        TOURIST-UNLIMITED                                           10          63          472.5
+        HAYYAK PLUS 6                                               2           42          63
+        HAYYAK STANDARD                                             0.2         42          6.300000000000001
+        TOURIST-10                                                  3.33        34          84.9915
+        HAYYAK VOICE ONLY                                           2.333       32          55.992000000000004   
+        TOURIST-5                                                   0.833       30          18.7425
+        HAYYAK DATA ONLY 150 GB 25 RO                               12.5        20          187.5
+        HAYYAK PLUS 2                                               0.2         5           0.75
+                                                                    0           3           0
+        HAYYAK PLUS 3 RO MONTHLY                                    0.5         1           0.375        
+        HAYYAK DATA ONLY 10 RO                                      3.333       1           2.49975 
+
+
+
+BAQATI
+    Sales Count:        494         (0+0+146+0+0+95+1+114+106+0+32+0)
+    Target:             489
+    Achieved Percent:   101.02249488752557
+    VOP:                0.25
+    Payout:             699.725
+    MaxPayout:          420
+    Plan Sales:
+        Name                                                        Rate        Qty         Pay                     CumulativePay 
+        BAQATI BLUE 10 OR - NO CONTRACT                             3.333       305         254.14125
+        BAQATI SILVER  - 12 MONTHS                                  10          94          235
+        BAQATI BRONZE - 12 MONTHS                                   705         44          82.5
+        BAQATI GOLD - 12 MONTHS                                     12.5        21          65.625
+        BAQATI BRONZE-NO CONTRACT                                   5.667       8           11.334
+        BAQATI BLUE(14GB)                                           3           5           3.75
+        BAQATI BLUE 10 OR                                           3.333       4           3.333
+        BAQATI DATA ONLY 25 RO - 5G 200GB                           12.5        3           9.375              
+        BAQATI SILVER - NO CONTRACT                                 8           3           6       
+        BAQATI DATA ONLY 30 RO - 5G 300 GB                          15          2           7.5          
+        BAQATI DATA ONLY 35 RO - 5G 400 GB                          17.5        2           8.75         
+        BAQATI DATA ONLY 40 RO - 5G 600 GB                          20          2           10     
+        BAQATI GOLD - NO CONTRACT                                   9.667       1           2.41675
+
+
+
+UPGRADE
+    Sales Count:        0               (0+0+0+0+0+0+0+0+0+0)
+    Target:             161
+    Achieved Percent:   0
+    VOP:                0
+    Payout:             0
+    MaxPayout:          96
+    Plan Sales: 
+        Name                                                        Rate        Qty         Pay                     CumulativePay
+
+
+Total Pay:          1104                (420 + 264 + 420 + 0)
+
+
+
+
+

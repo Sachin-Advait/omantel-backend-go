@@ -56,8 +56,8 @@ func (dbConn *DBImplementation) FetchUserBasicDetails(userID string, quarter, ye
 
 	user := &models.UserBasicDetailsDB{}
 
-	err := dbConn.Operation.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
-		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin)
+	err := dbConn.Operation.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
+		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive)
 	if err == nil {
 		return user, nil
 	}
@@ -91,15 +91,15 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 	user := &models.UserBasicDetailsDB{}
 
 	err := dbConn.Operation.QueryRowContext(ctx,
-		"select emp_id, name, usr_position, mobile_number, region, outlet, isAdmin from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
-		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.MobileNumber, &user.Region, &user.Outlet, &user.IsAdmin)
+		"select emp_id, name, usr_position, mobile_number, region, outlet, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
+		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.MobileNumber, &user.Region, &user.Outlet, &user.IsAdmin, &user.IsActive)
 	if err != nil {
 		if strings.Contains(err.Error(), "no rows") {
 			return nil, &errors.Error{
 				StatusCode: http.StatusBadRequest,
 				Code:       errors.InvalidReqParameterCode,
 				Message:    errors.UserNotFound,
-				Details:    "FetchUserDetails: no rows - " + err.Error(),
+				Details:    "FetchUserDetails: id-" + userID + " no rows - " + err.Error(),
 			}
 		}
 
@@ -107,33 +107,35 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
-			Details:    "FetchUserDetails: err - " + err.Error(),
+			Details:    "FetchUserDetails: id-" + userID + " err - " + err.Error(),
 		}
 	}
 
 	var query string
 
 	switch {
+	case user.Position == constant.VicePresident:
+		return user, nil
 	case user.Position == constant.GeneralManager:
 		user.ManagerPosition = constant.VicePresident
-		query = "select vice_president from user_hierarchy_table where deleted IS NULL and general_manager= $1 and quarter=$2 and year=$3"
+		query = "select vice_president from user_hierarchy_table where deleted IS NULL and general_manager= $1 and quarter=$2 and year=$3 limit 1"
 	case user.Position == constant.SeniorManager:
 		user.ManagerPosition = constant.GeneralManager
-		query = "select general_manager from user_hierarchy_table where deleted IS NULL and senior_manager= $1 and quarter=$2 and year=$3"
+		query = "select general_manager from user_hierarchy_table where deleted IS NULL and senior_manager= $1 and quarter=$2 and year=$3 limit 1"
 	case user.Position == constant.Manager:
 		user.ManagerPosition = constant.SeniorManager
-		query = "select senior_manager from user_hierarchy_table where deleted IS NULL and manager= $1 and quarter=$2 and year=$3"
+		query = "select senior_manager from user_hierarchy_table where deleted IS NULL and manager= $1 and quarter=$2 and year=$3 limit 1"
 	case user.Position == constant.OutletManager:
 		user.ManagerPosition = constant.Manager
-		query = "select manager from user_hierarchy_table where deleted IS NULL and outlet_manager= $1 and quarter=$2 and year=$3"
+		query = "select manager from user_hierarchy_table where deleted IS NULL and outlet_manager= $1 and quarter=$2 and year=$3 limit 1"
 	case user.Position == constant.Promoter || user.Position == constant.CSR:
 		user.ManagerPosition = constant.OutletManager
-		query = "select outlet_manager from user_hierarchy_table where deleted IS NULL and emp_id= $1 and quarter=$2 and year=$3"
+		query = "select outlet_manager from user_hierarchy_table where deleted IS NULL and emp_id= $1 and quarter=$2 and year=$3 limit 1"
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    "INVALID USER POSITION",
-			Details:    "FetchUserDetails: incorrect position - " + user.Position,
+			Details:    "FetchUserDetails: id-" + userID + " incorrect position - " + user.Position,
 		}
 	}
 
@@ -144,7 +146,7 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 				StatusCode: http.StatusBadRequest,
 				Code:       errors.InvalidReqParameterCode,
 				Message:    errors.UserNotFound,
-				Details:    "FetchUserDetails: no rows mngr - " + err.Error(),
+				Details:    "FetchUserDetails: id-" + userID + " no rows mngr - " + err.Error(),
 			}
 		}
 
@@ -152,7 +154,7 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
-			Details:    "FetchUserDetails: err mngr - " + err.Error(),
+			Details:    "FetchUserDetails: id-" + userID + " err mngr - " + err.Error(),
 		}
 	}
 

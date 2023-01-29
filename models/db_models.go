@@ -81,4 +81,5 @@ type UserBasicDetailsDB struct {
 	ManagerId       string
 	ManagerPosition string
 	IsAdmin         bool
+	IsActive        bool
 }

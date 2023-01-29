@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
@@ -16,6 +17,16 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 
 	if !isQuarterReport {
 		quarter = impl.getQuarterFromMonth(month)
+	}
+
+	cRH, _ := ctx.Get(constant.HeaderInContext)
+	ctxHeader, _ := (cRH).(context.ContextHeader)
+	if ctxHeader.IsAdmin {
+		vps, err := impl.PsqlDb.FetchVP(quarter, year)
+		if err != nil {
+			return nil, err
+		}
+		userID = vps[0]
 	}
 
 	user, err := impl.PsqlDb.FetchUserDetails(userID, quarter, year)
@@ -74,6 +85,7 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 					Payout:      userReport.UpgradePayout,
 					ExtraPayout: userReport.UpgradeExtraPayout,
 				},
+				TotalPay: userReport.TotalPayout,
 			}, nil
 		}
 
@@ -108,6 +120,7 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 				Payout:      userReport.UpgradePayout,
 				ExtraPayout: userReport.UpgradeExtraPayout,
 			},
+			TotalPay: userReport.TotalPayout,
 		}, nil
 	}
 
@@ -138,6 +151,7 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 				Payout:      mngrReport.UpgradePayout,
 				ExtraPayout: mngrReport.UpgradeExtraPayout,
 			},
+			TotalPay: mngrReport.TotalPayout,
 		}, nil
 	}
 
@@ -167,6 +181,7 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 				Payout:      mngrReport.UpgradePayout,
 				ExtraPayout: mngrReport.UpgradeExtraPayout,
 			},
+			TotalPay: mngrReport.TotalPayout,
 		}, nil
 	}
 
@@ -189,5 +204,6 @@ func (impl *IncentiveImpl) GetUserPayout(ctx *gin.Context, userID string, isQuar
 			Payout:      mngrReport.UpgradePayout,
 			ExtraPayout: mngrReport.UpgradeExtraPayout,
 		},
+		TotalPay: mngrReport.TotalPayout,
 	}, nil
 }

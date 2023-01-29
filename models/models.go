@@ -449,7 +449,12 @@ type ValueOfPoint struct {
 
 type MaxPayout struct {
 	Mutex     sync.RWMutex
-	Payoutmap map[int]map[int]map[string]float64
+	Payoutmap map[int]map[int]map[string]map[string]float64
+}
+
+type MaxExtraPayout struct {
+	Mutex          sync.RWMutex
+	ExtraPayoutmap map[int]map[int]map[string]map[string]float64
 }
 
 type OtpModel struct {
@@ -497,6 +502,7 @@ var SalesTrgt SaleTarget
 var PlanRates PlanRate
 var ValOfPoint ValueOfPoint
 var MaxPay MaxPayout
+var MaxExtraPay MaxExtraPayout
 
 var (
 	ProductTypeMap = map[string]string{

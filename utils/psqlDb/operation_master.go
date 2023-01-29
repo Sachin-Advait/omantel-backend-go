@@ -308,8 +308,8 @@ func (dbConn *DBImplementation) FetchAgentUserHierarchy(userID string, quarter, 
 
 	rcrd := &models.UserHierarchy{}
 
-	err := dbConn.Operation.QueryRowContext(ctx, "select outlet_manager, manager, senior_manager, general_manager, vice_president from user_hierarchy_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3", userID, quarter, year).
-		Scan(&rcrd.OutletManager, &rcrd.Manager, &rcrd.SeniorManager, &rcrd.GeneralManager, &rcrd.VicePresident)
+	err := dbConn.Operation.QueryRowContext(ctx, "select b.outlet_manager, b.manager, b.senior_manager, b.general_manager, b.vice_president from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND a.emp_id=$1 AND a.quarter=$2 AND a.year=$3 AND a.isactive=true",
+		userID, quarter, year).Scan(&rcrd.OutletManager, &rcrd.Manager, &rcrd.SeniorManager, &rcrd.GeneralManager, &rcrd.VicePresident)
 	if err == nil {
 		return rcrd, nil
 	}
@@ -341,7 +341,8 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string, q
 	defer cancel()
 
 	//rows, err := dbConn.Operation.QueryContext(ctx, "select distinct emp_id from user_hierarchy_table where deleted IS NULL and outlet_manager=$1 and team_lead=$2 and quarter=$3 and year=$4", outletManagerID, outletManagerID, quarter, year)
-	rows, err := dbConn.Operation.QueryContext(ctx, "select distinct a.emp_id from user_hierarchy_table a inner join user_master_table b on a.emp_id = b.emp_id and a.quarter = b.quarter and a.year = b.year where a.deleted IS NULL and b.deleted is null and a.outlet_manager=$1 and b.isactive=true and a.quarter=$2 and a.year=$3", outletManagerID, quarter, year)
+	rows, err := dbConn.Operation.QueryContext(ctx, "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.emp_id AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.outlet_manager=$1 AND a.quarter=$2 AND a.year=$3", // AND a.isactive=true
+		outletManagerID, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -404,13 +405,13 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 
 	switch managerPosition {
 	case constant.VicePresident:
-		query = "select outlet_manager, team_lead from user_hierarchy_table where deleted IS NULL and vice_president=$1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.GeneralManager:
-		query = "select outlet_manager, team_lead from user_hierarchy_table where deleted IS NULL and general_manager=$1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.SeniorManager:
-		query = "select outlet_manager, team_lead from user_hierarchy_table where deleted IS NULL and senior_manager=$1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.Manager:
-		query = "select outlet_manager, team_lead from user_hierarchy_table where deleted IS NULL and manager=$1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -431,13 +432,12 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 
 	var (
 		outletManager string
-		teamLead      string
 		response      = make(map[string]*models.UserBasicDetailsDB, 0)
 	)
 
 	for rows.Next() {
 
-		if err := rows.Scan(&outletManager, &teamLead); err != nil {
+		if err := rows.Scan(&outletManager); err != nil {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
@@ -484,11 +484,11 @@ func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPositio
 
 	switch managerPosition {
 	case constant.VicePresident:
-		query = "select distinct manager from user_hierarchy_table where deleted IS NULL and vice_president= $1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.GeneralManager:
-		query = "select distinct manager from user_hierarchy_table where deleted IS NULL and general_manager= $1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.SeniorManager:
-		query = "select distinct manager from user_hierarchy_table where deleted IS NULL and senior_manager= $1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -559,7 +559,7 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    managerID + "DB CALL WITHOOUT DETAILS",
+			Message:    managerID + " DB CALL WITHOOUT DETAILS",
 			Details:    "FetchAllMngrReportingToManagerRole: invalid db call, mngrID-" + managerID + ", mngrPos-" + managerPosition,
 		}
 	}
@@ -571,16 +571,18 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 
 	switch managerPosition {
 	case constant.VicePresident:
-		query = "select distinct general_manager from user_hierarchy_table where deleted IS NULL and vice_president=$1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.general_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.GeneralManager:
-		query = "select distinct senior_manager from user_hierarchy_table where deleted IS NULL and general_manager=$1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.senior_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.SeniorManager:
-		query = "select distinct manager from user_hierarchy_table where deleted IS NULL and senior_manager=$1 and quarter=$2 and year=$3"
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+	case constant.Manager:
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
-			Message:    managerID + "MANAGER NOT SUPPORTED",
+			Message:    managerID + " MANAGER NOT SUPPORTED",
 			Details:    "FetchAllMngrReportingToManagerRole: not supported, mngrID-" + managerID + ", mngrPos-" + managerPosition,
 		}
 	}
@@ -658,18 +660,18 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 
 	switch managerPosition {
 	case constant.VicePresident:
-		query = "select distinct a.general_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.general_manager=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.vice_president=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
+		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.general_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.GeneralManager:
-		query = "select distinct a.senior_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.senior_manager=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.general_manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
+		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.senior_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.SeniorManager:
-		query = "select distinct a.manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.manager=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.senior_manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
+		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.Manager:
-		query = "select distinct a.outlet_manager, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
+		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.outlet_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.OutletManager:
-		query = "select distinct a.emp_id, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.emp_id=b.emp_id where a.deleted IS NULL and b.deleted IS NULL and a.outlet_manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5"
+		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.outlet_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	}
 
-	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID, quarter, year, quarter, year)
+	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -687,7 +689,7 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 
 		usr := &models.ReportingStaffIDAndName{}
 
-		if err := rows.Scan(&usr.ID, &usr.Position, &usr.Name); err != nil {
+		if err := rows.Scan(&usr.ID, &usr.Name, &usr.Position); err != nil {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
@@ -735,4 +737,48 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 	// }
 
 	return array, nil
+}
+
+// FetchVP -
+func (dbConn *DBImplementation) FetchVP(quarter, year int) ([]string, *errors.Error) {
+
+	// logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchVP start")
+	// defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchVP done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.vice_president AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND a.quarter=$2 AND a.year=$3 AND a.isactive=true"
+	rows, err := dbConn.Operation.QueryContext(ctx, query, quarter, year)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "FetchVP: query failed: " + err.Error(),
+		}
+	}
+
+	var (
+		vp      string
+		vpArray = make([]string, 0)
+	)
+
+	for rows.Next() {
+		vp = ""
+		if err := rows.Scan(&vp); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    errors.InternalServerError,
+				Details:    "FetchVP: scan failed - " + err.Error(),
+			}
+		}
+
+		if vp != "" {
+			vpArray = append(vpArray, vp)
+		}
+	}
+
+	return vpArray, nil
 }

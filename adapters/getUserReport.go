@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"time"
 
@@ -18,7 +19,7 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	isQuarterReport, err := validateUserReport(req, ctxHeader)
+	isQuarterReport, err := validateUserReportRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetUserReport : validation failed")
 		logger.LogChan <- &logger.Logging{
@@ -53,6 +54,8 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 		}
 	}
 
+	validateUserReportResponse(ctx, response)
+
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserReport : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
@@ -66,7 +69,7 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 	return http.StatusOK, response
 }
 
-func validateUserReport(req *models.UserReportRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, err error) {
+func validateUserReportRequest(req *models.UserReportRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, err error) {
 
 	if req.ClientId == "" {
 		err = errors.New("blank userId")
@@ -88,4 +91,69 @@ func validateUserReport(req *models.UserReportRequest, ctxHeader context.Context
 	}
 
 	return isQuarterReport, nil
+}
+
+func validateUserReportResponse(ctx *gin.Context, res *models.UserReportDB) {
+
+	var achievedCount int
+
+	if res.HBBPayout != 0 {
+		achievedCount++
+	} else {
+		logger.FileLogger.CtxTrace(ctx).Str("HBB", "not achieved").Msg("GetUserReport : response validation")
+	}
+
+	if res.HayyakPayout != 0 {
+		achievedCount++
+	} else {
+		logger.FileLogger.CtxTrace(ctx).Str("HAYYAK", "not achieved").Msg("GetUserReport : response validation")
+	}
+
+	if res.BaqatiPayout != 0 {
+		achievedCount++
+	} else {
+		logger.FileLogger.CtxTrace(ctx).Str("BAQATI", "not achieved").Msg("GetUserReport : response validation")
+	}
+
+	if res.UpgradePayout != 0 {
+		achievedCount++
+	} else {
+		logger.FileLogger.CtxTrace(ctx).Str("UPGRADE", "not achieved").Msg("GetUserReport : response validation")
+	}
+
+	if achievedCount < 3 {
+		res.HBBPayout = 0
+		res.HBBExtraPayout = 0
+		res.HayyakPayout = 0
+		res.HayyakExtraPayout = 0
+		res.BaqatiPayout = 0
+		res.BaqatiExtraPayout = 0
+		res.UpgradePayout = 0
+		res.UpgradeExtraPayout = 0
+		res.TotalPayout = 0
+
+		return
+	}
+
+	res.HBBTargetCount = math.Round(res.HBBTargetCount*1000) / 1000
+	res.HBBPayout = math.Round(res.HBBPayout*1000) / 1000
+	res.HBBExtraPayout = math.Round(res.HBBExtraPayout*1000) / 1000
+	res.HBBAchievedPercentage = math.Round(res.HBBAchievedPercentage*1000) / 1000
+
+	res.HayyakTargetCount = math.Round(res.HayyakTargetCount*1000) / 1000
+	res.HayyakPayout = math.Round(res.HayyakPayout*1000) / 1000
+	res.HayyakExtraPayout = math.Round(res.HayyakExtraPayout*1000) / 1000
+	res.HayyakAchievedPercentage = math.Round(res.HayyakAchievedPercentage*1000) / 1000
+
+	res.BaqatiTargetCount = math.Round(res.BaqatiTargetCount*1000) / 1000
+	res.BaqatiPayout = math.Round(res.BaqatiPayout*1000) / 1000
+	res.BaqatiExtraPayout = math.Round(res.BaqatiExtraPayout*1000) / 1000
+	res.BaqatiAchievedPercentage = math.Round(res.BaqatiAchievedPercentage*1000) / 1000
+
+	res.UpgradeTargetCount = math.Round(res.UpgradeTargetCount*1000) / 1000
+	res.UpgradePayout = math.Round(res.UpgradePayout*1000) / 1000
+	res.UpgradeExtraPayout = math.Round(res.UpgradeExtraPayout*1000) / 1000
+	res.UpradeAchievedPercentage = math.Round(res.UpradeAchievedPercentage*1000) / 1000
+
+	res.TotalPayout = math.Round(res.TotalPayout*1000) / 1000
 }

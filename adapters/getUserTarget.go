@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -54,6 +55,8 @@ func GetUserTarget(ctx *gin.Context, req *models.SingleUserIncentiveRequest) (in
 			Error: errs.Message,
 		}
 	}
+
+	validateUserTargetResponse(response)
 
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserTarget : success")
 	logger.LogChan <- &logger.Logging{
@@ -131,4 +134,16 @@ func validateUserTargetRequest(req *models.SingleUserIncentiveRequest, ctxHeader
 	}
 
 	return
+}
+
+func validateUserTargetResponse(res *models.ChartDataResponse) {
+
+	res.HBB.Target = math.Round(res.HBB.Target*1000) / 1000
+	res.HBB.AchievedPercentage = math.Round(res.HBB.AchievedPercentage*1000) / 1000
+	res.Hayyak.Target = math.Round(res.Hayyak.Target*1000) / 1000
+	res.Hayyak.AchievedPercentage = math.Round(res.Hayyak.AchievedPercentage*1000) / 1000
+	res.Baqati.Target = math.Round(res.Baqati.Target*1000) / 1000
+	res.Baqati.AchievedPercentage = math.Round(res.Baqati.AchievedPercentage*1000) / 1000
+	res.Upgrade.Target = math.Round(res.Upgrade.Target*1000) / 1000
+	res.Upgrade.AchievedPercentage = math.Round(res.Upgrade.AchievedPercentage*1000) / 1000
 }
