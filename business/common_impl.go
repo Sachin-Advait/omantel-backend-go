@@ -259,6 +259,45 @@ func (impl *IncentiveImpl) getMaxExtraPayout(quarter, year int, position, grp st
 	return val, nil
 }
 
+func (impl *IncentiveImpl) getThresholdPayout(quarter, year int, position, grp string, achievedPercent float64) (float64, error) {
+
+	achieved := int(math.Round(achievedPercent))
+
+	models.ThresholdCheck.Mutex.RLock()
+	defer models.ThresholdCheck.Mutex.RUnlock()
+
+	if achieved < 75 {
+		return 0, nil
+	}
+
+	if achieved > 140 {
+		achieved = 140
+	}
+
+	if models.ThresholdCheck.Limit[year] == nil {
+		return 0, errors.New("THRESHOLD PAYOUT YEAR INVALID - " + fmt.Sprintf("%v", year))
+	}
+
+	if models.ThresholdCheck.Limit[year][quarter] == nil {
+		return 0, errors.New("THRESHOLD PAYOUT QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
+	}
+
+	if models.ThresholdCheck.Limit[year][quarter][position] == nil {
+		return 0, errors.New("THRESHOLD PAYOUT POSITION INVALID - " + fmt.Sprintf("%v", position))
+	}
+
+	if models.ThresholdCheck.Limit[year][quarter][position][grp] == nil {
+		return 0, errors.New("THRESHOLD PAYOUT GROUP INVALID - " + fmt.Sprintf("%v", grp))
+	}
+
+	val, ok := models.ThresholdCheck.Limit[year][quarter][position][grp][achieved]
+	if !ok {
+		return 0, errors.New("THRESHOLD PAYOUT ACHIEVED PERCENT INVALID - " + grp)
+	}
+
+	return val, nil
+}
+
 func (impl *IncentiveImpl) getQuarterFromMonth(month int) int {
 	switch {
 	case month >= 1 && month <= 3:
@@ -323,9 +362,6 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			Details:    "agent blank region or outlet - userId: " + user.UserId + " region:" + user.Region + " outlet:" + user.Outlet,
 		}
 	}
-
-	logger.FileLogger.CtxTrace(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
-		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("AReport : info")
 
 	outletResponse, err := impl.PsqlDb.FetchOutletDetailsViaName(user.Region, user.Outlet, quarter, year)
 	if err != nil {
@@ -502,6 +538,13 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 				resp.HBB = ind
 				break
 			}
+			threshold, internalErr := impl.getThresholdPayout(quarter, year, constant.Promoter, grp, achieved)
+			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Float64("achieved", achieved).Err(internalErr).Msg("AReport : HBB fetch threshold failed")
+				ind.Error = internalErr.Error()
+				resp.HBB = ind
+				break
+			}
 
 			report.HBBTargetCount = targetPerEmp
 			report.HBBSalesCount = totalActive[grp]
@@ -513,7 +556,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
 				Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).Float64("extraPay", extraPayout).
-				Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Msg("AReport : HBB sales info")
+				Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Float64("threshold", threshold).Msg("AReport : HBB sales info")
 
 			saleCount := make([]*models.SaleCountPerPlan, 0)
 			for plan, qty := range plans {
@@ -534,10 +577,13 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			hBBSaleCountPerPlanArray, _ := json.Marshal(saleCount)
 			report.HBBSaleCountPerPlanArray = string(hBBSaleCountPerPlanArray)
 
-			ind.Payout = math.Round(ind.Payout*100) / 100
 			if ind.Payout > maxPayAllowed {
 				ind.Payout = maxPayAllowed
 			}
+			if ind.Payout > threshold {
+				ind.Payout = threshold
+			}
+			ind.Payout = math.Round(ind.Payout*100) / 100
 
 			totalPay += ind.Payout
 			totalPay += ind.ExtraPayout
@@ -584,7 +630,14 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			if internalErr != nil {
 				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : HAYYAK fetch maxExtraPay failed")
 				ind.Error = internalErr.Error()
-				resp.HBB = ind
+				resp.Hayyak = ind
+				break
+			}
+			threshold, internalErr := impl.getThresholdPayout(quarter, year, constant.Promoter, grp, achieved)
+			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Float64("achieved", achieved).Err(internalErr).Msg("AReport : HAYYAK fetch threshold failed")
+				ind.Error = internalErr.Error()
+				resp.Hayyak = ind
 				break
 			}
 
@@ -598,7 +651,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
 				Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).Float64("extraPay", extraPayout).
-				Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Msg("AReport : HAYYAK sales info")
+				Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Float64("threshold", threshold).Msg("AReport : HAYYAK sales info")
 
 			saleCount := make([]*models.SaleCountPerPlan, 0)
 			for plan, qty := range plans {
@@ -619,10 +672,13 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			hayyakSaleCountPerPlanArray, _ := json.Marshal(saleCount)
 			report.HayyakSaleCountPerPlanArray = string(hayyakSaleCountPerPlanArray)
 
-			ind.Payout = math.Round(ind.Payout*100) / 100
 			if ind.Payout > maxPayAllowed {
 				ind.Payout = maxPayAllowed
 			}
+			if ind.Payout > threshold {
+				ind.Payout = threshold
+			}
+			ind.Payout = math.Round(ind.Payout*100) / 100
 
 			totalPay += ind.Payout
 			totalPay += ind.ExtraPayout
@@ -669,7 +725,14 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			if internalErr != nil {
 				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Err(internalErr).Msg("AReport : BAQATI fetch maxExtraPay failed")
 				ind.Error = internalErr.Error()
-				resp.HBB = ind
+				resp.Baqati = ind
+				break
+			}
+			threshold, internalErr := impl.getThresholdPayout(quarter, year, constant.Promoter, grp, achieved)
+			if internalErr != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", grp).Str("position", constant.Promoter).Float64("achieved", achieved).Err(internalErr).Msg("AReport : BAQATI fetch threshold failed")
+				ind.Error = internalErr.Error()
+				resp.Baqati = ind
 				break
 			}
 
@@ -683,7 +746,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
 				Int("achievedCount", totalActive[grp]).Float64("achievedPercent", achieved).Float64("vop", vop).Float64("extraPay", extraPayout).
-				Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Msg("AReport : BAQATI sales info")
+				Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Float64("threshold", threshold).Msg("AReport : BAQATI sales info")
 
 			saleCount := make([]*models.SaleCountPerPlan, 0)
 
@@ -704,10 +767,14 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 			})
 			baqatiSaleCountPerPlanArray, _ := json.Marshal(saleCount)
 			report.BaqatiSaleCountPerPlanArray = string(baqatiSaleCountPerPlanArray)
-			ind.Payout = math.Round(ind.Payout*100) / 100
+
 			if ind.Payout > maxPayAllowed {
 				ind.Payout = maxPayAllowed
 			}
+			if ind.Payout > threshold {
+				ind.Payout = threshold
+			}
+			ind.Payout = math.Round(ind.Payout*100) / 100
 
 			totalPay += ind.Payout
 			totalPay += ind.ExtraPayout
@@ -775,6 +842,13 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 		resp.Upgrade = ind
 		return resp, report, nil
 	}
+	threshold, internalErr := impl.getThresholdPayout(quarter, year, constant.Promoter, constant.UpgradeCategory, achieved)
+	if internalErr != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Str("position", constant.Promoter).Float64("achieved", achieved).Err(internalErr).Msg("AReport : UPGRADE fetch threshold failed")
+		ind.Error = internalErr.Error()
+		resp.Upgrade = ind
+		return resp, report, nil
+	}
 
 	report.UpgradeTargetCount = targetPerEmp
 	report.UpgradeSalesCount = totalActiveUpgrade
@@ -786,7 +860,7 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 
 	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("targetPerOutlet", targetPerOutlet).Float64("targetPerEmp", targetPerEmp).
 		Int("achievedCount", totalActiveUpgrade).Float64("achievedPercent", achieved).Float64("vop", vop).Float64("extraPay", extraPayout).
-		Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Msg("AReport : UPGRADE sales info")
+		Float64("maxPayAllowed", maxPayAllowed).Float64("maxExtraPayAllowed", maxExtraPayAllowed).Float64("threshold", threshold).Msg("AReport : UPGRADE sales info")
 
 	saleCount := make([]*models.SaleCountPerPlan, 0)
 	for currPlan, prevPlansMap := range upgradedPlans {
@@ -812,10 +886,13 @@ func (impl *IncentiveImpl) updateAgentUserReport(ctx *gin.Context, user *models.
 	upgradeSaleCountPerPlanArray, _ := json.Marshal(saleCount)
 	report.UpgradeSaleCountPerPlanArray = string(upgradeSaleCountPerPlanArray)
 
-	ind.Payout = math.Round(ind.Payout*100) / 100
 	if ind.Payout > maxPayAllowed {
 		ind.Payout = maxPayAllowed
 	}
+	if ind.Payout > threshold {
+		ind.Payout = threshold
+	}
+	ind.Payout = math.Round(ind.Payout*100) / 100
 
 	totalPay += ind.Payout
 	totalPay += ind.ExtraPayout
@@ -888,7 +965,7 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 		}
 	}
 
-	logger.FileLogger.CtxTrace(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
 		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("OMReport : info")
 
 	var needUpdate bool
@@ -1029,9 +1106,10 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	achieved := float64(report.HBBSalesCount) * 100 / float64(target)
 	vop, _ := impl.getValueOfPoint(quarter, year, constant.HBBCategory, achieved)
 	maxPayAllowed, _ := impl.getMaxPayout(quarter, year, constant.OutletManager, constant.HBBCategory)
+	threshold, _ := impl.getThresholdPayout(quarter, year, constant.OutletManager, constant.HBBCategory, achieved)
 
 	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("target", target).Int("achievedCount", report.HBBSalesCount).Float64("achievedPercent", achieved).
-		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("OMReport : HBB sales info")
+		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Float64("threshold", threshold).Msg("OMReport : HBB sales info")
 
 	for plan, qty := range hbbSaleMap {
 		rate, _ := impl.getSIPRatePlan(quarter, year, plan)
@@ -1044,6 +1122,9 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	report.HBBAchievedPercentage = achieved
 	if report.HBBPayout > maxPayAllowed {
 		report.HBBPayout = maxPayAllowed
+	}
+	if report.HBBPayout > threshold {
+		report.HBBPayout = threshold
 	}
 	//hbb sales count per plan
 	saleArray := make([]*models.SaleCountPerPlan, 0)
@@ -1073,9 +1154,10 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	achieved = float64(report.HayyakSalesCount) * 100 / float64(target)
 	vop, _ = impl.getValueOfPoint(quarter, year, constant.HayyakCategory, achieved)
 	maxPayAllowed, _ = impl.getMaxPayout(quarter, year, constant.OutletManager, constant.HayyakCategory)
+	threshold, _ = impl.getThresholdPayout(quarter, year, constant.OutletManager, constant.HayyakCategory, achieved)
 
 	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("target", target).Int("achievedCount", report.HayyakSalesCount).Float64("achievedPercent", achieved).
-		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("OMReport : HAYYAK sales info")
+		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Float64("threshold", threshold).Msg("OMReport : HAYYAK sales info")
 
 	for plan, qty := range hayyakSaleMap {
 		rate, _ := impl.getSIPRatePlan(quarter, year, plan)
@@ -1088,6 +1170,9 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	report.HayyakAchievedPercentage = achieved
 	if report.HayyakPayout > maxPayAllowed {
 		report.HayyakPayout = maxPayAllowed
+	}
+	if report.HayyakPayout > threshold {
+		report.HayyakPayout = threshold
 	}
 	//hayyak sales count per plan
 	saleArray = make([]*models.SaleCountPerPlan, 0)
@@ -1117,9 +1202,10 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	achieved = float64(report.BaqatiSalesCount) * 100 / float64(target)
 	vop, _ = impl.getValueOfPoint(quarter, year, constant.BaqatiCategory, achieved)
 	maxPayAllowed, _ = impl.getMaxPayout(quarter, year, constant.OutletManager, constant.BaqatiCategory)
+	threshold, _ = impl.getThresholdPayout(quarter, year, constant.OutletManager, constant.BaqatiCategory, achieved)
 
 	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("target", target).Int("achievedCount", report.BaqatiSalesCount).Float64("achievedPercent", achieved).
-		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("OMReport : BAQATI sales info")
+		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Float64("threshold", threshold).Msg("OMReport : BAQATI sales info")
 
 	for plan, qty := range baqatiSaleMap {
 		rate, _ := impl.getSIPRatePlan(quarter, year, plan)
@@ -1132,6 +1218,9 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	report.BaqatiAchievedPercentage = achieved
 	if report.BaqatiPayout > maxPayAllowed {
 		report.BaqatiPayout = maxPayAllowed
+	}
+	if report.BaqatiPayout > threshold {
+		report.BaqatiPayout = threshold
 	}
 	//baqati sales count per plan
 	saleArray = make([]*models.SaleCountPerPlan, 0)
@@ -1161,9 +1250,10 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	achieved = float64(report.UpgradeSalesCount) * 100 / float64(target)
 	vop, _ = impl.getValueOfPoint(quarter, year, constant.UpgradeCategory, achieved)
 	maxPayAllowed, _ = impl.getMaxPayout(quarter, year, constant.OutletManager, constant.UpgradeCategory)
+	threshold, _ = impl.getThresholdPayout(quarter, year, constant.OutletManager, constant.UpgradeCategory, achieved)
 
 	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("target", target).Int("achievedCount", report.UpgradeSalesCount).Float64("achievedPercent", achieved).
-		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("OMReport : UPGRADE sales info")
+		Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Float64("threshold", threshold).Msg("OMReport : UPGRADE sales info")
 
 	for plan, qty := range upgradeSaleMap {
 		rate, _ := impl.getSIPRatePlan(quarter, year, plan)
@@ -1176,6 +1266,9 @@ func (impl *IncentiveImpl) updateOutletManagerReport(ctx *gin.Context, omngr *mo
 	report.UpradeAchievedPercentage = achieved
 	if report.UpgradePayout > maxPayAllowed {
 		report.UpgradePayout = maxPayAllowed
+	}
+	if report.UpgradePayout > threshold {
+		report.UpgradePayout = threshold
 	}
 	//upgrade sales count per plan
 	saleArray = make([]*models.SaleCountPerPlan, 0)
@@ -1226,8 +1319,9 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 		}
 	}
 
-	logger.FileLogger.CtxTrace(ctx).Str("clientID", mngr.UserId).Str("region", mngr.Region).Str("outlet", mngr.Outlet).Bool("isQuarter", isQuarterReport).
-		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("MngrReport : info")
+	rawDetails, _ := json.Marshal(mngr)
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("user", string(rawDetails)).Bool("isQuarter", isQuarterReport).Int("quarter", quarter).
+		Int("month", month).Int("year", year).Msg("MngrReport : info")
 
 	//for outlet manager and team lead only
 	if mngr.Position == constant.OutletManager { // || mngr.Position == constant.TeamLeader
@@ -1473,8 +1567,9 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 		//HBB
 		vop, _ := impl.getValueOfPoint(quarter, year, constant.HBBCategory, report.HBBAchievedPercentage)
 		maxPayAllowed, _ := impl.getMaxPayout(quarter, year, mngr.Position, constant.HBBCategory)
+		threshold, _ := impl.getThresholdPayout(quarter, year, constant.Manager, constant.HBBCategory, achieved)
 		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Float64("target", report.HBBTargetCount).Int("achievedCount", report.HBBSalesCount).
-			Float64("achievedPercent", report.HBBAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("MngrReport : HBB sales info")
+			Float64("achievedPercent", report.HBBAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Float64("threshold", threshold).Msg("MngrReport : HBB sales info")
 		for plan, qty := range hbbSaleMap {
 			rate, _ := impl.getSIPRatePlan(quarter, year, plan)
 			report.HBBPayout += float64(qty) * vop * rate
@@ -1484,12 +1579,18 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 		if report.HBBPayout > maxPayAllowed {
 			report.HBBPayout = maxPayAllowed
 		}
+		if mngr.Position == constant.Manager {
+			if report.HBBPayout > threshold {
+				report.HBBPayout = threshold
+			}
+		}
 
 		//HAYYAK
 		vop, _ = impl.getValueOfPoint(quarter, year, constant.HayyakCategory, report.HayyakAchievedPercentage)
 		maxPayAllowed, _ = impl.getMaxPayout(quarter, year, mngr.Position, constant.HayyakCategory)
+		threshold, _ = impl.getThresholdPayout(quarter, year, constant.Manager, constant.HayyakCategory, achieved)
 		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Float64("target", report.HayyakTargetCount).Int("achievedCount", report.HayyakSalesCount).
-			Float64("achievedPercent", report.HayyakAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("MngrReport : HAYYAK sales info")
+			Float64("achievedPercent", report.HayyakAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Float64("threshold", threshold).Msg("MngrReport : HAYYAK sales info")
 		for plan, qty := range hayyakSaleMap {
 			rate, _ := impl.getSIPRatePlan(quarter, year, plan)
 			report.HayyakPayout += float64(qty) * vop * rate
@@ -1499,12 +1600,18 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 		if report.HayyakPayout > maxPayAllowed {
 			report.HayyakPayout = maxPayAllowed
 		}
+		if mngr.Position == constant.Manager {
+			if report.HayyakPayout > threshold {
+				report.HayyakPayout = threshold
+			}
+		}
 
 		//BAQATI
 		vop, _ = impl.getValueOfPoint(quarter, year, constant.BaqatiCategory, report.BaqatiAchievedPercentage)
 		maxPayAllowed, _ = impl.getMaxPayout(quarter, year, mngr.Position, constant.BaqatiCategory)
+		threshold, _ = impl.getThresholdPayout(quarter, year, constant.Manager, constant.BaqatiCategory, achieved)
 		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Float64("target", report.BaqatiTargetCount).Int("achievedCount", report.BaqatiSalesCount).
-			Float64("achievedPercent", report.BaqatiAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("MngrReport : BAQATI sales info")
+			Float64("achievedPercent", report.BaqatiAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Float64("threshold", threshold).Msg("MngrReport : BAQATI sales info")
 		for plan, qty := range baqatiSaleMap {
 			rate, _ := impl.getSIPRatePlan(quarter, year, plan)
 			report.BaqatiPayout += float64(qty) * vop * rate
@@ -1514,12 +1621,18 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 		if report.BaqatiPayout > maxPayAllowed {
 			report.BaqatiPayout = maxPayAllowed
 		}
+		if mngr.Position == constant.Manager {
+			if report.BaqatiPayout > threshold {
+				report.BaqatiPayout = threshold
+			}
+		}
 
 		//UPGRADE
 		vop, _ = impl.getValueOfPoint(quarter, year, constant.UpgradeCategory, report.UpradeAchievedPercentage)
 		maxPayAllowed, _ = impl.getMaxPayout(quarter, year, mngr.Position, constant.UpgradeCategory)
+		threshold, _ = impl.getThresholdPayout(quarter, year, constant.Manager, constant.UpgradeCategory, achieved)
 		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Float64("target", report.UpgradeTargetCount).Int("achievedCount", report.UpgradeSalesCount).
-			Float64("achievedPercent", report.UpradeAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Msg("MngrReport : UPGRADE sales info")
+			Float64("achievedPercent", report.UpradeAchievedPercentage).Float64("vop", vop).Float64("maxPayAllowed", maxPayAllowed).Float64("threshold", threshold).Msg("MngrReport : UPGRADE sales info")
 		for plan, qty := range upgradeSaleMap {
 			rate, _ := impl.getSIPRatePlan(quarter, year, plan)
 			report.UpgradePayout += float64(qty) * vop * rate
@@ -1528,6 +1641,11 @@ func (impl *IncentiveImpl) updateManagerReport(ctx *gin.Context, mngr *models.Us
 		}
 		if report.UpgradePayout > maxPayAllowed {
 			report.UpgradePayout = maxPayAllowed
+		}
+		if mngr.Position == constant.Manager {
+			if report.UpgradePayout > threshold {
+				report.UpgradePayout = threshold
+			}
 		}
 
 		report.TotalPayout = report.HBBPayout + report.HayyakPayout + report.BaqatiPayout + report.UpgradePayout

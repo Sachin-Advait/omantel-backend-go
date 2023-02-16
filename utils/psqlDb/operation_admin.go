@@ -17,7 +17,7 @@ func (dbConn *DBImplementation) FetchRegionRecord(regionCodes []string, quarter,
 	// logger.FileLogger.Info().Interface("record", regionCodes).Time("start", time.Now()).Msg("FetchRegionRecord start")
 	// defer logger.FileLogger.Info().Interface("record", regionCodes).Time("end", time.Now()).Msg("FetchRegionRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	query := "SELECT region_code, region_name FROM regions_table where deleted IS NULL and quarter=$1 and year=$2"
@@ -72,7 +72,7 @@ func (dbConn *DBImplementation) FetchOutletRecord(outletCodes []string, quarter,
 	// logger.FileLogger.Info().Interface("record", outletCodes).Time("start", time.Now()).Msg("FetchOutletRecord start")
 	// defer logger.FileLogger.Info().Interface("record", outletCodes).Time("end", time.Now()).Msg("FetchOutletRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	query := "SELECT outlet_code, outlet_name, region_code, latitude, longitude FROM outlets_table where deleted IS NULL and quarter=$1 and year=$2"
@@ -130,7 +130,7 @@ func (dbConn *DBImplementation) FetchProductRecord(productCodes []string, quarte
 	// logger.FileLogger.Info().Interface("record", productCodes).Time("start", time.Now()).Msg("FetchProductRecord start")
 	// defer logger.FileLogger.Info().Interface("record", productCodes).Time("end", time.Now()).Msg("FetchProductRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	query := "SELECT product_code, product_name, weightage FROM products_table where deleted IS NULL and quarter=$1 and year=$2"
@@ -186,7 +186,7 @@ func (dbConn *DBImplementation) FetchPlanRecord(planCodes []string, quarter, yea
 	// logger.FileLogger.Info().Interface("record", planCodes).Time("start", time.Now()).Msg("FetchPlanRecord start")
 	// defer logger.FileLogger.Info().Interface("record", planCodes).Time("end", time.Now()).Msg("FetchPlanRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	query := "SELECT plan_code, plan_name, product_code, plan_price, sip_plan_rate FROM plans_table where deleted IS NULL and quarter=$1 and year=$2"
@@ -244,7 +244,7 @@ func (dbConn *DBImplementation) FetchTargetRecord(targetCodes []string, outletCo
 	// logger.FileLogger.Info().Interface("record", targetCodes).Time("start", time.Now()).Msg("FetchTargetRecord start")
 	// defer logger.FileLogger.Info().Interface("record", targetCodes).Time("end", time.Now()).Msg("FetchTargetRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var (
@@ -341,7 +341,7 @@ func (dbConn *DBImplementation) UpsertRegionRecord(userId string, dbReq *models.
 	// logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertRegionRecord start")
 	// defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertRegionRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var (
@@ -407,7 +407,7 @@ func (dbConn *DBImplementation) UpsertRegionRecordViaFile(userId string, dbReq [
 
 	for _, eachRecord := range dbReq {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		var (
@@ -456,7 +456,7 @@ func (dbConn *DBImplementation) UpsertOutletRecord(userId string, dbReq *models.
 	// logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertOutletRecord start")
 	// defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertOutletRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var regionName string
@@ -489,7 +489,7 @@ func (dbConn *DBImplementation) UpsertOutletRecord(userId string, dbReq *models.
 		}
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var result sql.Result
@@ -552,7 +552,7 @@ func (dbConn *DBImplementation) UpsertOutletRecordViaFile(userId string, dbReq [
 
 	for _, eachRecord := range dbReq {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		var regionName string
@@ -573,7 +573,7 @@ func (dbConn *DBImplementation) UpsertOutletRecordViaFile(userId string, dbReq [
 			continue
 		}
 
-		ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		var result sql.Result
@@ -619,7 +619,7 @@ func (dbConn *DBImplementation) UpsertProductRecord(userId string, dbReq *models
 	// logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertProductRecord start")
 	// defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertProductRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var (
@@ -685,7 +685,7 @@ func (dbConn *DBImplementation) UpsertProductRecordViaFile(userId string, dbReq 
 
 	for _, eachRecord := range dbReq {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		var (
@@ -734,7 +734,7 @@ func (dbConn *DBImplementation) UpsertPlanRecord(userId string, dbReq *models.Cr
 	// logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertPlanRecord start")
 	// defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertPlanRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var (
@@ -800,7 +800,7 @@ func (dbConn *DBImplementation) UpsertPlanRecordViaFile(userId string, dbReq []*
 
 	for _, eachRecord := range dbReq {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		var (
@@ -849,7 +849,7 @@ func (dbConn *DBImplementation) UpsertTargetRecord(userId string, dbReq *models.
 	// logger.FileLogger.Info().Interface("record", dbReq).Time("start", time.Now()).Msg("UpsertTargetRecord start")
 	// defer logger.FileLogger.Info().Interface("record", dbReq).Time("end", time.Now()).Msg("UpsertTargetRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var outletName string
@@ -882,7 +882,7 @@ func (dbConn *DBImplementation) UpsertTargetRecord(userId string, dbReq *models.
 		}
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var result sql.Result
@@ -945,7 +945,7 @@ func (dbConn *DBImplementation) UpsertTargetRecordViaFile(userId string, dbReq [
 
 	for _, eachRecord := range dbReq {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		var outletName string
@@ -966,7 +966,7 @@ func (dbConn *DBImplementation) UpsertTargetRecordViaFile(userId string, dbReq [
 			continue
 		}
 
-		ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+		ctx, cancel = context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
 
 		var result sql.Result
@@ -1012,7 +1012,7 @@ func (dbConn *DBImplementation) DeleteRegionRecord(userId string, regionCodes []
 	// logger.FileLogger.Info().Interface("record", regionCodes).Time("start", time.Now()).Msg("DeleteRegionRecord start")
 	// defer logger.FileLogger.Info().Interface("record", regionCodes).Time("end", time.Now()).Msg("DeleteRegionRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	query := "UPDATE regions_table SET deleted=$, comment=$2 WHERE region_code IN ("
@@ -1070,7 +1070,7 @@ func (dbConn *DBImplementation) DeleteOutletRecord(userId string, outletCode []s
 	// logger.FileLogger.Info().Interface("record", outletCode).Time("start", time.Now()).Msg("DeleteOutletRecord start")
 	// defer logger.FileLogger.Info().Interface("record", outletCode).Time("end", time.Now()).Msg("DeleteOutletRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	query := "UPDATE outlets_table SET deleted=$1, comment=$2 WHERE outlet_code IN ("
@@ -1128,7 +1128,7 @@ func (dbConn *DBImplementation) DeleteProductRecord(userId string, productCode [
 	// logger.FileLogger.Info().Interface("record", productCode).Time("start", time.Now()).Msg("DeleteProductRecord start")
 	// defer logger.FileLogger.Info().Interface("record", productCode).Time("end", time.Now()).Msg("DeleteProductRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	query := "UPDATE products_table SET deleted=$1, comment=$2 WHERE product_code IN ("
@@ -1186,7 +1186,7 @@ func (dbConn *DBImplementation) DeletePlanRecord(userId string, planCode []strin
 	// logger.FileLogger.Info().Interface("record", planCode).Time("start", time.Now()).Msg("DeletePlanRecord start")
 	// defer logger.FileLogger.Info().Interface("record", planCode).Time("end", time.Now()).Msg("DeletePlanRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	query := "UPDATE plans_table SET deleted=$1, comment=$2 WHERE plan_code IN ("
@@ -1244,7 +1244,7 @@ func (dbConn *DBImplementation) DeleteTargetRecord(userId string, targetCode []s
 	// logger.FileLogger.Info().Interface("record", targetCode).Time("start", time.Now()).Msg("DeleteTargetRecord start")
 	// defer logger.FileLogger.Info().Interface("record", targetCode).Time("end", time.Now()).Msg("DeleteTargetRecord done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	query := "UPDATE targets_table SET deleted=$1, comment=$2 WHERE target_code IN ("

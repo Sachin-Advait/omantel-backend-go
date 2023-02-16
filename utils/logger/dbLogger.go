@@ -58,7 +58,7 @@ func insertLogs(dbConn *sql.DB) {
 	for val := range LogChan {
 
 		go func(val *Logging) {
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 			defer cancel()
 
 			_, err := dbConn.ExecContext(ctx, "INSERT INTO logs_table(emp_id, url, type, msg, code, text, created) VALUES ($1,$2,$3,$4,$5,$6,$7);",

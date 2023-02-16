@@ -16,7 +16,7 @@ func (dbConn *DBImplementation) FetchPlans(year int) *errors.Error {
 	// logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchPlans start")
 	// defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchPlans done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	rows, err := dbConn.Operation.QueryContext(ctx, "select plan_code, plan_name, plan_price, sip_plan_rate, quarter from plans_table where deleted IS NULL and year=$1", year)
@@ -80,7 +80,7 @@ func (dbConn *DBImplementation) FetchSaleTarget(year int) *errors.Error {
 	// logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchSaleTarget start")
 	// defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchSaleTarget done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	rows, err := dbConn.Operation.QueryContext(ctx, "select region, outlet, month, baqati, hbb, hayyak, upgrade from targets_table where deleted IS NULL and year=$1", year)
@@ -500,6 +500,77 @@ func (dbConn *DBImplementation) FetchMaxExtraPayout(year int) *errors.Error {
 		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["BAQATI"] = 88
 		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["HAYYAK"] = 55
 		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["UPGRADE"] = 20
+	}
+
+	return nil
+}
+
+// FetchMaxThresholdCheck loads the gloabal variable ThresholdCheck with the threshold pay limit
+func (dbConn *DBImplementation) FetchMaxThresholdCheck(year int) *errors.Error {
+
+	// logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchPlans start")
+	// defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchPlans done")
+
+	models.ThresholdCheck.Mutex.Lock()
+	defer models.ThresholdCheck.Mutex.Unlock()
+
+	if models.ThresholdCheck.Limit == nil {
+		models.ThresholdCheck.Limit = make(map[int]map[int]map[string]map[string]map[int]float64)
+	}
+
+	if models.ThresholdCheck.Limit[year] == nil {
+		models.ThresholdCheck.Limit[year] = make(map[int]map[string]map[string]map[int]float64)
+	}
+
+	positions := []string{constant.Promoter, constant.OutletManager, constant.Manager, constant.SeniorManager}
+
+	for _, position := range positions {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		defer cancel()
+
+		rows, err := dbConn.Operation.QueryContext(ctx, "select product, achieved_percent, payout, quarter from threshold_table where deleted IS NULL and position=$1 and year=$2", position, year)
+		if err != nil {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchPlans Query: failed",
+				Details:    "FetchPlans Query: " + err.Error(),
+			}
+		}
+
+		for rows.Next() {
+
+			var (
+				product         string
+				achievedPercent int
+				payout          float64
+				quarter         int
+			)
+
+			if err := rows.Scan(&product, &achievedPercent, &payout, &quarter); err != nil {
+				return &errors.Error{
+					StatusCode: http.StatusInternalServerError,
+					Code:       errors.InternalServerError,
+					Message:    "FetchMaxThresholdCheck Scan: failed",
+					Details:    "FetchMaxThresholdCheck Scan: " + err.Error(),
+				}
+			}
+
+			if models.ThresholdCheck.Limit[year][quarter] == nil {
+				models.ThresholdCheck.Limit[year][quarter] = make(map[string]map[string]map[int]float64)
+			}
+
+			if models.ThresholdCheck.Limit[year][quarter][position] == nil {
+				models.ThresholdCheck.Limit[year][quarter][position] = make(map[string]map[int]float64)
+			}
+
+			if models.ThresholdCheck.Limit[year][quarter][position][product] == nil {
+				models.ThresholdCheck.Limit[year][quarter][position][product] = make(map[int]float64)
+			}
+
+			models.ThresholdCheck.Limit[year][quarter][position][product][achievedPercent] = payout
+		}
 	}
 
 	return nil

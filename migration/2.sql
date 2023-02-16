@@ -136,6 +136,22 @@ CREATE TABLE public.targets_table
     PRIMARY KEY (target_code, quarter, year)
 );
 
+CREATE TABLE public.threshold_table
+(
+    id character varying(32),
+    position character varying(32) NOT NULL,
+    product character varying(64) NOT NULL,
+    achieved_percent integer NOT NULL,
+    payout NUMERIC (10, 3) NOT NULL,
+    created timestamp with time zone NOT NULL,
+    modified timestamp with time zone NOT NULL,
+    deleted timestamp with time zone,
+    comment character varying(128) NOT NULL,
+    quarter integer NOT NULL,
+    year integer NOT NULL,  
+    PRIMARY KEY (id, quarter, year)
+);
+
 
 CREATE TABLE public.sale_transaction_table
 (

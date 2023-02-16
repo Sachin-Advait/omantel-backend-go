@@ -26,7 +26,7 @@ func (dbConn *DBImplementation) FetchOutletReport(outlet string, isQuarterReport
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	if isQuarterReport {
@@ -102,7 +102,7 @@ func (dbConn *DBImplementation) InsertOutletReport(outlet *models.OutletReportDB
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	if isQuarterReport {
@@ -179,7 +179,7 @@ func (dbConn *DBImplementation) FetchRegionReport(region string, isQuarterReport
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	if isQuarterReport {
@@ -253,7 +253,7 @@ func (dbConn *DBImplementation) InsertRegionReport(region *models.RegionReportDB
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	if isQuarterReport {
@@ -324,7 +324,7 @@ func (dbConn *DBImplementation) FetchAgentUserReport(userId string, isQuarterRep
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	if isQuarterReport {
@@ -409,7 +409,7 @@ func (dbConn *DBImplementation) InsertAgentUserReport(usr *models.UserReportDB, 
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	if isQuarterReport {
@@ -528,7 +528,7 @@ func (dbConn *DBImplementation) FetchManagerReport(userId string, isQuarterRepor
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	if isQuarterReport {
@@ -613,7 +613,7 @@ func (dbConn *DBImplementation) InsertManagerReport(usr *models.UserReportDB, is
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	if isQuarterReport {

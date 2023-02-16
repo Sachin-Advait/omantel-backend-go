@@ -12,12 +12,46 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
+// FetchUserBasicDetails - userID, name, position, region, outlet, mobile, isAdmin
+func (dbConn *DBImplementation) FetchUser(userID string) (*models.UserBasicDetailsDB, *errors.Error) {
+
+	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserBasicDetails start")
+	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserBasicDetails done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	user := &models.UserBasicDetailsDB{}
+
+	err := dbConn.Operation.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1",
+		userID).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive)
+	if err == nil {
+		return user, nil
+	}
+
+	if strings.Contains(err.Error(), "no rows") {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidReqParameterCode,
+			Message:    errors.UserNotFound,
+			Details:    "FetchUserBasicDetails: no rows - " + err.Error(),
+		}
+	}
+
+	return nil, &errors.Error{
+		StatusCode: http.StatusInternalServerError,
+		Code:       errors.InternalServerErrorCode,
+		Message:    errors.InternalServerError,
+		Details:    "FetchUserBasicDetails: err - " + err.Error(),
+	}
+}
+
 func (dbConn *DBImplementation) FetchUserName(userID string, quarter, year int) (string, *errors.Error) {
 
 	logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserName start")
 	defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserName done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var name string
@@ -51,7 +85,7 @@ func (dbConn *DBImplementation) FetchUserBasicDetails(userID string, quarter, ye
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserBasicDetails start")
 	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserBasicDetails done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	user := &models.UserBasicDetailsDB{}
@@ -85,7 +119,7 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchAgentUserDetails start")
 	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchAgentUserDetails done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	user := &models.UserBasicDetailsDB{}
@@ -166,7 +200,7 @@ func (dbConn *DBImplementation) FetchOTPValidity(userID string) (*models.OtpMode
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchOTPValidity start")
 	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchOTPValidity done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	otp := &models.OtpModel{}
@@ -194,7 +228,7 @@ func (dbConn *DBImplementation) InsertStaffOTP(update bool, otpModel *models.Otp
 	// logger.FileLogger.Info().Interface("clientID", otpModel.StaffID).Time("start", time.Now()).Msg("InsertStaffOTP start")
 	// defer logger.FileLogger.Info().Interface("clientID", otpModel.StaffID).Time("end", time.Now()).Msg("InsertStaffOTP done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var err error
@@ -257,7 +291,7 @@ func (dbConn *DBImplementation) FetchTotalNonManagerialEmployees(region, outlet 
 	// logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
 	// defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var count int

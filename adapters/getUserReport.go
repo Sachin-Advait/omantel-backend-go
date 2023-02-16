@@ -100,25 +100,25 @@ func validateUserReportResponse(ctx *gin.Context, res *models.UserReportDB) {
 	if res.HBBPayout != 0 {
 		achievedCount++
 	} else {
-		logger.FileLogger.CtxTrace(ctx).Str("HBB", "not achieved").Msg("GetUserReport : response validation")
+		logger.FileLogger.CtxInfo(ctx).Str("HBB", "not achieved").Msg("GetUserReport : response validation")
 	}
 
 	if res.HayyakPayout != 0 {
 		achievedCount++
 	} else {
-		logger.FileLogger.CtxTrace(ctx).Str("HAYYAK", "not achieved").Msg("GetUserReport : response validation")
+		logger.FileLogger.CtxInfo(ctx).Str("HAYYAK", "not achieved").Msg("GetUserReport : response validation")
 	}
 
 	if res.BaqatiPayout != 0 {
 		achievedCount++
 	} else {
-		logger.FileLogger.CtxTrace(ctx).Str("BAQATI", "not achieved").Msg("GetUserReport : response validation")
+		logger.FileLogger.CtxInfo(ctx).Str("BAQATI", "not achieved").Msg("GetUserReport : response validation")
 	}
 
 	if res.UpgradePayout != 0 {
 		achievedCount++
 	} else {
-		logger.FileLogger.CtxTrace(ctx).Str("UPGRADE", "not achieved").Msg("GetUserReport : response validation")
+		logger.FileLogger.CtxInfo(ctx).Str("UPGRADE", "not achieved").Msg("GetUserReport : response validation")
 	}
 
 	if achievedCount < 3 {

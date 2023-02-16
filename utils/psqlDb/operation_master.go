@@ -29,7 +29,7 @@ func (dbConn *DBImplementation) FetchOutletDetailsViaName(regionName, outletName
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	outlet := &models.OutletResponse{}
@@ -72,7 +72,7 @@ func (dbConn *DBImplementation) FetchAllOutletNames(regionName string, quarter, 
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	outlets := make([]string, 0)
@@ -114,7 +114,7 @@ func (dbConn *DBImplementation) FetchOutletSalesCount(region, outlet string, isQ
 	// logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchOutletSalesCount start")
 	// defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchOutletSalesCount done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var (
@@ -181,7 +181,7 @@ func (dbConn *DBImplementation) FetchActiveUserSales(userID string, region strin
 	// logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSales start")
 	// defer logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("end", time.Now()).Msg("FetchUserSales done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var (
@@ -190,11 +190,11 @@ func (dbConn *DBImplementation) FetchActiveUserSales(userID string, region strin
 	)
 
 	if isQuarterReport {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and region=$2 and outlet=$3 and quarter=$4 and EXTRACT('year' from sales_date)=$5",
-			userID, region, outlet, quarter, year)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
+			userID, quarter, year)
 	} else {
-		rows, err = dbConn.Operation.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and region=$2 and outlet=$3 and EXTRACT('month' from sales_date)=$4 and EXTRACT('year' from sales_date)=$5",
-			userID, region, outlet, month, year)
+		rows, err = dbConn.Operation.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3",
+			userID, month, year)
 	}
 
 	if err != nil {
@@ -206,7 +206,12 @@ func (dbConn *DBImplementation) FetchActiveUserSales(userID string, region strin
 		}
 	}
 
-	trx := &models.SaleTransaction{}
+	trx := &models.SaleTransaction{
+		EmpID:  userID,
+		Region: region,
+		Outlet: outlet,
+	}
+
 	trx.SaleRecords = make(map[string][]*models.SaleRecord)
 
 	count := 0
@@ -235,10 +240,6 @@ func (dbConn *DBImplementation) FetchActiveUserSales(userID string, region strin
 				Details:    "FetchUserSales: " + userID + ", scan failed - " + err.Error(),
 			}
 		}
-
-		trx.EmpID = userID
-		trx.Outlet = outlet
-		trx.Region = region
 
 		switch {
 		case strings.Contains(productGroup, "FIXED") || productGroup == constant.HBBCategory:
@@ -303,7 +304,7 @@ func (dbConn *DBImplementation) FetchAgentUserHierarchy(userID string, quarter, 
 	// logger.FileLogger.Info().Str("userID", userID).Time("start", time.Now()).Msg("FetchAgentUserHierarchy start")
 	// defer logger.FileLogger.Info().Str("userID", userID).Time("end", time.Now()).Msg("FetchAgentUserHierarchy done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	rcrd := &models.UserHierarchy{}
@@ -337,7 +338,7 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string, q
 	// logger.FileLogger.Info().Str("userID", userID).Time("start", time.Now()).Msg("FetchAgentUserHierarchy start")
 	// defer logger.FileLogger.Info().Str("userID", userID).Time("end", time.Now()).Msg("FetchAgentUserHierarchy done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	//rows, err := dbConn.Operation.QueryContext(ctx, "select distinct emp_id from user_hierarchy_table where deleted IS NULL and outlet_manager=$1 and team_lead=$2 and quarter=$3 and year=$4", outletManagerID, outletManagerID, quarter, year)
@@ -398,7 +399,7 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllOMReportingToGivenManager start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllOMReportingToGivenManager done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var query string
@@ -477,7 +478,7 @@ func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPositio
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllManagerReportingToGivenManager start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllManagerReportingToGivenManager done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var query string
@@ -564,7 +565,7 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var query string
@@ -653,22 +654,22 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var query string
 
 	switch managerPosition {
 	case constant.VicePresident:
-		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.general_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet  from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.general_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.GeneralManager:
-		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.senior_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet  from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.senior_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.SeniorManager:
-		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet  from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.Manager:
-		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.outlet_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet  from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.outlet_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	case constant.OutletManager:
-		query = "select distinct a.emp_id, a.name, a.usr_position from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.outlet_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.outlet_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	}
 
 	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID, quarter, year)
@@ -689,7 +690,7 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 
 		usr := &models.ReportingStaffIDAndName{}
 
-		if err := rows.Scan(&usr.ID, &usr.Name, &usr.Position); err != nil {
+		if err := rows.Scan(&usr.ID, &usr.Name, &usr.Position, &usr.Region, &usr.Outlet); err != nil {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
@@ -745,10 +746,10 @@ func (dbConn *DBImplementation) FetchVP(quarter, year int) ([]string, *errors.Er
 	// logger.FileLogger.Info().Time("start", time.Now()).Msg("FetchVP start")
 	// defer logger.FileLogger.Info().Time("end", time.Now()).Msg("FetchVP done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	query := "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.vice_president AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND a.quarter=$2 AND a.year=$3 AND a.isactive=true"
+	query := "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.vice_president AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND a.quarter=$1 AND a.year=$2 AND a.isactive=true"
 	rows, err := dbConn.Operation.QueryContext(ctx, query, quarter, year)
 	if err != nil {
 		return nil, &errors.Error{

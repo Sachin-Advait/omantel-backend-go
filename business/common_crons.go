@@ -209,6 +209,35 @@ func (impl *IncentiveImpl) LoadMaxExtraPayFromDB(printLog bool) error {
 	return nil
 }
 
+func (impl *IncentiveImpl) LoadThresholdCheckFromDB(printLog bool) error {
+
+	currTime := time.Now()
+	currYear, _, _ := currTime.Date()
+
+	if err := impl.PsqlDb.FetchMaxThresholdCheck(currYear); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear).Err(errors.New(err.Details.(string))).Msg("LoadThresholdCheckFromDB : threshold fetching failed")
+		}
+		return errors.New(err.Details.(string))
+	}
+
+	if err := impl.PsqlDb.FetchMaxThresholdCheck(currYear - 1); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear-1).Err(errors.New(err.Details.(string))).Msg("LoadThresholdCheckFromDB : threshold fetching failed")
+		}
+		return errors.New(err.Details.(string))
+	}
+
+	if err := impl.PsqlDb.FetchMaxThresholdCheck(currYear + 1); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear+1).Err(errors.New(err.Details.(string))).Msg("LoadThresholdCheckFromDB : threshold fetching failed")
+		}
+		return errors.New(err.Details.(string))
+	}
+
+	return nil
+}
+
 func (impl *IncentiveImpl) PrintAllInMemData() {
 
 	for year, yearVal := range models.PlanRates.PlanRateMap {
@@ -239,6 +268,14 @@ func (impl *IncentiveImpl) PrintAllInMemData() {
 		for quarter, quarterVal := range yearVal {
 			for position, val := range quarterVal {
 				logger.FileLogger.Info().Int("year", year).Int("quarter", quarter).Str("position", position).Interface("maxExtraPay", val).Msg("LoadMaxExtraPayFromDB: load maxExtraPay success")
+			}
+		}
+	}
+
+	for year, yearVal := range models.ThresholdCheck.Limit {
+		for quarter, quarterVal := range yearVal {
+			for position, val := range quarterVal {
+				logger.FileLogger.Info().Int("year", year).Int("quarter", quarter).Str("position", position).Interface("threshold", val).Msg("LoadThresholdFromDB: load threshold success")
 			}
 		}
 	}

@@ -13,9 +13,9 @@ import (
 
 func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*models.VerifyOTPResponse, *errors.Error) {
 
-	currTime := time.Now()
-	currYear, currMonth, _ := currTime.Date()
-	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+	// currTime := time.Now()
+	// currYear, currMonth, _ := currTime.Date()
+	// currQuarter := impl.getQuarterFromMonth(int(currMonth))
 
 	otpModel, err := impl.PsqlDb.FetchOTPValidity(req.ClientId)
 	if err != nil {
@@ -89,7 +89,7 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*
 	otpModel.UpdateReason = "otp login success"
 	otpModel.UpdatedTime = time.Now()
 
-	user, err := impl.PsqlDb.FetchUserBasicDetails(req.ClientId, currQuarter, currYear)
+	user, err := impl.PsqlDb.FetchUser(req.ClientId)
 	if err != nil {
 		return nil, err
 	}

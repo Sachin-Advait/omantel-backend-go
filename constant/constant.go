@@ -211,14 +211,25 @@ const (
 	CSR           = "CSR"
 )
 
+// var (
+// 	ManagerMap = map[string]string{
+// 		OutletManager: "outlet_manager",
+// 		//TeamLeader:     "team_lead",
+// 		Manager:        "manager",
+// 		SeniorManager:  "senior_manager",
+// 		GeneralManager: "general_manager",
+// 		VicePresident:  "vice_president",
+// 	}
+// )
+
 var (
 	ManagerMap = map[string]string{
-		OutletManager: "outlet_manager",
+		OutletManager: "OM",
 		//TeamLeader:     "team_lead",
-		Manager:        "manager",
-		SeniorManager:  "senior_manager",
-		GeneralManager: "general_manager",
-		VicePresident:  "vice_president",
+		Manager:        "M",
+		SeniorManager:  "SM",
+		GeneralManager: "GM",
+		VicePresident:  "VP",
 	}
 )
 

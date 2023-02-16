@@ -143,25 +143,25 @@ func validateUserPayoutResponse(ctx *gin.Context, res *models.TotalIncentive) {
 	if res.HBB.Payout != 0 {
 		achievedCount++
 	} else {
-		logger.FileLogger.CtxTrace(ctx).Str("HBB", "not achieved").Msg("GetUserPayout : response validation")
+		logger.FileLogger.CtxInfo(ctx).Str("HBB", "not achieved").Msg("GetUserPayout : response validation")
 	}
 
 	if res.Hayyak.Payout != 0 {
 		achievedCount++
 	} else {
-		logger.FileLogger.CtxTrace(ctx).Str("HAYYAK", "not achieved").Msg("GetUserPayout : response validation")
+		logger.FileLogger.CtxInfo(ctx).Str("HAYYAK", "not achieved").Msg("GetUserPayout : response validation")
 	}
 
 	if res.Baqati.Payout != 0 {
 		achievedCount++
 	} else {
-		logger.FileLogger.CtxTrace(ctx).Str("BAQATI", "not achieved").Msg("GetUserPayout : response validation")
+		logger.FileLogger.CtxInfo(ctx).Str("BAQATI", "not achieved").Msg("GetUserPayout : response validation")
 	}
 
 	if res.Upgrade.Payout != 0 {
 		achievedCount++
 	} else {
-		logger.FileLogger.CtxTrace(ctx).Str("UPGRADE", "not achieved").Msg("GetUserPayout : response validation")
+		logger.FileLogger.CtxInfo(ctx).Str("UPGRADE", "not achieved").Msg("GetUserPayout : response validation")
 	}
 
 	if achievedCount < 3 {

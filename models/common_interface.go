@@ -11,6 +11,7 @@ type IncentiveProvider interface {
 	LoadScaleOrderFromDB(printLogs bool) error
 	LoadMaxPayFromDB(printLogs bool) error
 	LoadMaxExtraPayFromDB(printLog bool) error
+	LoadThresholdCheckFromDB(printLog bool) error
 
 	PrintAllInMemData()
 
@@ -22,11 +23,11 @@ type IncentiveProvider interface {
 	GetSingleUserTargetChart(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*ChartDataResponse, *errors.Error)
 	GetSaleCountPerPlan(ctx *gin.Context, userId, product string, isQuarterReport bool, quarter, month, year int) ([]*SaleCountPerPlan, *errors.Error)
 	GetUserReport(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*UserReportDB, *errors.Error)
-	GetUsersReportingToManager(ctx *gin.Context, managerID string) ([]*ReportingStaffIDAndName, *errors.Error)
-	GetUsersReportingToOutletManager(ctx *gin.Context, outletManagerID string) ([]*ReportingStaffIDAndName, *errors.Error)
-	GetUsersReportingToSeniorManager(ctx *gin.Context, seniorManagerID string) ([]*ReportingStaffIDAndName, *errors.Error)
-	GetUsersReportingToGeneralManager(ctx *gin.Context, generalManagerID string) ([]*ReportingStaffIDAndName, *errors.Error)
-	GetUsersReportingToVicePresident(ctx *gin.Context, vicePresidentID string) ([]*ReportingStaffIDAndName, *errors.Error)
+	GetUsersReportingToManager(ctx *gin.Context, managerID string, isQuarterReport bool, quarter, month, year int) ([]*ReportingStaffIDAndName, *errors.Error)
+	GetUsersReportingToOutletManager(ctx *gin.Context, outletManagerID string, isQuarterReport bool, quarter, month, year int) ([]*ReportingStaffIDAndName, *errors.Error)
+	GetUsersReportingToSeniorManager(ctx *gin.Context, seniorManagerID string, isQuarterReport bool, quarter, month, year int) ([]*ReportingStaffIDAndName, *errors.Error)
+	GetUsersReportingToGeneralManager(ctx *gin.Context, generalManagerID string, isQuarterReport bool, quarter, month, year int) ([]*ReportingStaffIDAndName, *errors.Error)
+	GetUsersReportingToVicePresident(ctx *gin.Context, vicePresidentID string, isQuarterReport bool, quarter, month, year int) ([]*ReportingStaffIDAndName, *errors.Error)
 	GetUserPayout(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*TotalIncentive, *errors.Error)
 	GetUserTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*ChartDataResponse, *errors.Error)
 	GetOutletTotalSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*ProductWiseSalesCountPerOutlet, *errors.Error)

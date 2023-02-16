@@ -48,7 +48,9 @@ type UserReportRequest struct {
 }
 
 type UserReporting struct {
-	ClientId string `json:"client_id"`
+	ClientId  string `json:"client_id"`
+	Monthly   string `json:"monthly"`
+	Quarterly string `json:"quarterly"`
 }
 
 type CreateRegionRequest struct {
@@ -457,6 +459,11 @@ type MaxExtraPayout struct {
 	ExtraPayoutmap map[int]map[int]map[string]map[string]float64
 }
 
+type ThresholdCheckout struct {
+	Mutex sync.RWMutex
+	Limit map[int]map[int]map[string]map[string]map[int]float64
+}
+
 type OtpModel struct {
 	StaffID              string
 	StaffName            string
@@ -503,6 +510,7 @@ var PlanRates PlanRate
 var ValOfPoint ValueOfPoint
 var MaxPay MaxPayout
 var MaxExtraPay MaxExtraPayout
+var ThresholdCheck ThresholdCheckout
 
 var (
 	ProductTypeMap = map[string]string{

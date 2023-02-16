@@ -34,6 +34,10 @@ func InitIncentiveCron() {
 		logger.FileLogger.Fatal().Err(err).Msg("LoadMaxExtraPayFromDB: load maxExtraPay failed")
 	}
 
+	if err := theProvider.LoadThresholdCheckFromDB(false); err != nil {
+		logger.FileLogger.Fatal().Err(err).Msg("LoadThresholdCheckFromDB: load threshold failed")
+	}
+
 	theProvider.PrintAllInMemData()
 
 	////////
@@ -52,6 +56,14 @@ func InitIncentiveCron() {
 
 	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadMaxPayFromDB, true); err != nil {
 		logger.FileLogger.Error().Err(err).Msg("LoadMaxPayFromDB: maxPay cron failed")
+	}
+
+	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadMaxExtraPayFromDB, true); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("LoadMaxExtraPayFromDB: maxExtraPay cron failed")
+	}
+
+	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadThresholdCheckFromDB, true); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("LoadThresholdCheckFromDB: threshold cron failed")
 	}
 
 	<-gocron.Start()

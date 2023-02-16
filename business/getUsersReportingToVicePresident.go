@@ -2,7 +2,6 @@ package business
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
@@ -10,13 +9,13 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) GetUsersReportingToVicePresident(ctx *gin.Context, vicePresidentID string) ([]*models.ReportingStaffIDAndName, *errors.Error) {
+func (impl *IncentiveImpl) GetUsersReportingToVicePresident(ctx *gin.Context, vicePresidentID string, isQuarterReport bool, quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
-	currTime := time.Now()
-	currYear, currMonth, _ := currTime.Date()
-	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+	if !isQuarterReport {
+		quarter = impl.getQuarterFromMonth(month)
+	}
 
-	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.VicePresident, vicePresidentID, currQuarter, currYear)
+	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.VicePresident, vicePresidentID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
