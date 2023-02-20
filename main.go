@@ -182,7 +182,22 @@ func buildIncentiveProvider() models.IncentiveProvider {
 
 	logger.InitDBLogger(dbLogConfig)
 
-	return business.NewIncentiveService(incentiveConfig, dbConfig)
+	redisConfig := &models.RedisConfigStruct{
+		Address:                     applicationConfig.GetString(constant.UserIncentiveRedisAddress),
+		Password:                    applicationConfig.GetString(constant.UserIncentiveRedisPassword),
+		Db:                          applicationConfig.GetInt(constant.UserIncentiveRedisDb),
+		PoolSize:                    applicationConfig.GetInt(constant.UserIncentiveRedisPoolSize),
+		MinIdleConn:                 applicationConfig.GetInt(constant.UserIncentiveRedisMinIdleConn),
+		MaxConnAgeInHour:            applicationConfig.GetDuration(constant.UserIncentiveRedisMaxConnAgeInHour) * time.Hour,
+		PoolTimeoutInMilliSecond:    applicationConfig.GetDuration(constant.UserIncentiveRedisPoolTimeoutInMilliSecond) * time.Millisecond,
+		ReadTimeoutInMilliSecond:    applicationConfig.GetDuration(constant.UserIncentiveRedisReadTimeoutInMilliSecond) * time.Millisecond,
+		WriteTimeoutInMilliSecond:   applicationConfig.GetDuration(constant.UserIncentiveRedisWriteTimeoutInMilliSecond) * time.Millisecond,
+		ContextTimeoutInMilliSecond: applicationConfig.GetDuration(constant.UserIncentiveRedisContextTimeoutInMilliSecond) * time.Millisecond,
+		KeyTTLInHour:                applicationConfig.GetDuration(constant.UserIncentiveRedisKeyTTLInHour) * time.Hour,
+		Mode:                        applicationConfig.GetString(constant.UserIncentiveRedisMode),
+	}
+
+	return business.NewIncentiveService(incentiveConfig, dbConfig, redisConfig)
 }
 
 func startRouter() {

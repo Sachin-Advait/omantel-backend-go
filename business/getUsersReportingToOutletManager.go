@@ -26,14 +26,14 @@ func (impl *IncentiveImpl) GetUsersReportingToOutletManager(ctx *gin.Context, ou
 		outletManagerID = vps[0]
 	}
 
-	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.OutletManager, outletManagerID, quarter, year)
+	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.OutletManagerAbb, outletManagerID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
 	for index, agents := range response {
 
-		if agents.ID == "" || agents.Name == "" || !(agents.Position == constant.Promoter || agents.Position == constant.CSR) {
+		if agents.ID == "" || agents.Name == "" || !(agents.Position == constant.PromoterAbb || agents.Position == constant.CSRAbb) {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InvalidDetailsCode,
@@ -42,7 +42,7 @@ func (impl *IncentiveImpl) GetUsersReportingToOutletManager(ctx *gin.Context, ou
 			}
 		}
 
-		agents.Position = constant.EmployeePositionMap[agents.Position]
+		//agents.Position = constant.EmployeePositionMap[agents.Position]
 		response[index] = agents
 	}
 

@@ -62,6 +62,19 @@ const (
 	LogPsqlMaxIdleConn = LogPsqlDatabase + "." + "maxIdleConnections"
 	LogConnMaxLifetime = LogPsqlDatabase + "." + "connMaxLifetimeInHour"
 	LogConnMaxIdleTime = LogPsqlDatabase + "." + "connMaxIdleTimeInMinute"
+
+	UserIncentiveRedisAddress                     = "userIncentiveRedis.address"
+	UserIncentiveRedisPassword                    = "userIncentiveRedis.password"
+	UserIncentiveRedisDb                          = "userIncentiveRedis.db"
+	UserIncentiveRedisPoolSize                    = "userIncentiveRedis.poolSize"
+	UserIncentiveRedisMinIdleConn                 = "userIncentiveRedis.minIdleConn"
+	UserIncentiveRedisMaxConnAgeInHour            = "userIncentiveRedis.maxConnAgeInHour"
+	UserIncentiveRedisPoolTimeoutInMilliSecond    = "userIncentiveRedis.poolTimeoutInMilliSecond"
+	UserIncentiveRedisReadTimeoutInMilliSecond    = "userIncentiveRedis.readTimeoutInMilliSecond"
+	UserIncentiveRedisWriteTimeoutInMilliSecond   = "userIncentiveRedis.writeTimeoutInMilliSecond"
+	UserIncentiveRedisContextTimeoutInMilliSecond = "userIncentiveRedis.contextTimeoutInMilliSecond"
+	UserIncentiveRedisKeyTTLInHour                = "userIncentiveRedis.keyTTLInHour"
+	UserIncentiveRedisMode                        = "userIncentiveRedis.mode"
 )
 
 //log configuration keywords
@@ -93,6 +106,15 @@ const (
 
 const (
 	HeaderInContext = "Context-Header"
+)
+
+// Redis Mode and Keys
+const (
+	Cluster    = "CLUSTER"
+	NonCluster = "NON_CLUSTER"
+
+	RedisUserReportKey         = "%s|%v|%v|%v|Report"    // userId|month|quarter|year|Report
+	RedisOutletRegionReportKey = "%s|%s|%v|%v|%v|Report" // outlet|region|month|quarter|year|Report
 )
 
 //jwt tokens
@@ -201,14 +223,32 @@ const (
 )
 
 const (
-	VicePresident  = "VP"
-	GeneralManager = "GM"
-	SeniorManager  = "SM"
-	Manager        = "MANAGER"
-	//TeamLeader     = "TL"
-	OutletManager = "OUTLET MANAGER"
-	Promoter      = "PROMOTER"
-	CSR           = "CSR"
+	VicePresident  = "vice_president"
+	GeneralManager = "general_manager"
+	SeniorManager  = "senior_manager"
+	Manager        = "manager"
+	//TeamLeader     = "team_lead"
+	OutletManager = "outlet_manager"
+	Promoter      = "promoter"
+	CSR           = "csr"
+
+	VicePresidentCC  = "VICE PRESIDENT"
+	GeneralManagerCC = "GENERAL MANAGER"
+	SeniorManagerCC  = "SENIOR MANAGER"
+	ManagerCC        = "MANAGER"
+	//TeamLeaderCC     = "TEAM LEAD"
+	OutletManagerCC = "OUTLET MANAGER"
+	PromoterCC      = "PROMOTER"
+	CSRCC           = "CSR"
+
+	VicePresidentAbb  = "VP"
+	GeneralManagerAbb = "GM"
+	SeniorManagerAbb  = "SM"
+	ManagerAbb        = "M"
+	//TeamLeaderAbb     = "TL"
+	OutletManagerAbb = "OM"
+	PromoterAbb      = "A"
+	CSRAbb           = "A"
 )
 
 // var (
@@ -222,27 +262,90 @@ const (
 // 	}
 // )
 
+// var (
+// 	ManagerMap = map[string]string{
+// 		OutletManagerCC: "OM",
+// 		//TeamLeader:     "team_lead",
+// 		ManagerCC:         "M",
+// 		SeniorManagerAbb:  "SM",
+// 		GeneralManagerAbb: "GM",
+// 		VicePresidentAbb:  "VP",
+// 	}
+// )
+
 var (
 	ManagerMap = map[string]string{
-		OutletManager: "OM",
-		//TeamLeader:     "team_lead",
-		Manager:        "M",
-		SeniorManager:  "SM",
-		GeneralManager: "GM",
-		VicePresident:  "VP",
+		OutletManager:    "OM",
+		OutletManagerAbb: "OM",
+		OutletManagerCC:  "OM",
+
+		//TeamLeader:     "TL",
+		//TeamLeaderAbb:     "TL",
+		//TeamLeaderCC:     "TL",
+
+		Manager:    "M",
+		ManagerAbb: "M",
+		ManagerCC:  "M",
+
+		SeniorManager:    "SM",
+		SeniorManagerAbb: "SM",
+		SeniorManagerCC:  "SM",
+
+		GeneralManager:    "GM",
+		GeneralManagerAbb: "GM",
+		GeneralManagerCC:  "GM",
+
+		VicePresident:    "VP",
+		VicePresidentAbb: "VP",
+		VicePresidentCC:  "VP",
 	}
 )
 
+// var (
+// 	EmployeePositionMap = map[string]string{
+// 		PromoterCC:      "A",
+// 		CSRCC:           "A",
+// 		OutletManagerCC: "OM",
+// 		//TeamLeader:     "TL",
+// 		ManagerCC:         "M",
+// 		SeniorManagerAbb:  "SM",
+// 		GeneralManagerAbb: "GM",
+// 		VicePresidentAbb:  "VP",
+// 	}
+// )
+
 var (
 	EmployeePositionMap = map[string]string{
-		Promoter:      "A",
-		CSR:           "A",
-		OutletManager: "OM",
+		Promoter:    "A",
+		PromoterAbb: "A",
+		PromoterCC:  "A",
+
+		CSR:   "A",
+		CSRCC: "A",
+
+		OutletManager:    "OM",
+		OutletManagerAbb: "OM",
+		OutletManagerCC:  "OM",
+
 		//TeamLeader:     "TL",
-		Manager:        "M",
-		SeniorManager:  "SM",
-		GeneralManager: "GM",
-		VicePresident:  "VP",
+		//TeamLeaderAbb:     "TL",
+		//TeamLeaderCC:     "TL",
+
+		Manager:    "M",
+		ManagerAbb: "M",
+		ManagerCC:  "M",
+
+		SeniorManager:    "SM",
+		SeniorManagerAbb: "SM",
+		SeniorManagerCC:  "SM",
+
+		GeneralManager:    "GM",
+		GeneralManagerAbb: "GM",
+		GeneralManagerCC:  "GM",
+
+		VicePresident:    "VP",
+		VicePresidentAbb: "VP",
+		VicePresidentCC:  "VP",
 	}
 )
 

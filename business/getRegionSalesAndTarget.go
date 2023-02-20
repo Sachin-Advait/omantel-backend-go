@@ -3,195 +3,150 @@ package business
 import (
 	"math"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
-	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 func (impl *IncentiveImpl) GetRegionSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error) {
+
+	// cRH, _ := ctx.Get(constant.HeaderInContext)
+	// ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if !isQuarterReport {
 		quarter = impl.getQuarterFromMonth(month)
 	}
 
-	cRH, _ := ctx.Get(constant.HeaderInContext)
-	ctxHeader, _ := (cRH).(context.ContextHeader)
-	if ctxHeader.IsAdmin {
-		vps, err := impl.PsqlDb.FetchVP(quarter, year)
-		if err != nil {
-			return nil, err
-		}
-		userID = vps[0]
-	}
+	// if ctxHeader.IsAdmin {
+	// 	vps, err := impl.PsqlDb.FetchVP(quarter, year)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	userID = vps[0]
+	// }
 
 	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
-	mangerPosition, ok := constant.ManagerMap[user.Position]
-	if !ok || user.Position == constant.Promoter || user.Position == constant.CSR || user.Position == constant.OutletManager { //|| user.Position == constant.TeamLeader
+	position, ok := constant.ManagerMap[user.Position]
+	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    user.UserId + ": INCORRECT MANAGER POSITION - " + user.Position,
-			Details:    "incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
+			Details:    "GetRegionSalesAndTarget: incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
 		}
 	}
-
-	var needUpdate bool
-
-	currTime := time.Now()
-	currYear, currMonth, currDay := currTime.Date()
-	currQuarter := impl.getQuarterFromMonth(int(currMonth))
-
-	if isQuarterReport && year == currYear && quarter <= currQuarter {
-		needUpdate = true
-	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
-		needUpdate = true
-	}
-
-	//TODO: remove at last
-	needUpdate = true
+	user.Position = position
 
 	resp := make([]*models.ProductWiseSalesTargetPerOutlet, 0)
 
-	// for regional manager
-	if user.Position == constant.Manager {
+	/*
+		For Outlet Managers
+	*/
 
-		regionReport, err := impl.PsqlDb.FetchRegionReport(user.Region, isQuarterReport, quarter, month, year)
-		if !needUpdate {
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			if err != nil || (err == nil && regionReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+	if user.Position == constant.OutletManagerAbb {
 
-				regionResp, err := impl.updateRegionReport(ctx, user.Region, isQuarterReport, quarter, month, year)
-				if err != nil {
-					return nil, err
-				}
-
-				logger.FileLogger.CtxInfo(ctx).Interface("M regionReport", regionResp).Msg("GetRegionSalesAndTarget : trace")
-				//TODO: test this out for struct assignment
-				regionReport = regionResp
-			}
+		cacheReport, err := impl.RedisCache.GetRegionReport(user.Region, isQuarterReport, month, quarter, year)
+		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
+			return append(resp, impl.singleRegionSalesAndTarget(ctx, cacheReport)), nil
 		}
 
-		eachRegionResp := &models.ProductWiseSalesTargetPerOutlet{
-			Region:        regionReport.Region,
-			HBBSales:      regionReport.HBBSalesCount,
-			HayyakSales:   regionReport.HayyakSalesCount,
-			BaqatiSales:   regionReport.BaqatiSalesCount,
-			UpgradeSales:  regionReport.UpgradeSalesCount,
-			HBBTarget:     regionReport.HBBTargetCount,
-			HayyakTarget:  regionReport.HayyakTargetCount,
-			BaqatiTarget:  regionReport.BaqatiTargetCount,
-			UpgradeTarget: regionReport.UpgradeTargetCount,
+		regionResp, err := impl.updateRegionReport(ctx, user.Region, isQuarterReport, quarter, month, year)
+		if err != nil {
+			return nil, err
 		}
 
-		eachRegionResp.TotalSales = regionReport.HBBSalesCount + regionReport.HayyakSalesCount + regionReport.BaqatiSalesCount + regionReport.UpgradeSalesCount
-		eachRegionResp.TotalTarget = regionReport.HBBTargetCount + regionReport.HayyakTargetCount + regionReport.BaqatiTargetCount + regionReport.UpgradeTargetCount
+		// val, _ := json.Marshal(outletResp)
+		// logger.FileLogger.CtxInfo(ctx).Interface("OM regionReport", string(val)).Msg("GetRegionSalesAndTarget : trace")
 
-		if eachRegionResp.HBBTarget != 0 {
-			eachRegionResp.HBBAchievedPercentage = math.Round(float64(eachRegionResp.HBBSales*100/eachRegionResp.HBBTarget)*100) / 100
-		}
-
-		if eachRegionResp.HayyakTarget != 0 {
-			eachRegionResp.HayyakAchievedPercentage = math.Round(float64(eachRegionResp.HayyakSales*100/eachRegionResp.HayyakTarget)*100) / 100
-		}
-
-		if eachRegionResp.BaqatiTarget != 0 {
-			eachRegionResp.BaqatiAchievedPercentage = math.Round(float64(eachRegionResp.BaqatiSales*100/eachRegionResp.BaqatiTarget)*100) / 100
-		}
-
-		if eachRegionResp.UpgradeTarget != 0 {
-			eachRegionResp.UpgradeAchievedPercentage = math.Round(float64(eachRegionResp.UpgradeSales*100/eachRegionResp.UpgradeTarget)*100) / 100
-		}
-
-		if eachRegionResp.TotalTarget != 0 {
-			eachRegionResp.TotalAchievedPercentage = math.Round(float64(eachRegionResp.TotalSales*100/eachRegionResp.TotalTarget)*100) / 100
-		}
-
-		resp = append(resp, eachRegionResp)
-
-		return resp, nil
+		return append(resp, impl.singleRegionSalesAndTarget(ctx, regionResp)), nil
 	}
 
-	////// for non region manager
+	/*
+		For Other Managers
+	*/
 
-	allDistinctMngr, err := impl.PsqlDb.FetchAllRMReportingToGivenManager(mangerPosition, userID, quarter, year)
+	allDistinctOM, err := impl.PsqlDb.FetchAllOMReportingToGivenManager(user.Position, userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(allDistinctMngr) == 0 {
-		logger.FileLogger.CtxError(ctx).Str("position", mangerPosition).Msg("GetRegionSalesAndTarget : no RM found")
+	if len(allDistinctOM) == 0 {
+		logger.FileLogger.CtxError(ctx).Str("user", userID).Str("position", user.Position).Msg("GetRegionSalesAndTarget : no OM found")
 		return resp, nil
 	}
 
-	for _, eachMngr := range allDistinctMngr {
+	for _, eachOM := range allDistinctOM {
 
-		regionReport, err := impl.PsqlDb.FetchRegionReport(eachMngr.Region, isQuarterReport, quarter, month, year)
-		if !needUpdate {
+		if eachOM.Position != constant.OutletManagerAbb {
+			return nil, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Message:    eachOM.UserId + ": INCORRECT MANAGER POSITION - " + eachOM.Position,
+				Details:    "GetRegionSalesAndTarget: incorrect manager position: userId-" + eachOM.UserId + " position-" + eachOM.Position,
+			}
+		}
+
+		cacheReport, err := impl.RedisCache.GetRegionReport(eachOM.Region, isQuarterReport, month, quarter, year)
+		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
+			resp = append(resp, impl.singleRegionSalesAndTarget(ctx, cacheReport))
+		} else {
+			outletResp, err := impl.updateRegionReport(ctx, eachOM.Region, isQuarterReport, quarter, month, year)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			if err != nil || (err == nil && regionReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-				regionResp, err := impl.updateRegionReport(ctx, eachMngr.Region, isQuarterReport, quarter, month, year)
-				if err != nil {
-					return nil, err
-				}
+			// val, _ := json.Marshal(outletResp)
+			// logger.FileLogger.CtxInfo(ctx).Interface("OtherMngr regionReport", string(val)).Msg("GetRegionSalesAndTarget : trace")
 
-				logger.FileLogger.CtxInfo(ctx).Interface("OtherMngr regionReport", regionResp).Msg("GetRegionSalesAndTarget : trace")
-				//TODO: test this out for struct assignment
-				regionReport = regionResp
-			}
+			resp = append(resp, impl.singleRegionSalesAndTarget(ctx, outletResp))
 		}
-
-		eachRegionResp := &models.ProductWiseSalesTargetPerOutlet{
-			Region:        regionReport.Region,
-			HBBSales:      regionReport.HBBSalesCount,
-			HayyakSales:   regionReport.HayyakSalesCount,
-			BaqatiSales:   regionReport.BaqatiSalesCount,
-			UpgradeSales:  regionReport.UpgradeSalesCount,
-			HBBTarget:     regionReport.HBBTargetCount,
-			HayyakTarget:  regionReport.HayyakTargetCount,
-			BaqatiTarget:  regionReport.BaqatiTargetCount,
-			UpgradeTarget: regionReport.UpgradeTargetCount,
-		}
-
-		eachRegionResp.TotalSales = regionReport.HBBSalesCount + regionReport.HayyakSalesCount + regionReport.BaqatiSalesCount + regionReport.UpgradeSalesCount
-		eachRegionResp.TotalTarget = regionReport.HBBTargetCount + regionReport.HayyakTargetCount + regionReport.BaqatiTargetCount + regionReport.UpgradeTargetCount
-
-		if eachRegionResp.HBBTarget != 0 {
-			eachRegionResp.HBBAchievedPercentage = math.Round(float64(eachRegionResp.HBBSales*100/eachRegionResp.HBBTarget)*100) / 100
-		}
-
-		if eachRegionResp.HayyakTarget != 0 {
-			eachRegionResp.HayyakAchievedPercentage = math.Round(float64(eachRegionResp.HayyakSales*100/eachRegionResp.HayyakTarget)*100) / 100
-		}
-
-		if eachRegionResp.BaqatiTarget != 0 {
-			eachRegionResp.BaqatiAchievedPercentage = math.Round(float64(eachRegionResp.BaqatiSales*100/eachRegionResp.BaqatiTarget)*100) / 100
-		}
-
-		if eachRegionResp.UpgradeTarget != 0 {
-			eachRegionResp.UpgradeAchievedPercentage = math.Round(float64(eachRegionResp.UpgradeSales*100/eachRegionResp.UpgradeTarget)*100) / 100
-		}
-
-		if eachRegionResp.TotalTarget != 0 {
-			eachRegionResp.TotalAchievedPercentage = math.Round(float64(eachRegionResp.TotalSales*100/eachRegionResp.TotalTarget)*100) / 100
-		}
-
-		resp = append(resp, eachRegionResp)
 	}
 
 	return resp, nil
+}
+
+func (impl *IncentiveImpl) singleRegionSalesAndTarget(ctx *gin.Context, regionReport *models.RegionReportDB) *models.ProductWiseSalesTargetPerOutlet {
+
+	eachRegionResp := &models.ProductWiseSalesTargetPerOutlet{
+		Region:        regionReport.Region,
+		HBBSales:      regionReport.HBBSalesCount,
+		HayyakSales:   regionReport.HayyakSalesCount,
+		BaqatiSales:   regionReport.BaqatiSalesCount,
+		UpgradeSales:  regionReport.UpgradeSalesCount,
+		HBBTarget:     regionReport.HBBTargetCount,
+		HayyakTarget:  regionReport.HayyakTargetCount,
+		BaqatiTarget:  regionReport.BaqatiTargetCount,
+		UpgradeTarget: regionReport.UpgradeTargetCount,
+	}
+
+	eachRegionResp.TotalSales = regionReport.HBBSalesCount + regionReport.HayyakSalesCount + regionReport.BaqatiSalesCount + regionReport.UpgradeSalesCount
+	eachRegionResp.TotalTarget = regionReport.HBBTargetCount + regionReport.HayyakTargetCount + regionReport.BaqatiTargetCount + regionReport.UpgradeTargetCount
+
+	if eachRegionResp.HBBTarget != 0 {
+		eachRegionResp.HBBAchievedPercentage = math.Round(float64(eachRegionResp.HBBSales*100/eachRegionResp.HBBTarget)*100) / 100
+	}
+
+	if eachRegionResp.HayyakTarget != 0 {
+		eachRegionResp.HayyakAchievedPercentage = math.Round(float64(eachRegionResp.HayyakSales*100/eachRegionResp.HayyakTarget)*100) / 100
+	}
+
+	if eachRegionResp.BaqatiTarget != 0 {
+		eachRegionResp.BaqatiAchievedPercentage = math.Round(float64(eachRegionResp.BaqatiSales*100/eachRegionResp.BaqatiTarget)*100) / 100
+	}
+
+	if eachRegionResp.UpgradeTarget != 0 {
+		eachRegionResp.UpgradeAchievedPercentage = math.Round(float64(eachRegionResp.UpgradeSales*100/eachRegionResp.UpgradeTarget)*100) / 100
+	}
+
+	if eachRegionResp.TotalTarget != 0 {
+		eachRegionResp.TotalAchievedPercentage = math.Round(float64(eachRegionResp.TotalSales*100/eachRegionResp.TotalTarget)*100) / 100
+	}
+
+	return eachRegionResp
 }

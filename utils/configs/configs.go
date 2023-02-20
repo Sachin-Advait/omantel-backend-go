@@ -51,7 +51,7 @@ func Get(name string) (*viper.Viper, error) {
 	err := provider.ReadInConfig()
 	if err != nil {
 		// config not found
-		return nil, fmt.Errorf("config %s not found", name)
+		return nil, fmt.Errorf("config %s not found, err: %s", name, err.Error())
 	}
 
 	// add a watcher for this provider

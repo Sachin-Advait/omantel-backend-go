@@ -197,3 +197,9 @@ func RandStringRunes(n int) string {
 	}
 	return string(b)
 }
+
+func IsCurrentDay(t time.Time) bool {
+	y1, m1, d1 := time.Now().Date()
+	y2, m2, d2 := t.Date()
+	return y1 == y2 && m1 == m2 && d1 == d2
+}

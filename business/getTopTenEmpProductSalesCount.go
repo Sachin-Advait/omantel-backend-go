@@ -1,68 +1,56 @@
 package business
 
 import (
-	"encoding/json"
 	"net/http"
 	"sort"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
-	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerStaff, *errors.Error) {
+
+	// cRH, _ := ctx.Get(constant.HeaderInContext)
+	// ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if !isQuarterReport {
 		quarter = impl.getQuarterFromMonth(month)
 	}
 
-	cRH, _ := ctx.Get(constant.HeaderInContext)
-	ctxHeader, _ := (cRH).(context.ContextHeader)
-	if ctxHeader.IsAdmin {
-		vps, err := impl.PsqlDb.FetchVP(quarter, year)
-		if err != nil {
-			return nil, err
-		}
-		userID = vps[0]
-	}
+	// if ctxHeader.IsAdmin {
+	// 	vps, err := impl.PsqlDb.FetchVP(quarter, year)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	userID = vps[0]
+	// }
 
 	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
-	_, ok := constant.ManagerMap[user.Position]
+	position, ok := constant.ManagerMap[user.Position]
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    user.UserId + ": INCORRECT MANAGER POSITION - " + user.Position,
-			Details:    "incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
+			Details:    "GetTopTenEmpProductSalesCount: incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
 		}
 	}
-
-	var needUpdate bool
-
-	currTime := time.Now()
-	currYear, currMonth, currDay := currTime.Date()
-	currQuarter := impl.getQuarterFromMonth(int(currMonth))
-
-	if isQuarterReport && year == currYear && quarter <= currQuarter {
-		needUpdate = true
-	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
-		needUpdate = true
-	}
-
-	//TODO: remove at last
-	needUpdate = true
+	user.Position = position
 
 	resp := make([]*models.ProductWiseSalesCountPerStaff, 0)
 
-	// for oulletManager and teamLeader
-	if user.Position == constant.OutletManager { //|| user.Position == constant.TeamLeader
+	/*
+		For Outlet Managers
+	*/
+
+	if user.Position == constant.OutletManagerAbb {
 
 		agentList, err := impl.PsqlDb.FetchAllAgentsUserOfOM(userID, quarter, year)
 		if err != nil {
@@ -75,57 +63,32 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userI
 		}
 
 		for _, agent := range agentList {
-
-			agentReport, err := impl.PsqlDb.FetchAgentUserReport(agent.UserId, isQuarterReport, quarter, month, year)
-			if !needUpdate {
+			cacheReport, err := impl.RedisCache.GetUserReport(agent.UserId, isQuarterReport, month, quarter, year)
+			if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
+				resp = append(resp, impl.userSaleCount(ctx, cacheReport))
+			} else {
+				_, report, err := impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
 				if err != nil {
 					return nil, err
 				}
-			} else {
-				if err != nil || (err == nil && agentReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
-
-					ind, resp, err := impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
-					if err != nil {
-						return nil, err
-					}
-
-					rawValue, _ := json.Marshal(ind)
-					logger.FileLogger.CtxInfo(ctx).Str("agentReport", agent.UserId).Str("record", string(rawValue)).Msg("GetTopTenEmpProductSalesCount : trace")
-					//TODO: test this out for struct assignment
-					agentReport = resp
-				}
+				resp = append(resp, impl.userSaleCount(ctx, report))
 			}
+		}
 
-			agentName, err := impl.PsqlDb.FetchUserName(agentReport.UserId, quarter, year)
-			if err != nil {
-				return nil, err
-			}
+		sort.Slice(resp, func(i, j int) bool {
+			return resp[i].Total > resp[j].Total
+		})
 
-			agentProductWiseRprt := &models.ProductWiseSalesCountPerStaff{
-				Name:    agentName,
-				HBB:     agentReport.HBBSalesCount,
-				Hayyak:  agentReport.HayyakSalesCount,
-				Baqati:  agentReport.BaqatiSalesCount,
-				Upgrade: agentReport.UpgradeSalesCount,
-			}
-
-			agentProductWiseRprt.Total = agentProductWiseRprt.HBB + agentProductWiseRprt.Hayyak + agentProductWiseRprt.Baqati + agentProductWiseRprt.Upgrade
-
-			resp = append(resp, agentProductWiseRprt)
-
-			sort.Slice(resp, func(i, j int) bool {
-				return resp[i].Total > resp[j].Total
-			})
-
-			if len(resp) > 10 {
-				resp = resp[:10]
-			}
+		if len(resp) > 10 {
+			resp = resp[:10]
 		}
 
 		return resp, nil
 	}
 
-	/////// for all other non-outlet managers
+	/*
+		For Other Managers
+	*/
 
 	allDistinctMngr, err := impl.PsqlDb.FetchAllMngrReportingToManagerRole(userID, user.Position, quarter, year)
 	if err != nil {
@@ -138,51 +101,40 @@ func (impl *IncentiveImpl) GetTopTenEmpProductSalesCount(ctx *gin.Context, userI
 	}
 
 	for _, eachMngr := range allDistinctMngr {
-
-		mngrReport, err := impl.PsqlDb.FetchManagerReport(eachMngr.UserId, isQuarterReport, quarter, month, year)
-		if !needUpdate {
+		cacheReport, err := impl.RedisCache.GetUserReport(eachMngr.UserId, isQuarterReport, month, quarter, year)
+		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
+			resp = append(resp, impl.userSaleCount(ctx, cacheReport))
+		} else {
+			report, err := impl.updateManagerReport(ctx, eachMngr, isQuarterReport, quarter, month, year)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			if err != nil || (err == nil && mngrReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
-
-				resp, err := impl.updateManagerReport(ctx, eachMngr, isQuarterReport, quarter, month, year)
-				if err != nil {
-					return nil, err
-				}
-
-				logger.FileLogger.CtxInfo(ctx).Interface("mngrReport", resp).Msg("GetTopTenEmpProductSalesCount : trace")
-				//TODO: test this out for struct assignment
-				mngrReport = resp
-			}
-		}
-
-		mngrName, err := impl.PsqlDb.FetchUserName(mngrReport.UserId, quarter, year)
-		if err != nil {
-			return nil, err
-		}
-
-		mngrProductWiseRprt := &models.ProductWiseSalesCountPerStaff{
-			Name:    mngrName,
-			HBB:     mngrReport.HBBSalesCount,
-			Hayyak:  mngrReport.HayyakSalesCount,
-			Baqati:  mngrReport.BaqatiSalesCount,
-			Upgrade: mngrReport.UpgradeSalesCount,
-		}
-
-		mngrProductWiseRprt.Total = mngrProductWiseRprt.HBB + mngrProductWiseRprt.Hayyak + mngrProductWiseRprt.Baqati + mngrProductWiseRprt.Upgrade
-
-		resp = append(resp, mngrProductWiseRprt)
-
-		sort.Slice(resp, func(i, j int) bool {
-			return resp[i].Total > resp[j].Total
-		})
-
-		if len(resp) > 10 {
-			resp = resp[:10]
+			resp = append(resp, impl.userSaleCount(ctx, report))
 		}
 	}
 
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].Total > resp[j].Total
+	})
+
+	if len(resp) > 10 {
+		resp = resp[:10]
+	}
+
 	return resp, nil
+}
+
+func (impl *IncentiveImpl) userSaleCount(ctx *gin.Context, userReport *models.UserReportDB) *models.ProductWiseSalesCountPerStaff {
+
+	agentProductWiseRprt := &models.ProductWiseSalesCountPerStaff{
+		Name:    userReport.UserName,
+		HBB:     userReport.HBBSalesCount,
+		Hayyak:  userReport.HayyakSalesCount,
+		Baqati:  userReport.BaqatiSalesCount,
+		Upgrade: userReport.UpgradeSalesCount,
+	}
+
+	agentProductWiseRprt.Total = agentProductWiseRprt.HBB + agentProductWiseRprt.Hayyak + agentProductWiseRprt.Baqati + agentProductWiseRprt.Upgrade
+
+	return agentProductWiseRprt
 }

@@ -2,6 +2,7 @@ package psqldb
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -9,11 +10,10 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
-// FetchUserBasicDetails - userID, name, position, region, outlet, mobile, isAdmin
-func (dbConn *DBImplementation) FetchUser(userID string) (*models.UserBasicDetailsDB, *errors.Error) {
+// FetchUserBasicDetails - userID, name, position, region, outlet, mobile, isAdmin, isActive
+func (dbConn *DBImplementation) FetchUserBasicDetails(userID string, quarter, year int, args ...bool) (*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserBasicDetails start")
 	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserBasicDetails done")
@@ -21,78 +21,29 @@ func (dbConn *DBImplementation) FetchUser(userID string) (*models.UserBasicDetai
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	user := &models.UserBasicDetailsDB{}
+	var (
+		err  error
+		user = &models.UserBasicDetailsDB{}
+	)
 
-	err := dbConn.Operation.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1",
-		userID).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive)
-	if err == nil {
-		return user, nil
+	if args != nil {
+		err = dbConn.Operation.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1",
+			userID).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive)
+	} else {
+		err = dbConn.Operation.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
+			userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive)
 	}
 
-	if strings.Contains(err.Error(), "no rows") {
-		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidReqParameterCode,
-			Message:    errors.UserNotFound,
-			Details:    "FetchUserBasicDetails: no rows - " + err.Error(),
+	if err == nil {
+		position, ok := constant.EmployeePositionMap[user.Position]
+		if !ok {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Message:    user.UserId + ": INCORRECT USER POSITION - " + user.Position,
+				Details:    "FetchUserBasicDetails: incorrect user position: userId-" + user.UserId + " position-" + user.Position,
+			}
 		}
-	}
-
-	return nil, &errors.Error{
-		StatusCode: http.StatusInternalServerError,
-		Code:       errors.InternalServerErrorCode,
-		Message:    errors.InternalServerError,
-		Details:    "FetchUserBasicDetails: err - " + err.Error(),
-	}
-}
-
-func (dbConn *DBImplementation) FetchUserName(userID string, quarter, year int) (string, *errors.Error) {
-
-	logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserName start")
-	defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserName done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	var name string
-
-	err := dbConn.Operation.QueryRowContext(ctx, "select name from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3", userID, quarter, year).
-		Scan(&name)
-	if err == nil {
-		return name, nil
-	}
-
-	if strings.Contains(err.Error(), "no rows") {
-		return "", &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidReqParameterCode,
-			Message:    errors.UserNotFound,
-			Details:    "FetchUserName: no rows - " + err.Error(),
-		}
-	}
-
-	return "", &errors.Error{
-		StatusCode: http.StatusInternalServerError,
-		Code:       errors.InternalServerErrorCode,
-		Message:    errors.InternalServerError,
-		Details:    "FetchUserName: err - " + err.Error(),
-	}
-}
-
-// FetchUserBasicDetails - userID, name, position, region, outlet, mobile, isAdmin
-func (dbConn *DBImplementation) FetchUserBasicDetails(userID string, quarter, year int) (*models.UserBasicDetailsDB, *errors.Error) {
-
-	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserBasicDetails start")
-	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserBasicDetails done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	user := &models.UserBasicDetailsDB{}
-
-	err := dbConn.Operation.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
-		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive)
-	if err == nil {
+		user.Position = position
 		return user, nil
 	}
 
@@ -119,52 +70,38 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchAgentUserDetails start")
 	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchAgentUserDetails done")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	user := &models.UserBasicDetailsDB{}
-
-	err := dbConn.Operation.QueryRowContext(ctx,
-		"select emp_id, name, usr_position, mobile_number, region, outlet, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
-		userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.MobileNumber, &user.Region, &user.Outlet, &user.IsAdmin, &user.IsActive)
+	user, err := dbConn.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
-		if strings.Contains(err.Error(), "no rows") {
-			return nil, &errors.Error{
-				StatusCode: http.StatusBadRequest,
-				Code:       errors.InvalidReqParameterCode,
-				Message:    errors.UserNotFound,
-				Details:    "FetchUserDetails: id-" + userID + " no rows - " + err.Error(),
-			}
-		}
-
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "FetchUserDetails: id-" + userID + " err - " + err.Error(),
-		}
+		err.Details = fmt.Sprintf("FetchUserDetails: %v", err.Details)
+		return nil, err
 	}
 
 	var query string
 
 	switch {
-	case user.Position == constant.VicePresident:
+	case user.Position == constant.VicePresident || user.Position == constant.VicePresidentAbb || user.Position == constant.VicePresidentCC:
 		return user, nil
-	case user.Position == constant.GeneralManager:
-		user.ManagerPosition = constant.VicePresident
+	case user.Position == constant.GeneralManager || user.Position == constant.GeneralManagerAbb || user.Position == constant.GeneralManagerCC:
+		user.ManagerPosition = constant.VicePresidentAbb
 		query = "select vice_president from user_hierarchy_table where deleted IS NULL and general_manager= $1 and quarter=$2 and year=$3 limit 1"
-	case user.Position == constant.SeniorManager:
-		user.ManagerPosition = constant.GeneralManager
+
+	case user.Position == constant.SeniorManager || user.Position == constant.SeniorManagerAbb || user.Position == constant.SeniorManagerCC:
+		user.ManagerPosition = constant.GeneralManagerAbb
 		query = "select general_manager from user_hierarchy_table where deleted IS NULL and senior_manager= $1 and quarter=$2 and year=$3 limit 1"
-	case user.Position == constant.Manager:
-		user.ManagerPosition = constant.SeniorManager
+
+	case user.Position == constant.Manager || user.Position == constant.ManagerAbb || user.Position == constant.ManagerCC:
+		user.ManagerPosition = constant.SeniorManagerAbb
 		query = "select senior_manager from user_hierarchy_table where deleted IS NULL and manager= $1 and quarter=$2 and year=$3 limit 1"
-	case user.Position == constant.OutletManager:
-		user.ManagerPosition = constant.Manager
+
+	case user.Position == constant.OutletManager || user.Position == constant.OutletManagerAbb || user.Position == constant.OutletManagerCC:
+		user.ManagerPosition = constant.ManagerAbb
 		query = "select manager from user_hierarchy_table where deleted IS NULL and outlet_manager= $1 and quarter=$2 and year=$3 limit 1"
-	case user.Position == constant.Promoter || user.Position == constant.CSR:
-		user.ManagerPosition = constant.OutletManager
+
+	case user.Position == constant.Promoter || user.Position == constant.PromoterAbb || user.Position == constant.PromoterCC || user.Position == constant.CSR ||
+		user.Position == constant.CSRAbb || user.Position == constant.CSRCC:
+		user.ManagerPosition = constant.OutletManagerAbb
 		query = "select outlet_manager from user_hierarchy_table where deleted IS NULL and emp_id= $1 and quarter=$2 and year=$3 limit 1"
+
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
@@ -173,14 +110,17 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 		}
 	}
 
-	err = dbConn.Operation.QueryRowContext(ctx, query, user.UserId, quarter, year).Scan(&user.ManagerId)
-	if err != nil {
-		if strings.Contains(err.Error(), "no rows") {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	scanErr := dbConn.Operation.QueryRowContext(ctx, query, user.UserId, quarter, year).Scan(&user.ManagerId)
+	if scanErr != nil {
+		if strings.Contains(scanErr.Error(), "no rows") {
 			return nil, &errors.Error{
 				StatusCode: http.StatusBadRequest,
 				Code:       errors.InvalidReqParameterCode,
 				Message:    errors.UserNotFound,
-				Details:    "FetchUserDetails: id-" + userID + " no rows mngr - " + err.Error(),
+				Details:    "FetchUserDetails: id-" + userID + " no rows mngr - " + scanErr.Error(),
 			}
 		}
 
@@ -188,7 +128,7 @@ func (dbConn *DBImplementation) FetchUserDetails(userID string, quarter, year in
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
-			Details:    "FetchUserDetails: id-" + userID + " err mngr - " + err.Error(),
+			Details:    "FetchUserDetails: id-" + userID + " err mngr - " + scanErr.Error(),
 		}
 	}
 

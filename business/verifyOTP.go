@@ -89,7 +89,7 @@ func (impl *IncentiveImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*
 	otpModel.UpdateReason = "otp login success"
 	otpModel.UpdatedTime = time.Now()
 
-	user, err := impl.PsqlDb.FetchUser(req.ClientId)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(req.ClientId, 0, 0, true)
 	if err != nil {
 		return nil, err
 	}

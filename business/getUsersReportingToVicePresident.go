@@ -15,14 +15,14 @@ func (impl *IncentiveImpl) GetUsersReportingToVicePresident(ctx *gin.Context, vi
 		quarter = impl.getQuarterFromMonth(month)
 	}
 
-	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.VicePresident, vicePresidentID, quarter, year)
+	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.VicePresidentAbb, vicePresidentID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
 	for index, eachGM := range response {
 
-		if eachGM.ID == "" || eachGM.Name == "" || eachGM.Position != constant.GeneralManager {
+		if eachGM.ID == "" || eachGM.Name == "" || eachGM.Position != constant.GeneralManagerAbb {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InvalidDetailsCode,
@@ -31,7 +31,7 @@ func (impl *IncentiveImpl) GetUsersReportingToVicePresident(ctx *gin.Context, vi
 			}
 		}
 
-		eachGM.Position = constant.EmployeePositionMap[eachGM.Position]
+		//eachGM.Position = constant.EmployeePositionMap[eachGM.Position]
 		response[index] = eachGM
 	}
 

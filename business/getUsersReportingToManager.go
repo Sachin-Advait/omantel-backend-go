@@ -26,14 +26,14 @@ func (impl *IncentiveImpl) GetUsersReportingToManager(ctx *gin.Context, managerI
 		managerID = vps[0]
 	}
 
-	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.Manager, managerID, quarter, year)
+	response, err := impl.PsqlDb.FetchAllEmpReportingToGivenManagerRole(constant.ManagerAbb, managerID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
 	for index, eachOM := range response {
 
-		if eachOM.ID == "" || eachOM.Name == "" || eachOM.Position != constant.OutletManager { //!(eachOM.Position == constant.OutletManager || eachOM.Position == constant.TeamLeader)
+		if eachOM.ID == "" || eachOM.Name == "" || eachOM.Position != constant.OutletManagerAbb { //!(eachOM.Position == constant.OutletManager || eachOM.Position == constant.TeamLeader)
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InvalidDetailsCode,
@@ -42,7 +42,7 @@ func (impl *IncentiveImpl) GetUsersReportingToManager(ctx *gin.Context, managerI
 			}
 		}
 
-		eachOM.Position = constant.EmployeePositionMap[eachOM.Position]
+		//eachOM.Position = constant.EmployeePositionMap[eachOM.Position]
 		response[index] = eachOM
 	}
 

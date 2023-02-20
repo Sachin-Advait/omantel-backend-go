@@ -2,31 +2,35 @@ package business
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
-	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
-	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 func (impl *IncentiveImpl) GetUserReport(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.UserReportDB, *errors.Error) {
+
+	// cRH, _ := ctx.Get(constant.HeaderInContext)
+	// ctxHeader, _ := (cRH).(context.ContextHeader)
+
+	report, err := impl.RedisCache.GetUserReport(userID, isQuarterReport, month, quarter, year)
+	if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {
+		return report, nil
+	}
 
 	if !isQuarterReport {
 		quarter = impl.getQuarterFromMonth(month)
 	}
 
-	cRH, _ := ctx.Get(constant.HeaderInContext)
-	ctxHeader, _ := (cRH).(context.ContextHeader)
-	if ctxHeader.IsAdmin {
-		vps, err := impl.PsqlDb.FetchVP(quarter, year)
-		if err != nil {
-			return nil, err
-		}
-		userID = vps[0]
-	}
+	// if ctxHeader.IsAdmin {
+	// 	vps, err := impl.PsqlDb.FetchVP(quarter, year)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	userID = vps[0]
+	// }
 
 	user, err := impl.PsqlDb.FetchUserDetails(userID, quarter, year)
 	if err != nil {
@@ -42,95 +46,34 @@ func (impl *IncentiveImpl) GetUserReport(ctx *gin.Context, userID string, isQuar
 		}
 	}
 
-	var needUpdate bool
+	/*
+		For Agents
+	*/
 
-	currTime := time.Now()
-	currYear, currMonth, currDay := currTime.Date()
-	currQuarter := impl.getQuarterFromMonth(int(currMonth))
+	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb {
 
-	if isQuarterReport && year == currYear && quarter <= currQuarter {
-		needUpdate = true
-	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
-		needUpdate = true
-	}
-
-	//TODO: remove at last
-	needUpdate = true
-
-	if user.Position == constant.Promoter || user.Position == constant.CSR {
-
-		userReport, err := impl.PsqlDb.FetchAgentUserReport(user.UserId, isQuarterReport, quarter, month, year)
-		if !needUpdate {
-			if err != nil {
-				return nil, err
-			}
-
-			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserReport : precalculated")
-
-			userReport.Position = constant.EmployeePositionMap[userReport.Position]
-			userReport.ManagerPosition = constant.EmployeePositionMap[userReport.ManagerPosition]
-
-			return userReport, nil
-		}
-
-		if err != nil || (err == nil && userReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
-
-			_, resp, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
-			if err != nil {
-				return nil, err
-			}
-
-			logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserReport : updated")
-
-			resp.Position = constant.EmployeePositionMap[resp.Position]
-			resp.ManagerPosition = constant.EmployeePositionMap[resp.ManagerPosition]
-
-			return resp, nil
-		}
-
-		logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Msg("GetUserReport : trace")
-
-		userReport.Position = constant.EmployeePositionMap[userReport.Position]
-		userReport.ManagerPosition = constant.EmployeePositionMap[userReport.ManagerPosition]
-
-		return userReport, nil
-	}
-
-	/////
-
-	mngrReport, err := impl.PsqlDb.FetchManagerReport(user.UserId, isQuarterReport, quarter, month, year)
-	if !needUpdate {
+		_, report, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
 
-		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserReport : precalculated")
+		// val, _ := json.Marshal(resp)
+		// logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Str("report", string(val)).Msg("GetUserReport : updated")
 
-		mngrReport.Position = constant.EmployeePositionMap[mngrReport.Position]
-		mngrReport.ManagerPosition = constant.EmployeePositionMap[mngrReport.ManagerPosition]
-
-		return mngrReport, nil
+		return report, nil
 	}
 
-	if err != nil || (err == nil && mngrReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+	/*
+		For All Managers
+	*/
 
-		resp, err := impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
-		if err != nil {
-			return nil, err
-		}
-
-		logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserReport : updated")
-
-		resp.Position = constant.EmployeePositionMap[resp.Position]
-		resp.ManagerPosition = constant.EmployeePositionMap[resp.ManagerPosition]
-
-		return resp, nil
+	mngrReport, err := impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
+	if err != nil {
+		return nil, err
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Msg("GetUserReport : trace")
-
-	mngrReport.Position = constant.EmployeePositionMap[mngrReport.Position]
-	mngrReport.ManagerPosition = constant.EmployeePositionMap[mngrReport.ManagerPosition]
+	// val, _ := json.Marshal(mngrReport)
+	// logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Str("report", string(val)).Msg("GetUserReport : updated")
 
 	return mngrReport, nil
 }

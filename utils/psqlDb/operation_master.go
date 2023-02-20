@@ -299,39 +299,6 @@ func (dbConn *DBImplementation) FetchActiveUserSales(userID string, region strin
 	return trx, nil
 }
 
-func (dbConn *DBImplementation) FetchAgentUserHierarchy(userID string, quarter, year int) (*models.UserHierarchy, *errors.Error) {
-
-	// logger.FileLogger.Info().Str("userID", userID).Time("start", time.Now()).Msg("FetchAgentUserHierarchy start")
-	// defer logger.FileLogger.Info().Str("userID", userID).Time("end", time.Now()).Msg("FetchAgentUserHierarchy done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	rcrd := &models.UserHierarchy{}
-
-	err := dbConn.Operation.QueryRowContext(ctx, "select b.outlet_manager, b.manager, b.senior_manager, b.general_manager, b.vice_president from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND a.emp_id=$1 AND a.quarter=$2 AND a.year=$3 AND a.isactive=true",
-		userID, quarter, year).Scan(&rcrd.OutletManager, &rcrd.Manager, &rcrd.SeniorManager, &rcrd.GeneralManager, &rcrd.VicePresident)
-	if err == nil {
-		return rcrd, nil
-	}
-
-	if strings.Contains(err.Error(), "no rows") {
-		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidReqParameterCode,
-			Message:    "OUTLATE NAME NOT FOUND",
-			Details:    "FetchAgentUserHierarchy: userId-" + userID + ", no rows - " + err.Error(),
-		}
-	}
-
-	return nil, &errors.Error{
-		StatusCode: http.StatusInternalServerError,
-		Code:       errors.InternalServerErrorCode,
-		Message:    errors.InternalServerError,
-		Details:    "FetchAgentUserHierarchy: userId-" + userID + ", err - " + err.Error(),
-	}
-}
-
 // FetchAllAgentsUserOfOM - all outlet employees reporting to given outlet manager in argument
 func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error) {
 
@@ -353,12 +320,11 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string, q
 		}
 	}
 
-	var (
-		userId  string
-		userIds = make([]string, 0)
-	)
+	var userIds = make(map[string]string, 0)
 
 	for rows.Next() {
+
+		var userId string
 
 		if err := rows.Scan(&userId); err != nil {
 			return nil, &errors.Error{
@@ -369,23 +335,33 @@ func (dbConn *DBImplementation) FetchAllAgentsUserOfOM(outletManagerID string, q
 			}
 		}
 
-		if userId != "" && userId != outletManagerID {
-			userIds = append(userIds, userId)
+		if userId == "" || userId == outletManagerID {
+			continue
 		}
 
-		userId = ""
+		userIds[userId] = ""
 	}
 
 	response := make([]*models.UserBasicDetailsDB, 0)
 
-	for _, eachUser := range userIds {
+	for eachUser := range userIds {
 		userRecord, err := dbConn.FetchUserBasicDetails(eachUser, quarter, year)
 		if err != nil {
 			return nil, err
 		}
 
+		if userRecord.Position != constant.PromoterAbb && userRecord.Position != constant.CSRAbb {
+			// return nil, &errors.Error{
+			// 	StatusCode: http.StatusInternalServerError,
+			// 	Code:       errors.InternalServerErrorCode,
+			// 	Message:    errors.InternalServerError,
+			// 	Details:    "FetchAllAgentsUserOfOM: invalid position in master record, id - " + eachUser + ", pos - " + userRecord.Position,
+			// }
+			continue
+		}
+
 		userRecord.ManagerId = outletManagerID
-		userRecord.ManagerPosition = constant.OutletManager
+		userRecord.ManagerPosition = constant.OutletManagerAbb
 
 		response = append(response, userRecord)
 	}
@@ -399,19 +375,29 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllOMReportingToGivenManager start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllOMReportingToGivenManager done")
 
+	position, ok := constant.ManagerMap[managerPosition]
+	if !ok {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Message:    managerID + ": INCORRECT MANAGER POSITION - " + managerPosition,
+			Details:    "FetchAllOMReportingToGivenManager: incorrect user position: userId-" + managerID + " position-" + managerPosition,
+		}
+	}
+	managerPosition = position
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var query string
 
-	switch managerPosition {
-	case constant.VicePresident:
+	switch {
+	case managerPosition == constant.VicePresidentAbb: //managerPosition == constant.VicePresident || managerPosition == constant.VicePresidentAbb || managerPosition == constant.VicePresidentCC:
 		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.GeneralManager:
+	case managerPosition == constant.GeneralManagerAbb: //managerPosition == constant.GeneralManager || managerPosition == constant.GeneralManagerAbb || managerPosition == constant.GeneralManagerCC:
 		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.SeniorManager:
+	case managerPosition == constant.SeniorManagerAbb: //managerPosition == constant.SeniorManager || managerPosition == constant.SeniorManagerAbb || managerPosition == constant.SeniorManagerCC:
 		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.Manager:
+	case managerPosition == constant.ManagerAbb: //managerPosition == constant.Manager || managerPosition == constant.ManagerAbb || managerPosition == constant.ManagerCC:
 		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	default:
 		return nil, &errors.Error{
@@ -431,14 +417,12 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 		}
 	}
 
-	var (
-		outletManager string
-		response      = make(map[string]*models.UserBasicDetailsDB, 0)
-	)
+	var outletManagerIDs = make(map[string]string, 0)
 
 	for rows.Next() {
 
-		if err := rows.Scan(&outletManager); err != nil {
+		var outletManagerID string
+		if err := rows.Scan(&outletManagerID); err != nil {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
@@ -447,102 +431,33 @@ func (dbConn *DBImplementation) FetchAllOMReportingToGivenManager(managerPositio
 			}
 		}
 
-		if outletManager == managerID {
+		if outletManagerID == "" || outletManagerID == managerID {
 			continue
 		}
 
-		if response[outletManager] == nil {
-			response[outletManager] = &models.UserBasicDetailsDB{}
-		}
-
-		// if response[teamLead] == nil {
-		// 	response[teamLead] = &models.UserBasicDetailsDB{}
-		// }
+		outletManagerIDs[outletManagerID] = ""
 	}
 
-	for eachUser := range response {
-		userRecord, err := dbConn.FetchUserDetails(eachUser, quarter, year)
+	response := make(map[string]*models.UserBasicDetailsDB, 0)
+
+	for eachOM := range outletManagerIDs {
+
+		userRecord, err := dbConn.FetchUserDetails(eachOM, quarter, year)
 		if err != nil {
 			return nil, err
 		}
 
-		response[eachUser] = userRecord
-	}
-
-	return response, nil
-}
-
-// FetchAllRMReportingToGivenManager - all regional managers reporting to given manager in argument
-func (dbConn *DBImplementation) FetchAllRMReportingToGivenManager(managerPosition string, managerID string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error) {
-
-	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllManagerReportingToGivenManager start")
-	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllManagerReportingToGivenManager done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	var query string
-
-	switch managerPosition {
-	case constant.VicePresident:
-		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.GeneralManager:
-		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.SeniorManager:
-		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	default:
-		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Message:    "NOT A MANAGER",
-			Details:    "FetchAllManagerReportingToGivenManager: incorrect position - " + managerPosition,
-		}
-	}
-
-	rows, err := dbConn.Operation.QueryContext(ctx, query, managerID, quarter, year)
-	if err != nil {
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "FetchAllManagerReportingToGivenManager: query failed - " + err.Error(),
-		}
-	}
-
-	var (
-		manager      string
-		managerArray = make([]string, 0)
-	)
-
-	for rows.Next() {
-
-		if err := rows.Scan(&manager); err != nil {
-			return nil, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerErrorCode,
-				Message:    errors.InternalServerError,
-				Details:    "FetchAllManagerReportingToGivenManager: scan failed - " + err.Error(),
-			}
-		}
-
-		if manager == managerID {
+		if userRecord.Position != constant.OutletManagerAbb {
+			// return nil, &errors.Error{
+			// 	StatusCode: http.StatusInternalServerError,
+			// 	Code:       errors.InternalServerErrorCode,
+			// 	Message:    errors.InternalServerError,
+			// 	Details:    "FetchAllOMReportingToGivenManager: invalid position in master record, id - " + eachUser + ", pos - " + userRecord.Position,
+			// }
 			continue
 		}
 
-		if manager != "" {
-			managerArray = append(managerArray, manager)
-		}
-		manager = ""
-	}
-
-	response := make([]*models.UserBasicDetailsDB, 0)
-
-	for _, eachManager := range managerArray {
-		userRecord, err := dbConn.FetchUserDetails(eachManager, quarter, year)
-		if err != nil {
-			return nil, err
-		}
-
-		response = append(response, userRecord)
+		response[eachOM] = userRecord
 	}
 
 	return response, nil
@@ -554,30 +469,29 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllMngrReportingToManagerRole start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllMngrReportingToManagerRole done")
 
-	_, ok := constant.ManagerMap[managerPosition]
-
-	if managerID == "" || !ok {
+	position, ok := constant.ManagerMap[managerPosition]
+	if !ok {
 		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message:    managerID + " DB CALL WITHOOUT DETAILS",
-			Details:    "FetchAllMngrReportingToManagerRole: invalid db call, mngrID-" + managerID + ", mngrPos-" + managerPosition,
+			StatusCode: http.StatusInternalServerError,
+			Message:    managerID + ": INCORRECT MANAGER POSITION - " + managerPosition,
+			Details:    "FetchAllMngrReportingToManagerRole: incorrect user position: userId-" + managerID + " position-" + managerPosition,
 		}
 	}
+	managerPosition = position
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var query string
 
-	switch managerPosition {
-	case constant.VicePresident:
+	switch {
+	case managerPosition == constant.VicePresidentAbb: //managerPosition == constant.VicePresident || managerPosition == constant.VicePresidentAbb || managerPosition == constant.VicePresidentCC:
 		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.general_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.GeneralManager:
+	case managerPosition == constant.GeneralManagerAbb: //managerPosition == constant.GeneralManager || managerPosition == constant.GeneralManagerAbb || managerPosition == constant.GeneralManagerCC:
 		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.senior_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.SeniorManager:
+	case managerPosition == constant.SeniorManagerAbb: //managerPosition == constant.SeniorManager || managerPosition == constant.SeniorManagerAbb || managerPosition == constant.SeniorManagerCC:
 		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.Manager:
+	case managerPosition == constant.ManagerAbb: //managerPosition == constant.Manager || managerPosition == constant.ManagerAbb || managerPosition == constant.ManagerCC:
 		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	default:
 		return nil, &errors.Error{
@@ -598,12 +512,11 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 		}
 	}
 
-	var (
-		manager      string
-		managerArray = make([]string, 0)
-	)
+	var managerIDs = make(map[string]string, 0)
 
 	for rows.Next() {
+
+		var manager string
 
 		if err := rows.Scan(&manager); err != nil {
 			return nil, &errors.Error{
@@ -614,24 +527,23 @@ func (dbConn *DBImplementation) FetchAllMngrReportingToManagerRole(managerID, ma
 			}
 		}
 
-		if manager == managerID {
+		if manager == "" || manager == managerID {
 			continue
 		}
 
-		if manager != "" {
-			managerArray = append(managerArray, manager)
-		}
-		manager = ""
+		managerIDs[manager] = ""
 	}
 
 	response := make([]*models.UserBasicDetailsDB, 0)
 
-	for _, eachManager := range managerArray {
-		userRecord, err := dbConn.FetchUserDetails(eachManager, quarter, year)
+	for eachManager := range managerIDs {
+		userRecord, err := dbConn.FetchUserBasicDetails(eachManager, quarter, year)
 		if err != nil {
 			return nil, err
 		}
 
+		userRecord.ManagerId = managerID
+		userRecord.ManagerPosition = managerPosition
 		response = append(response, userRecord)
 	}
 
@@ -644,31 +556,31 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllEmpReportingToGivenManagerRole start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllEmpReportingToGivenManagerRole done")
 
-	_, ok := constant.ManagerMap[managerPosition]
-	if managerID == "" || !ok {
+	position, ok := constant.ManagerMap[managerPosition]
+	if !ok {
 		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message:    managerID + ": INVALID MANAGER POSITION - " + managerPosition,
-			Details:    "FetchAllEmpReportingToGivenManagerRole: invalid position, mngrID-" + managerID + ", mngrPos-" + managerPosition,
+			StatusCode: http.StatusInternalServerError,
+			Message:    managerID + ": INCORRECT MANAGER POSITION - " + managerPosition,
+			Details:    "FetchAllEmpReportingToGivenManagerRole: incorrect user position: userId-" + managerID + " position-" + managerPosition,
 		}
 	}
+	managerPosition = position
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	var query string
 
-	switch managerPosition {
-	case constant.VicePresident:
+	switch {
+	case managerPosition == constant.VicePresidentAbb: //managerPosition == constant.VicePresident || managerPosition == constant.VicePresidentAbb || managerPosition == constant.VicePresidentCC:
 		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet  from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.general_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.GeneralManager:
+	case managerPosition == constant.GeneralManagerAbb: //managerPosition == constant.GeneralManager || managerPosition == constant.GeneralManagerAbb || managerPosition == constant.GeneralManagerCC:
 		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet  from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.senior_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.SeniorManager:
+	case managerPosition == constant.SeniorManagerAbb: //managerPosition == constant.SeniorManager || managerPosition == constant.SeniorManagerAbb || managerPosition == constant.SeniorManagerCC:
 		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet  from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.Manager:
+	case managerPosition == constant.ManagerAbb: //managerPosition == constant.Manager || managerPosition == constant.ManagerAbb || managerPosition == constant.ManagerCC:
 		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet  from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.outlet_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
-	case constant.OutletManager:
+	case managerPosition == constant.OutletManagerAbb: //managerPosition == constant.OutletManager || managerPosition == constant.OutletManagerAbb || managerPosition == constant.OutletManagerCC:
 		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.outlet_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
 	}
 
@@ -703,39 +615,18 @@ func (dbConn *DBImplementation) FetchAllEmpReportingToGivenManagerRole(managerPo
 			continue
 		}
 
+		position, ok := constant.EmployeePositionMap[usr.Position]
+		if !ok {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Message:    usr.ID + ": INCORRECT USER POSITION - " + usr.Position,
+				Details:    "incorrect user position: userId-" + usr.ID + " position-" + usr.Position,
+			}
+		}
+		usr.Position = position
+
 		array = append(array, usr)
 	}
-
-	// if managerPosition == constant.Manager {
-
-	// 	rows, err := dbConn.Operation.QueryContext(ctx,
-	// 		"select distinct a.team_lead, b.usr_position, b.name from user_hierarchy_table a INNER JOIN user_master_table b on a.outlet_manager=b.emp_id where a.manager=$1 and a.quarter=$2 and a.year=$3 and b.quarter=$4 and b.year=$5",
-	// 		managerID, quarter, year, quarter, year)
-	// 	if err != nil {
-	// 		return nil, &errors.Error{
-	// 			StatusCode: http.StatusInternalServerError,
-	// 			Code:       errors.InternalServerErrorCode,
-	// 			Message:    errors.InternalServerError,
-	// 			Details:    "FetchAllEmpReportingToGivenManagerRole: tl query failed - " + err.Error(),
-	// 		}
-	// 	}
-
-	// 	for rows.Next() {
-
-	// 		usr := &models.ReportingStaffIDAndName{}
-
-	// 		if err := rows.Scan(&usr.ID, &usr.Position, &usr.Name); err != nil {
-	// 			return nil, &errors.Error{
-	// 				StatusCode: http.StatusInternalServerError,
-	// 				Code:       errors.InternalServerErrorCode,
-	// 				Message:    errors.InternalServerError,
-	// 				Details:    "FetchAllEmpReportingToGivenManagerRole: tl scan failed - " + err.Error(),
-	// 			}
-	// 		}
-
-	// 		array = append(array, usr)
-	// 	}
-	// }
 
 	return array, nil
 }

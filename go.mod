@@ -8,6 +8,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gin-contrib/gzip v0.0.5
 	github.com/gin-gonic/gin v1.7.7
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
 	github.com/jasonlvhit/gocron v0.0.1
 	github.com/json-iterator/go v1.1.12
@@ -20,7 +21,6 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.1
 	github.com/swaggo/gin-swagger v1.4.3
-	github.com/tiaguinho/gosoap v1.4.4
 	github.com/xuri/excelize/v2 v2.6.0
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
@@ -31,7 +31,9 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.6 // indirect

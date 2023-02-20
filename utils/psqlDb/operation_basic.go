@@ -421,41 +421,41 @@ func (dbConn *DBImplementation) FetchMaxPayout(year int) *errors.Error {
 			models.MaxPay.Payoutmap[year][quarter] = make(map[string]map[string]float64)
 		}
 
-		if models.MaxPay.Payoutmap[year][quarter][constant.Promoter] == nil {
-			models.MaxPay.Payoutmap[year][quarter][constant.Promoter] = make(map[string]float64)
+		if models.MaxPay.Payoutmap[year][quarter][constant.PromoterAbb] == nil {
+			models.MaxPay.Payoutmap[year][quarter][constant.PromoterAbb] = make(map[string]float64)
 		}
 
-		if models.MaxPay.Payoutmap[year][quarter][constant.OutletManager] == nil {
-			models.MaxPay.Payoutmap[year][quarter][constant.OutletManager] = make(map[string]float64)
+		if models.MaxPay.Payoutmap[year][quarter][constant.OutletManagerAbb] == nil {
+			models.MaxPay.Payoutmap[year][quarter][constant.OutletManagerAbb] = make(map[string]float64)
 		}
 
-		if models.MaxPay.Payoutmap[year][quarter][constant.Manager] == nil {
-			models.MaxPay.Payoutmap[year][quarter][constant.Manager] = make(map[string]float64)
+		if models.MaxPay.Payoutmap[year][quarter][constant.ManagerAbb] == nil {
+			models.MaxPay.Payoutmap[year][quarter][constant.ManagerAbb] = make(map[string]float64)
 		}
 
-		if models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager] == nil {
-			models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager] = make(map[string]float64)
+		if models.MaxPay.Payoutmap[year][quarter][constant.SeniorManagerAbb] == nil {
+			models.MaxPay.Payoutmap[year][quarter][constant.SeniorManagerAbb] = make(map[string]float64)
 		}
 
-		models.MaxPay.Payoutmap[year][quarter][constant.Promoter]["HBB"] = 350
-		models.MaxPay.Payoutmap[year][quarter][constant.Promoter]["BAQATI"] = 350
-		models.MaxPay.Payoutmap[year][quarter][constant.Promoter]["HAYYAK"] = 220
-		models.MaxPay.Payoutmap[year][quarter][constant.Promoter]["UPGRADE"] = 80
+		models.MaxPay.Payoutmap[year][quarter][constant.PromoterAbb]["HBB"] = 350
+		models.MaxPay.Payoutmap[year][quarter][constant.PromoterAbb]["BAQATI"] = 350
+		models.MaxPay.Payoutmap[year][quarter][constant.PromoterAbb]["HAYYAK"] = 220
+		models.MaxPay.Payoutmap[year][quarter][constant.PromoterAbb]["UPGRADE"] = 80
 
-		models.MaxPay.Payoutmap[year][quarter][constant.OutletManager]["HBB"] = 420
-		models.MaxPay.Payoutmap[year][quarter][constant.OutletManager]["BAQATI"] = 420
-		models.MaxPay.Payoutmap[year][quarter][constant.OutletManager]["HAYYAK"] = 264
-		models.MaxPay.Payoutmap[year][quarter][constant.OutletManager]["UPGRADE"] = 96
+		models.MaxPay.Payoutmap[year][quarter][constant.OutletManagerAbb]["HBB"] = 420
+		models.MaxPay.Payoutmap[year][quarter][constant.OutletManagerAbb]["BAQATI"] = 420
+		models.MaxPay.Payoutmap[year][quarter][constant.OutletManagerAbb]["HAYYAK"] = 264
+		models.MaxPay.Payoutmap[year][quarter][constant.OutletManagerAbb]["UPGRADE"] = 96
 
-		models.MaxPay.Payoutmap[year][quarter][constant.Manager]["HBB"] = 656.25
-		models.MaxPay.Payoutmap[year][quarter][constant.Manager]["BAQATI"] = 656.25
-		models.MaxPay.Payoutmap[year][quarter][constant.Manager]["HAYYAK"] = 412.5
-		models.MaxPay.Payoutmap[year][quarter][constant.Manager]["UPGRADE"] = 150
+		models.MaxPay.Payoutmap[year][quarter][constant.ManagerAbb]["HBB"] = 656.25
+		models.MaxPay.Payoutmap[year][quarter][constant.ManagerAbb]["BAQATI"] = 656.25
+		models.MaxPay.Payoutmap[year][quarter][constant.ManagerAbb]["HAYYAK"] = 412.5
+		models.MaxPay.Payoutmap[year][quarter][constant.ManagerAbb]["UPGRADE"] = 150
 
-		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager]["HBB"] = 985
-		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager]["BAQATI"] = 985
-		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager]["HAYYAK"] = 619
-		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManager]["UPGRADE"] = 225
+		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManagerAbb]["HBB"] = 985
+		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManagerAbb]["BAQATI"] = 985
+		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManagerAbb]["HAYYAK"] = 619
+		models.MaxPay.Payoutmap[year][quarter][constant.SeniorManagerAbb]["UPGRADE"] = 225
 	}
 
 	return nil
@@ -480,26 +480,26 @@ func (dbConn *DBImplementation) FetchMaxExtraPayout(year int) *errors.Error {
 			models.MaxExtraPay.ExtraPayoutmap[year][quarter] = make(map[string]map[string]float64)
 		}
 
-		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter] == nil {
-			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter] = make(map[string]float64)
+		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.PromoterAbb] == nil {
+			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.PromoterAbb] = make(map[string]float64)
 		}
 
-		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.OutletManager] == nil {
-			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.OutletManager] = make(map[string]float64)
+		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.OutletManagerAbb] == nil {
+			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.OutletManagerAbb] = make(map[string]float64)
 		}
 
-		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Manager] == nil {
-			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Manager] = make(map[string]float64)
+		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.ManagerAbb] == nil {
+			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.ManagerAbb] = make(map[string]float64)
 		}
 
-		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.SeniorManager] == nil {
-			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.SeniorManager] = make(map[string]float64)
+		if models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.SeniorManagerAbb] == nil {
+			models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.SeniorManagerAbb] = make(map[string]float64)
 		}
 
-		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["HBB"] = 88
-		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["BAQATI"] = 88
-		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["HAYYAK"] = 55
-		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.Promoter]["UPGRADE"] = 20
+		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.PromoterAbb]["HBB"] = 88
+		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.PromoterAbb]["BAQATI"] = 88
+		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.PromoterAbb]["HAYYAK"] = 55
+		models.MaxExtraPay.ExtraPayoutmap[year][quarter][constant.PromoterAbb]["UPGRADE"] = 20
 	}
 
 	return nil
@@ -522,7 +522,7 @@ func (dbConn *DBImplementation) FetchMaxThresholdCheck(year int) *errors.Error {
 		models.ThresholdCheck.Limit[year] = make(map[int]map[string]map[string]map[int]float64)
 	}
 
-	positions := []string{constant.Promoter, constant.OutletManager, constant.Manager, constant.SeniorManager}
+	positions := []string{constant.PromoterCC, constant.OutletManagerCC, constant.ManagerCC, constant.SeniorManagerAbb}
 
 	for _, position := range positions {
 
@@ -557,19 +557,29 @@ func (dbConn *DBImplementation) FetchMaxThresholdCheck(year int) *errors.Error {
 				}
 			}
 
+			pos := constant.EmployeePositionMap[position]
+			if pos == "" {
+				return &errors.Error{
+					StatusCode: http.StatusInternalServerError,
+					Code:       errors.InternalServerError,
+					Message:    "blank user position",
+					Details:    "FetchMaxThresholdCheck: blank position",
+				}
+			}
+
 			if models.ThresholdCheck.Limit[year][quarter] == nil {
 				models.ThresholdCheck.Limit[year][quarter] = make(map[string]map[string]map[int]float64)
 			}
 
-			if models.ThresholdCheck.Limit[year][quarter][position] == nil {
-				models.ThresholdCheck.Limit[year][quarter][position] = make(map[string]map[int]float64)
+			if models.ThresholdCheck.Limit[year][quarter][pos] == nil {
+				models.ThresholdCheck.Limit[year][quarter][pos] = make(map[string]map[int]float64)
 			}
 
-			if models.ThresholdCheck.Limit[year][quarter][position][product] == nil {
-				models.ThresholdCheck.Limit[year][quarter][position][product] = make(map[int]float64)
+			if models.ThresholdCheck.Limit[year][quarter][pos][product] == nil {
+				models.ThresholdCheck.Limit[year][quarter][pos][product] = make(map[int]float64)
 			}
 
-			models.ThresholdCheck.Limit[year][quarter][position][product][achievedPercent] = payout
+			models.ThresholdCheck.Limit[year][quarter][pos][product][achievedPercent] = payout
 		}
 	}
 

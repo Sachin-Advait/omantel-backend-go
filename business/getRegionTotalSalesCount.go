@@ -2,145 +2,125 @@ package business
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
-	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 func (impl *IncentiveImpl) GetRegionTotalSalesCount(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error) {
+
+	// cRH, _ := ctx.Get(constant.HeaderInContext)
+	// ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if !isQuarterReport {
 		quarter = impl.getQuarterFromMonth(month)
 	}
 
-	cRH, _ := ctx.Get(constant.HeaderInContext)
-	ctxHeader, _ := (cRH).(context.ContextHeader)
-	if ctxHeader.IsAdmin {
-		vps, err := impl.PsqlDb.FetchVP(quarter, year)
-		if err != nil {
-			return nil, err
-		}
-		userID = vps[0]
-	}
+	// if ctxHeader.IsAdmin {
+	// 	vps, err := impl.PsqlDb.FetchVP(quarter, year)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	userID = vps[0]
+	// }
 
 	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
-	mangerPosition, ok := constant.ManagerMap[user.Position]
-	if !ok || user.Position == constant.Promoter || user.Position == constant.CSR || user.Position == constant.OutletManager { //|| user.Position == constant.TeamLeader
+	position, ok := constant.ManagerMap[user.Position]
+	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    user.UserId + ": INCORRECT MANAGER POSITION - " + user.Position,
-			Details:    "incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
+			Details:    "GetRegionTotalSalesCount: incorrect manager position: userId-" + user.UserId + " position-" + user.Position,
 		}
 	}
-
-	var needUpdate bool
-
-	currTime := time.Now()
-	currYear, currMonth, currDay := currTime.Date()
-	currQuarter := impl.getQuarterFromMonth(int(currMonth))
-
-	if isQuarterReport && year == currYear && quarter <= currQuarter {
-		needUpdate = true
-	} else if !isQuarterReport && year == currYear && month <= int(currMonth) {
-		needUpdate = true
-	}
-
-	//TODO: remove at last
-	needUpdate = true
+	user.Position = position
 
 	resp := make([]*models.ProductWiseSalesCountPerOutlet, 0)
 
-	// for regional manager
-	if user.Position == constant.Manager {
+	/*
+		For Outlet Managers
+	*/
 
-		regionReport, err := impl.PsqlDb.FetchRegionReport(user.Region, isQuarterReport, quarter, month, year)
-		if !needUpdate {
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			if err != nil || (err == nil && regionReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
+	if user.Position == constant.OutletManagerAbb {
 
-				regionResp, err := impl.updateRegionReport(ctx, user.Region, isQuarterReport, quarter, month, year)
-				if err != nil {
-					return nil, err
-				}
-
-				logger.FileLogger.CtxInfo(ctx).Interface("M regionReport", regionResp).Msg("GetRegionTotalSalesCount : trace")
-				//TODO: test this out for struct assignment
-				regionReport = regionResp
-			}
+		cacheReport, err := impl.RedisCache.GetRegionReport(user.Region, isQuarterReport, month, quarter, year)
+		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
+			return append(resp, impl.singleRegionSalesCount(ctx, cacheReport)), nil
 		}
 
-		eachRegionResp := &models.ProductWiseSalesCountPerOutlet{
-			Region:  regionReport.Region,
-			HBB:     regionReport.HBBSalesCount,
-			Hayyak:  regionReport.HayyakSalesCount,
-			Baqati:  regionReport.BaqatiSalesCount,
-			Upgrade: regionReport.UpgradeSalesCount,
+		regionResp, err := impl.updateRegionReport(ctx, user.Region, isQuarterReport, quarter, month, year)
+		if err != nil {
+			return nil, err
 		}
 
-		eachRegionResp.Total = regionReport.HBBSalesCount + regionReport.HayyakSalesCount + regionReport.BaqatiSalesCount + regionReport.UpgradeSalesCount
+		// val, _ := json.Marshal(outletResp)
+		// logger.FileLogger.CtxInfo(ctx).Interface("OM regionReport", string(val)).Msg("GetRegionTotalSalesCount : trace")
 
-		resp = append(resp, eachRegionResp)
-
-		return resp, nil
+		return append(resp, impl.singleRegionSalesCount(ctx, regionResp)), nil
 	}
 
-	//// for non region manager
+	/*
+		For Other Managers
+	*/
 
-	allDistinctMngr, err := impl.PsqlDb.FetchAllRMReportingToGivenManager(mangerPosition, userID, quarter, year)
+	allDistinctOM, err := impl.PsqlDb.FetchAllOMReportingToGivenManager(user.Position, userID, quarter, year)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(allDistinctMngr) == 0 {
-		logger.FileLogger.CtxError(ctx).Str("position", mangerPosition).Msg("GetRegionSalesAndTarget : no RM found")
+	if len(allDistinctOM) == 0 {
+		logger.FileLogger.CtxError(ctx).Str("user", userID).Str("position", user.Position).Msg("GetRegionTotalSalesCount : no OM found")
 		return resp, nil
 	}
 
-	for _, eachMngr := range allDistinctMngr {
+	for _, eachOM := range allDistinctOM {
 
-		regionReport, err := impl.PsqlDb.FetchRegionReport(eachMngr.Region, isQuarterReport, quarter, month, year)
-		if !needUpdate {
+		if eachOM.Position != constant.OutletManagerAbb {
+			return nil, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Message:    eachOM.UserId + ": INCORRECT MANAGER POSITION - " + eachOM.Position,
+				Details:    "GetRegionTotalSalesCount: incorrect manager position: userId-" + eachOM.UserId + " position-" + eachOM.Position,
+			}
+		}
+
+		cacheReport, err := impl.RedisCache.GetRegionReport(eachOM.Region, isQuarterReport, month, quarter, year)
+		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
+			resp = append(resp, impl.singleRegionSalesCount(ctx, cacheReport))
+		} else {
+			outletResp, err := impl.updateRegionReport(ctx, eachOM.Region, isQuarterReport, quarter, month, year)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			if err != nil || (err == nil && regionReport.ModifiedAt.Before(time.Date(currYear, currMonth, currDay, 0, 0, 0, 0, currTime.Location()))) {
 
-				regionResp, err := impl.updateRegionReport(ctx, eachMngr.Region, isQuarterReport, quarter, month, year)
-				if err != nil {
-					return nil, err
-				}
+			// val, _ := json.Marshal(outletResp)
+			// logger.FileLogger.CtxInfo(ctx).Interface("OtherMngr regionReport", string(val)).Msg("GetRegionTotalSalesCount : trace")
 
-				logger.FileLogger.CtxInfo(ctx).Interface("OtherMngr regionReport", regionResp).Msg("GetRegionTotalSalesCount : trace")
-				//TODO: test this out for struct assignment
-				regionReport = regionResp
-			}
+			resp = append(resp, impl.singleRegionSalesCount(ctx, outletResp))
 		}
-
-		eachRegionResp := &models.ProductWiseSalesCountPerOutlet{
-			Region:  regionReport.Region,
-			HBB:     regionReport.HBBSalesCount,
-			Hayyak:  regionReport.HayyakSalesCount,
-			Baqati:  regionReport.BaqatiSalesCount,
-			Upgrade: regionReport.UpgradeSalesCount,
-		}
-
-		eachRegionResp.Total = regionReport.HBBSalesCount + regionReport.HayyakSalesCount + regionReport.BaqatiSalesCount + regionReport.UpgradeSalesCount
-
-		resp = append(resp, eachRegionResp)
 	}
 
 	return resp, nil
+}
+
+func (impl *IncentiveImpl) singleRegionSalesCount(ctx *gin.Context, regionReport *models.RegionReportDB) *models.ProductWiseSalesCountPerOutlet {
+
+	eachRegionResp := &models.ProductWiseSalesCountPerOutlet{
+		Region:  regionReport.Region,
+		HBB:     regionReport.HBBSalesCount,
+		Hayyak:  regionReport.HayyakSalesCount,
+		Baqati:  regionReport.BaqatiSalesCount,
+		Upgrade: regionReport.UpgradeSalesCount,
+	}
+
+	eachRegionResp.Total = regionReport.HBBSalesCount + regionReport.HayyakSalesCount + regionReport.BaqatiSalesCount + regionReport.UpgradeSalesCount
+
+	return eachRegionResp
 }

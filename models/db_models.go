@@ -4,6 +4,7 @@ import "time"
 
 type UserReportDB struct {
 	UserId                       string
+	UserName                     string
 	Position                     string
 	ManagerId                    string
 	ManagerPosition              string
@@ -82,4 +83,19 @@ type UserBasicDetailsDB struct {
 	ManagerPosition string
 	IsAdmin         bool
 	IsActive        bool
+}
+
+type RedisConfigStruct struct {
+	Address                     string
+	Password                    string
+	Db                          int
+	PoolSize                    int
+	MinIdleConn                 int
+	MaxConnAgeInHour            time.Duration
+	PoolTimeoutInMilliSecond    time.Duration
+	ReadTimeoutInMilliSecond    time.Duration
+	WriteTimeoutInMilliSecond   time.Duration
+	ContextTimeoutInMilliSecond time.Duration
+	KeyTTLInHour                time.Duration
+	Mode                        string
 }

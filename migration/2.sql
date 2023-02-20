@@ -323,3 +323,5 @@ CREATE TABLE public.outlet_reports_table
     modified timestamp with time zone NOT NULL,
     PRIMARY KEY (outlet, month, quarter, year)
 );
+
+CREATE INDEX quarter_idx ON sale_transaction_table (quarter);

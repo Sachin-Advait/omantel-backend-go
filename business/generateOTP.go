@@ -71,7 +71,7 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, userID string) (map[str
 
 	var isUpdate = true
 
-	user, err := impl.PsqlDb.FetchUser(userID)
+	user, err := impl.PsqlDb.FetchUserBasicDetails(userID, 0, 0, true)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (impl *IncentiveImpl) GenerateOTP(ctx *gin.Context, userID string) (map[str
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
 			Message:    "USER POSITION OR CONTANCT NUMBER NOT FOUND",
-			Details:    "position:" + user.Position + "contact:" + user.MobileNumber,
+			Details:    "position:" + user.Position + ", contact:" + user.MobileNumber,
 		}
 	}
 
