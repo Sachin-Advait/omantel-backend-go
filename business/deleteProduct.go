@@ -1,8 +1,6 @@
 package business
 
 import (
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
@@ -10,22 +8,10 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) DeleteProducts(ctx *gin.Context, req *models.ProductRequest) *errors.Error {
+func (impl *IncentiveImpl) DeleteProducts(ctx *gin.Context, req *models.FetchDeleteProductRequest) *errors.Error {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
-
-	currTime := time.Now()
-	currYear, currMonth, _ := currTime.Date()
-	currQuarter := impl.getQuarterFromMonth(int(currMonth))
-
-	if req.Quarter == 0 {
-		req.Quarter = currQuarter
-	}
-
-	if req.Year == 0 {
-		req.Year = currYear
-	}
 
 	return impl.PsqlDb.DeleteProductRecord(ctxHeader.XUserId, req.ProductCodes, req.Quarter, req.Year)
 }

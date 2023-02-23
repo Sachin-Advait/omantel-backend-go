@@ -11,62 +11,69 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func DeleteTargets(ctx *gin.Context, req *models.TargetRequest) (int, interface{}) {
+func DeleteTargets(ctx *gin.Context) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if req == nil || (req.Month == 0 && req.Quarter == 0) || req.Year == 0 || (req.Month != 0 && !(req.Month >= 1 && req.Month <= 12)) ||
-		(req.Quarter != 0 && !(req.Quarter >= 1 && req.Quarter <= 4)) {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Msg("DeleteTargets : invalid req params")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid req param",
-			CreateTime: time.Now().Local(),
+	userReq, err := deleteTargetPayload(ctx)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("deleteTargets : invalid request param")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "request binding", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
+
+		return http.StatusBadRequest, models.APIFailureResponse{
+			Error:   errors.RequestDecodeErrorCode,
+			Message: errors.RequestDecodeError,
 		}
+	}
+
+	req, _ := objecthelper.MarshalJSON(userReq)
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("deleteTargets : req body")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
+		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
+
+	if err := models.ValidateDeleteTarget(userReq); err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("deleteTargets : req validation failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params",
+			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,
-			Message: "Invalid target param",
+			Message: err.Error(),
 		}
 	}
 
-	errs := theProvider.DeleteTargets(ctx, req)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("DeleteTargets : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+	customErr := theProvider.DeleteTargets(ctx, userReq)
+	if customErr != nil {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(customErr.Details.(string))).Msg("deleteTargets : provider failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: customErr.Details.(string), CreateTime: time.Now().Local()})
 
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+		return customErr.StatusCode, &models.APIFailureResponse{
+			Error: customErr.Message,
 		}
 	}
 
-	resp := models.APISuccessResponse{
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, errors.SuccessInfoMessage).Msg("deleteTargets : success")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success",
+		Text: errors.SuccessInfoMessage, CreateTime: time.Now().Local()})
+
+	return http.StatusOK, models.APISuccessResponse{
 		Status: true,
 		Data:   errors.SuccessInfoMessage,
 	}
+}
 
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteTargets : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", resp),
-		CreateTime: time.Now().Local(),
+func deleteTargetPayload(ctx *gin.Context) (*models.FetchDeleteTargetRequest, error) {
+
+	userReq := &models.FetchDeleteTargetRequest{}
+	if err := ctx.ShouldBindJSON(userReq); err != nil {
+		return nil, err
 	}
 
-	return http.StatusOK, resp
+	return userReq, nil
 }

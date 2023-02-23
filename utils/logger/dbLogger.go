@@ -21,6 +21,10 @@ type Logging struct {
 
 var LogChan chan *Logging
 
+func PrintDBLogs(log *Logging) {
+	LogChan <- log
+}
+
 func InitDBLogger(conf *models.DbClientConfig) {
 
 	LogChan = make(chan *Logging, 100)

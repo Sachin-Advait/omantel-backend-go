@@ -141,30 +141,6 @@ func validateSingleUserIncentiveResponse(ctx *gin.Context, res *models.TotalInce
 
 	var achievedCount int
 
-	if res.HBB == nil || res.HBB.Payout == 0 {
-		logger.FileLogger.CtxInfo(ctx).Str("HBB", "not achieved").Msg("GetSingleUserIncentive : response validation")
-	} else {
-		achievedCount++
-	}
-
-	if res.Hayyak == nil || res.Hayyak.Payout == 0 {
-		logger.FileLogger.CtxInfo(ctx).Str("HAYYAK", "not achieved").Msg("GetSingleUserIncentive : response validation")
-	} else {
-		achievedCount++
-	}
-
-	if res.Baqati == nil || res.Baqati.Payout == 0 {
-		logger.FileLogger.CtxInfo(ctx).Str("BAQATI", "not achieved").Msg("GetSingleUserIncentive : response validation")
-	} else {
-		achievedCount++
-	}
-
-	if res.Upgrade == nil || res.Upgrade.Payout == 0 {
-		logger.FileLogger.CtxInfo(ctx).Str("UPGRADE", "not achieved").Msg("GetSingleUserIncentive : response validation")
-	} else {
-		achievedCount++
-	}
-
 	if res.HBB == nil {
 		res.HBB = &models.IndividualIncentive{}
 	}
@@ -176,6 +152,30 @@ func validateSingleUserIncentiveResponse(ctx *gin.Context, res *models.TotalInce
 	}
 	if res.Upgrade == nil {
 		res.Upgrade = &models.IndividualIncentive{}
+	}
+
+	if res.HBB.Payout == 0 {
+		logger.FileLogger.CtxInfo(ctx).Str("HBB", "not achieved").Msg("GetSingleUserIncentive : response validation")
+	} else {
+		achievedCount++
+	}
+
+	if res.Hayyak.Payout == 0 {
+		logger.FileLogger.CtxInfo(ctx).Str("HAYYAK", "not achieved").Msg("GetSingleUserIncentive : response validation")
+	} else {
+		achievedCount++
+	}
+
+	if res.Baqati.Payout == 0 {
+		logger.FileLogger.CtxInfo(ctx).Str("BAQATI", "not achieved").Msg("GetSingleUserIncentive : response validation")
+	} else {
+		achievedCount++
+	}
+
+	if res.Upgrade.Payout == 0 {
+		logger.FileLogger.CtxInfo(ctx).Str("UPGRADE", "not achieved").Msg("GetSingleUserIncentive : response validation")
+	} else {
+		achievedCount++
 	}
 
 	if achievedCount < 3 {

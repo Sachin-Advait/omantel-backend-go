@@ -140,6 +140,19 @@ func validateUserPayoutResponse(ctx *gin.Context, res *models.TotalIncentive) {
 
 	var achievedCount int
 
+	if res.HBB == nil {
+		res.HBB = &models.IndividualIncentive{}
+	}
+	if res.Hayyak == nil {
+		res.Hayyak = &models.IndividualIncentive{}
+	}
+	if res.Baqati == nil {
+		res.Baqati = &models.IndividualIncentive{}
+	}
+	if res.Upgrade == nil {
+		res.Upgrade = &models.IndividualIncentive{}
+	}
+
 	if res.HBB.Payout != 0 {
 		achievedCount++
 	} else {

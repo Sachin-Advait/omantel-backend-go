@@ -6,7 +6,6 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	v1 "gitlab.com/rendezvousPoint/incentive_calculator/api/v1"
-	v2 "gitlab.com/rendezvousPoint/incentive_calculator/api/v2"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/flags"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
@@ -36,10 +35,6 @@ func GetRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 
 	incentiveSwagV1Router := router.Group(constant.SalesIncentiveDocRoute)
 	v1.IncentiveSwaggerRoutes(incentiveSwagV1Router)
-
-	//version 2
-	incentiveV2Router := router.Group(constant.SalesIncentiveV2Route, middleware.ApiVersionHandler("2"), middleware.OptionalAuthHandler())
-	v2.IncentiveRoutes(incentiveV2Router)
 
 	// incentiveSwagV2Router := router.Group(constant.SalesIncentiveV2DocRoute)
 	// v2.IncentiveSwaggerRoutes(incentiveSwagV2Router)

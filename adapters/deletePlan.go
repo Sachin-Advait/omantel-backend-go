@@ -3,7 +3,6 @@ package adapters
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,83 +11,69 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func DeletePlans(ctx *gin.Context, req *models.PlanRequest) (int, interface{}) {
+func DeletePlans(ctx *gin.Context) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if req == nil || len(req.PlanCodes) == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Msg("DeletePlans : invalid req params")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid req param",
-			CreateTime: time.Now().Local(),
+	userReq, err := deletePlanPayload(ctx)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("deletePlans : invalid request param")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "request binding", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
+
+		return http.StatusBadRequest, models.APIFailureResponse{
+			Error:   errors.RequestDecodeErrorCode,
+			Message: errors.RequestDecodeError,
 		}
+	}
+
+	req, _ := objecthelper.MarshalJSON(userReq)
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("deletePlans : req body")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
+		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
+
+	if err := models.ValidateDeletePlan(userReq); err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("deletePlans : req validation failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params",
+			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,
-			Message: "Invalid target param",
+			Message: err.Error(),
 		}
 	}
 
-	for i, v := range req.PlanCodes {
+	customErr := theProvider.DeletePlans(ctx, userReq)
+	if customErr != nil {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(customErr.Details.(string))).Msg("deletePlans : provider failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: customErr.Details.(string), CreateTime: time.Now().Local()})
 
-		if v == "" {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Msg("DeletePlans : invalid req params")
-			logger.LogChan <- &logger.Logging{
-				UserID:     ctxHeader.XUserId,
-				URL:        ctx.Request.URL.String(),
-				Type:       "error",
-				Msg:        "invalid req params",
-				Text:       "blank ids",
-				CreateTime: time.Now().Local(),
-			}
-
-			return http.StatusBadRequest, &models.APIFailureResponse{
-				Error:   errors.InvalidReqParameters,
-				Message: "Invalid target param",
-			}
-		}
-
-		req.PlanCodes[i] = strings.ToUpper(strings.TrimSpace(v))
-	}
-
-	errs := theProvider.DeletePlans(ctx, req)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("DeletePlans : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
-
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+		return customErr.StatusCode, &models.APIFailureResponse{
+			Error: customErr.Message,
 		}
 	}
 
-	resp := models.APISuccessResponse{
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, errors.SuccessInfoMessage).Msg("deletePlans : success")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success",
+		Text: errors.SuccessInfoMessage, CreateTime: time.Now().Local()})
+
+	return http.StatusOK, models.APISuccessResponse{
 		Status: true,
 		Data:   errors.SuccessInfoMessage,
 	}
+}
 
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeletePlans : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", resp),
-		CreateTime: time.Now().Local(),
+func deletePlanPayload(ctx *gin.Context) (*models.FetchDeletePlanRequest, error) {
+
+	userReq := &models.FetchDeletePlanRequest{}
+	if err := ctx.ShouldBindJSON(userReq); err != nil {
+		return nil, err
 	}
 
-	return http.StatusOK, resp
+	return userReq, nil
 }

@@ -8,13 +8,14 @@ import (
 type IncentiveProvider interface {
 	LoadPlansFromDB(printLogs bool) error
 	LoadTargetFromDB(printLogs bool) error
-	LoadScaleOrderFromDB(printLogs bool) error
+	LoadValueOfPointFromDB(printLogs bool) error
 	LoadMaxPayFromDB(printLogs bool) error
 	LoadMaxExtraPayFromDB(printLog bool) error
 	LoadThresholdCheckFromDB(printLog bool) error
 
 	PrintAllInMemData()
 
+	GenerateToken(ctx *gin.Context) (string, *errors.Error)
 	GenerateOTP(ctx *gin.Context, id string) (map[string]string, *errors.Error)
 	VerifyOTP(ctx *gin.Context, req *VerifyOTP) (*VerifyOTPResponse, *errors.Error)
 	CaptchaVerification(ctx *gin.Context, req *CaptchRequest) (interface{}, *errors.Error)
@@ -38,23 +39,23 @@ type IncentiveProvider interface {
 	GetTopTenEmpSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*ProductWiseSalesTargetPerStaff, *errors.Error)
 	RenewAccessToken(ctx *gin.Context) (string, *errors.Error)
 
-	FetchRegions(ctx *gin.Context, req *RegionRequest) ([]*RegionResponse, *errors.Error)
+	FetchRegions(ctx *gin.Context, req *FetchDeleteRegionRequest) ([]*RegionResponse, *errors.Error)
 	CreateNewRegion(ctx *gin.Context, req []*CreateRegionRequest) ([]*RegionFailedResponse, *errors.Error)
-	DeleteRegions(ctx *gin.Context, req *RegionRequest) *errors.Error
+	DeleteRegions(ctx *gin.Context, req *FetchDeleteRegionRequest) *errors.Error
 
-	FetchOutlets(ctx *gin.Context, req *OutletRequest) ([]*OutletResponse, *errors.Error)
+	FetchOutlets(ctx *gin.Context, req *FetchDeleteOutletRequest) ([]*OutletResponse, *errors.Error)
 	CreateNewOutlet(ctx *gin.Context, req []*CreateOutletRequest) ([]*OutletFailedResponse, *errors.Error)
-	DeleteOutlets(ctx *gin.Context, req *OutletRequest) *errors.Error
+	DeleteOutlets(ctx *gin.Context, req *FetchDeleteOutletRequest) *errors.Error
 
-	FetchProducts(ctx *gin.Context, req *ProductRequest) ([]*ProductResponse, *errors.Error)
+	FetchProducts(ctx *gin.Context, req *FetchDeleteProductRequest) ([]*ProductResponse, *errors.Error)
 	CreateNewProduct(ctx *gin.Context, req []*CreateProductRequest) ([]*ProductFailedResponse, *errors.Error)
-	DeleteProducts(ctx *gin.Context, req *ProductRequest) *errors.Error
+	DeleteProducts(ctx *gin.Context, req *FetchDeleteProductRequest) *errors.Error
 
-	FetchPlans(ctx *gin.Context, req *PlanRequest) ([]*PlanResponse, *errors.Error)
+	FetchPlans(ctx *gin.Context, req *FetchDeletePlanRequest) ([]*PlanResponse, *errors.Error)
 	CreateNewPlan(ctx *gin.Context, req []*CreatePlanRequest) ([]*PlanFailedResponse, *errors.Error)
-	DeletePlans(ctx *gin.Context, req *PlanRequest) *errors.Error
+	DeletePlans(ctx *gin.Context, req *FetchDeletePlanRequest) *errors.Error
 
-	FetchTargets(ctx *gin.Context, req *TargetRequest) (map[string][]*TargetResponse, *errors.Error)
+	FetchTargets(ctx *gin.Context, req *FetchDeleteTargetRequest) (map[string][]*TargetResponse, *errors.Error)
 	CreateNewTarget(ctx *gin.Context, req []*CreateTargetRequest) ([]*TargetFailedResponse, *errors.Error)
-	DeleteTargets(ctx *gin.Context, req *TargetRequest) *errors.Error
+	DeleteTargets(ctx *gin.Context, req *FetchDeleteTargetRequest) *errors.Error
 }

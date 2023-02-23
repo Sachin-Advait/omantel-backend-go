@@ -203,3 +203,18 @@ func IsCurrentDay(t time.Time) bool {
 	y2, m2, d2 := t.Date()
 	return y1 == y2 && m1 == m2 && d1 == d2
 }
+
+func GetQuarterFromMonth(month int) int {
+	switch {
+	case month >= 1 && month <= 3:
+		return 1
+	case month >= 4 && month <= 6:
+		return 2
+	case month >= 7 && month <= 9:
+		return 3
+	case month >= 10 && month <= 12:
+		return 4
+	}
+
+	return -1
+}

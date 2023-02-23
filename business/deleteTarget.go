@@ -8,14 +8,10 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *IncentiveImpl) DeleteTargets(ctx *gin.Context, req *models.TargetRequest) *errors.Error {
+func (impl *IncentiveImpl) DeleteTargets(ctx *gin.Context, req *models.FetchDeleteTargetRequest) *errors.Error {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if req.Month != 0 {
-		req.Quarter = impl.getQuarterFromMonth(req.Month)
-	}
-
-	return impl.PsqlDb.DeleteTargetRecord(ctxHeader.XUserId, req.TargetCodes, req.Quarter, req.Year)
+	return impl.PsqlDb.DeleteTargetRecord(ctxHeader.XUserId, req.TargetCodes, req.OutletCode, req.Month, req.Quarter, req.Year)
 }

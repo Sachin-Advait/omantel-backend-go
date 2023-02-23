@@ -3,7 +3,6 @@ package adapters
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +11,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 func FetchProducts(ctx *gin.Context) (int, interface{}) {
@@ -19,61 +19,59 @@ func FetchProducts(ctx *gin.Context) (int, interface{}) {
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	queryParam := ctx.Request.URL.Query()
+	userReq, err := fetchProductPayload(ctx)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("fetchProducts : invalid request param")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "request binding", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
 
-	products, ok := queryParam[constant.Product]
-	if !ok || products[0] == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY PRODUCTS")).Msg("FetchProducts : invalid params")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid req param",
-			CreateTime: time.Now().Local(),
-		}
-
-		return http.StatusBadRequest, &models.APIResponse{
-			ErrorCode: errors.InvalidReqParameterCode,
-			Message:   errors.InvalidReqParameters,
-			Data:      "EMPTY PRODUCTS",
+		return http.StatusBadRequest, models.APIFailureResponse{
+			Error:   errors.RequestDecodeErrorCode,
+			Message: errors.RequestDecodeError,
 		}
 	}
 
-	productsReq := &models.ProductRequest{}
+	req, _ := objecthelper.MarshalJSON(userReq)
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("fetchProducts : req body")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
+		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
 
-	if strings.ToLower(products[0]) != constant.All {
-		for _, v := range products {
-			productsReq.ProductCodes = append(productsReq.ProductCodes, v)
+	if err := models.ValidateFetchProduct(userReq); err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("fetchProducts : req validation failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params",
+			Text: err.Error(), CreateTime: time.Now().Local()})
+
+		return http.StatusBadRequest, &models.APIFailureResponse{
+			Error:   errors.InvalidReqParameters,
+			Message: err.Error(),
 		}
 	}
 
-	response, errs := theProvider.FetchProducts(ctx, productsReq)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("FetchProducts : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+	response, customErr := theProvider.FetchProducts(ctx, userReq)
+	if customErr != nil {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(customErr.Details.(string))).Msg("fetchProducts : provider failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: customErr.Details.(string), CreateTime: time.Now().Local()})
 
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+		return customErr.StatusCode, &models.APIFailureResponse{
+			Error: customErr.Message,
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchProducts : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", response),
-		CreateTime: time.Now().Local(),
-	}
+	res, _ := objecthelper.MarshalJSON(response)
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, string(res)).Msg("fetchProducts : success")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success",
+		Text: string(res), CreateTime: time.Now().Local()})
 
 	return http.StatusOK, response
+}
+
+func fetchProductPayload(ctx *gin.Context) (*models.FetchDeleteProductRequest, error) {
+
+	userReq := &models.FetchDeleteProductRequest{}
+	if err := ctx.ShouldBindJSON(userReq); err != nil {
+		return nil, err
+	}
+
+	return userReq, nil
 }

@@ -11,41 +11,67 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func FetchTargets(ctx *gin.Context, req *models.TargetRequest) (int, interface{}) {
+func FetchTargets(ctx *gin.Context) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	//TODO: check
+	userReq, err := fetchTargetPayload(ctx)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("fetchTargets : invalid request param")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "request binding", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
 
-	response, errs := theProvider.FetchTargets(ctx, req)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("CreateNewTarget : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
-
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+		return http.StatusBadRequest, models.APIFailureResponse{
+			Error:   errors.RequestDecodeErrorCode,
+			Message: errors.RequestDecodeError,
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("CreateNewTarget : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", response),
-		CreateTime: time.Now().Local(),
+	req, _ := objecthelper.MarshalJSON(userReq)
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("fetchTargets : req body")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
+		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
+
+	if err := models.ValidateFetchTarget(userReq); err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("fetchTargets : req validation failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params",
+			Text: err.Error(), CreateTime: time.Now().Local()})
+
+		return http.StatusBadRequest, &models.APIFailureResponse{
+			Error:   errors.InvalidReqParameters,
+			Message: err.Error(),
+		}
 	}
+
+	response, customErr := theProvider.FetchTargets(ctx, userReq)
+	if customErr != nil {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(customErr.Details.(string))).Msg("fetchTargets : provider failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: customErr.Details.(string), CreateTime: time.Now().Local()})
+
+		return customErr.StatusCode, &models.APIFailureResponse{
+			Error: customErr.Message,
+		}
+	}
+
+	res, _ := objecthelper.MarshalJSON(response)
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, string(res)).Msg("fetchTargets : success")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success",
+		Text: string(res), CreateTime: time.Now().Local()})
 
 	return http.StatusOK, response
+}
+
+func fetchTargetPayload(ctx *gin.Context) (*models.FetchDeleteTargetRequest, error) {
+
+	userReq := &models.FetchDeleteTargetRequest{}
+	if err := ctx.ShouldBindJSON(userReq); err != nil {
+		return nil, err
+	}
+
+	return userReq, nil
 }

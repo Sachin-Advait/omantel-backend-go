@@ -138,6 +138,19 @@ func validateUserTargetRequest(req *models.SingleUserIncentiveRequest, ctxHeader
 
 func validateUserTargetResponse(res *models.ChartDataResponse) {
 
+	if res.HBB == nil {
+		res.HBB = &models.TargetAchievementData{}
+	}
+	if res.Hayyak == nil {
+		res.Hayyak = &models.TargetAchievementData{}
+	}
+	if res.Baqati == nil {
+		res.Baqati = &models.TargetAchievementData{}
+	}
+	if res.Upgrade == nil {
+		res.Upgrade = &models.TargetAchievementData{}
+	}
+
 	res.HBB.Target = math.Round(res.HBB.Target*1000) / 1000
 	res.HBB.AchievedPercentage = math.Round(res.HBB.AchievedPercentage*1000) / 1000
 	res.Hayyak.Target = math.Round(res.Hayyak.Target*1000) / 1000

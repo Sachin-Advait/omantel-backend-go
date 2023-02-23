@@ -1,9 +1,6 @@
 package business
 
 import (
-	"net/http"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
@@ -16,33 +13,5 @@ func (impl *IncentiveImpl) CreateNewPlan(ctx *gin.Context, req []*models.CreateP
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	currTime := time.Now()
-	currYear, currMonth, _ := currTime.Date()
-	currQuarter := impl.getQuarterFromMonth(int(currMonth))
-
-	for index, val := range req {
-		if val.Quarter == 0 {
-			val.Quarter = currQuarter
-		}
-
-		if val.Year == 0 {
-			val.Year = currYear
-		}
-
-		req[index] = val
-	}
-
-	switch ctxHeader.XAPIVersion {
-	case "1":
-		return nil, impl.PsqlDb.UpsertPlanRecord(ctxHeader.XUserId, req[0])
-	case "2":
-		return impl.PsqlDb.UpsertPlanRecordViaFile(ctxHeader.XUserId, req), nil
-	default:
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "api version incorrect",
-		}
-	}
+	return impl.PsqlDb.UpsertPlanRecord(ctxHeader.XUserId, req)
 }

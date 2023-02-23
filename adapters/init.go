@@ -22,8 +22,8 @@ func InitIncentiveCron() {
 		logger.FileLogger.Fatal().Err(err).Msg("LoadTargetFromDB: load target failed")
 	}
 
-	if err := theProvider.LoadScaleOrderFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("LoadScaleOrderFromDB: load VOP failed")
+	if err := theProvider.LoadValueOfPointFromDB(false); err != nil {
+		logger.FileLogger.Fatal().Err(err).Msg("LoadValueOfPointFromDB: load VOP failed")
 	}
 
 	if err := theProvider.LoadMaxPayFromDB(false); err != nil {
@@ -50,7 +50,7 @@ func InitIncentiveCron() {
 		logger.FileLogger.Error().Err(err).Msg("LoadTargetFromDB: saleTarget cron failed")
 	}
 
-	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadScaleOrderFromDB, true); err != nil {
+	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadValueOfPointFromDB, true); err != nil {
 		logger.FileLogger.Error().Err(err).Msg("LoadScaleOrderFromDB: vop cron failed")
 	}
 

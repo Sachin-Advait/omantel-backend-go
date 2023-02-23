@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -21,32 +20,26 @@ func fetchPlans(ctx *gin.Context) {
 
 	if ctxHeader.Authorization == "" {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("fetchPlans : unauthorized request")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "unauthorized request",
-			Code:       http.StatusBadRequest,
-			Text:       "auth token not found",
-			CreateTime: time.Now().Local(),
-		}
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "unauthorized request", Code: http.StatusBadRequest,
+			Text: "auth token not found", CreateTime: time.Now().Local()})
 
 		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
-
 			Error:   errors.UnauthorizedUserCode,
 			Message: errors.UnauthorizedUser,
 		})
 		return
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", ctx.Request.URL.Query())).Msg("fetchPlans : req body")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "trace",
-		Msg:        "request body",
-		Text:       fmt.Sprintf("%+v", ctx.Request.URL.Query()),
-		CreateTime: time.Now().Local(),
+	if !ctxHeader.IsAdmin {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("fetchPlans : not an admin")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "not admin", Code: http.StatusForbidden,
+			Text: "not an admin", CreateTime: time.Now().Local()})
+
+		ctx.JSON(http.StatusForbidden, models.APIFailureResponse{
+			Error:   errors.UnauthorizedUserCode,
+			Message: errors.UnauthorizedUser,
+		})
+		return
 	}
 
 	ctx.JSON(adapters.FetchPlans(ctx))

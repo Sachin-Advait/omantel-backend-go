@@ -3,7 +3,6 @@ package adapters
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,83 +11,69 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func DeleteOutlets(ctx *gin.Context, req *models.OutletRequest) (int, interface{}) {
+func DeleteOutlets(ctx *gin.Context) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if req == nil || len(req.OutletCodes) == 0 {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("nil ids")).Msg("DeleteOutlets : invalid req params")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid req param",
-			CreateTime: time.Now().Local(),
+	userReq, err := deleteOutletPayload(ctx)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("deleteOutlets : invalid request param")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "request binding", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
+
+		return http.StatusBadRequest, models.APIFailureResponse{
+			Error:   errors.RequestDecodeErrorCode,
+			Message: errors.RequestDecodeError,
 		}
+	}
+
+	req, _ := objecthelper.MarshalJSON(userReq)
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("deleteOutlets : req body")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
+		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
+
+	if err := models.ValidateDeleteOutlet(userReq); err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("deleteOutlets : req validation failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params",
+			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,
-			Message: "Invalid target param",
+			Message: err.Error(),
 		}
 	}
 
-	for i, v := range req.OutletCodes {
+	customErr := theProvider.DeleteOutlets(ctx, userReq)
+	if customErr != nil {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(customErr.Details.(string))).Msg("deleteOutlets : provider failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: customErr.Details.(string), CreateTime: time.Now().Local()})
 
-		if v == "" {
-			logger.FileLogger.CtxError(ctx).Err(errors.New("blank ids")).Msg("DeleteOutlets : invalid req params")
-			logger.LogChan <- &logger.Logging{
-				UserID:     ctxHeader.XUserId,
-				URL:        ctx.Request.URL.String(),
-				Type:       "error",
-				Msg:        "invalid req params",
-				Text:       "blank ids",
-				CreateTime: time.Now().Local(),
-			}
-
-			return http.StatusBadRequest, &models.APIFailureResponse{
-				Error:   errors.InvalidReqParameters,
-				Message: "Invalid target param",
-			}
-		}
-
-		req.OutletCodes[i] = strings.ToUpper(strings.TrimSpace(v))
-	}
-
-	errs := theProvider.DeleteOutlets(ctx, req)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("DeleteOutlets : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
-
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+		return customErr.StatusCode, &models.APIFailureResponse{
+			Error: customErr.Message,
 		}
 	}
 
-	resp := models.APISuccessResponse{
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, errors.SuccessInfoMessage).Msg("deleteOutlets : success")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success",
+		Text: errors.SuccessInfoMessage, CreateTime: time.Now().Local()})
+
+	return http.StatusOK, models.APISuccessResponse{
 		Status: true,
 		Data:   errors.SuccessInfoMessage,
 	}
+}
 
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("DeleteOutlets : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", resp),
-		CreateTime: time.Now().Local(),
+func deleteOutletPayload(ctx *gin.Context) (*models.FetchDeleteOutletRequest, error) {
+
+	userReq := &models.FetchDeleteOutletRequest{}
+	if err := ctx.ShouldBindJSON(userReq); err != nil {
+		return nil, err
 	}
 
-	return http.StatusOK, resp
+	return userReq, nil
 }

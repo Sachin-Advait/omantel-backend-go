@@ -94,28 +94,28 @@ func (impl *IncentiveImpl) LoadTargetFromDB(printLog bool) error {
 	return nil
 }
 
-func (impl *IncentiveImpl) LoadScaleOrderFromDB(printLog bool) error {
+func (impl *IncentiveImpl) LoadValueOfPointFromDB(printLog bool) error {
 
 	currTime := time.Now()
 	currYear, _, _ := currTime.Date()
 
 	if err := impl.PsqlDb.FetchValueOfPoint(currYear); err != nil {
 		if printLog {
-			logger.FileLogger.Error().Int("year", currYear).Err(errors.New(err.Details.(string))).Msg("LoadScaleOrderFromDB : vop fetching failed")
+			logger.FileLogger.Error().Int("year", currYear).Err(errors.New(err.Details.(string))).Msg("LoadValueOfPointFromDB : vop fetching failed")
 		}
 		return errors.New(err.Details.(string))
 	}
 
 	if err := impl.PsqlDb.FetchValueOfPoint(currYear - 1); err != nil {
 		if printLog {
-			logger.FileLogger.Error().Int("year", currYear-1).Err(errors.New(err.Details.(string))).Msg("LoadScaleOrderFromDB : vop fetching failed")
+			logger.FileLogger.Error().Int("year", currYear-1).Err(errors.New(err.Details.(string))).Msg("LoadValueOfPointFromDB : vop fetching failed")
 		}
 		return errors.New(err.Details.(string))
 	}
 
 	if err := impl.PsqlDb.FetchValueOfPoint(currYear + 1); err != nil {
 		if printLog {
-			logger.FileLogger.Error().Int("year", currYear+1).Err(errors.New(err.Details.(string))).Msg("LoadScaleOrderFromDB : vop fetching failed")
+			logger.FileLogger.Error().Int("year", currYear+1).Err(errors.New(err.Details.(string))).Msg("LoadValueOfPointFromDB : vop fetching failed")
 		}
 		return errors.New(err.Details.(string))
 	}

@@ -55,6 +55,7 @@ CREATE TABLE public.outlets_table
     outlet_name character varying(64) NOT NULL,
     region_code character varying(64) NOT NULL,
     region_name character varying(64) NOT NULL,
+    subregion_name character varying(64) NOT NULL,
     latitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
     longitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
     created timestamp with time zone NOT NULL,
@@ -65,25 +66,6 @@ CREATE TABLE public.outlets_table
     year integer NOT NULL,
     PRIMARY KEY (outlet_code, quarter, year)
 );
-
-CREATE TABLE public.user_hierarchy_table
-(
-    emp_id character varying(32),
-    outlet_manager character varying(32) NOT NULL DEFAULT '',
-    team_lead character varying(32) NOT NULL DEFAULT '',
-    manager        character varying(32) NOT NULL DEFAULT '',
-    senior_manager  character varying(32) NOT NULL DEFAULT '',
-    general_manager character varying(32) NOT NULL DEFAULT '',
-    vice_president character varying(32) NOT NULL DEFAULT '',
-    created timestamp with time zone NOT NULL,
-    modified timestamp with time zone NOT NULL,
-    deleted timestamp with time zone,
-    comment character varying(128) NOT NULL,
-    quarter integer NOT NULL,
-    year integer NOT NULL,
-    PRIMARY KEY (emp_id, quarter, year)
-);
-
 
 CREATE TABLE public.products_table
 (
@@ -116,7 +98,6 @@ CREATE TABLE public.plans_table
     PRIMARY KEY (plan_code, quarter, year)
 );
 
-
 CREATE TABLE public.targets_table
 (
     target_code character varying(32),
@@ -134,6 +115,39 @@ CREATE TABLE public.targets_table
     quarter integer NOT NULL,
     year integer NOT NULL,  
     PRIMARY KEY (target_code, quarter, year)
+);
+
+CREATE TABLE public.user_hierarchy_table
+(
+    emp_id character varying(32),
+    outlet_manager character varying(32) NOT NULL DEFAULT '',
+    team_lead character varying(32) NOT NULL DEFAULT '',
+    manager        character varying(32) NOT NULL DEFAULT '',
+    senior_manager  character varying(32) NOT NULL DEFAULT '',
+    general_manager character varying(32) NOT NULL DEFAULT '',
+    vice_president character varying(32) NOT NULL DEFAULT '',
+    created timestamp with time zone NOT NULL,
+    modified timestamp with time zone NOT NULL,
+    deleted timestamp with time zone,
+    comment character varying(128) NOT NULL,
+    quarter integer NOT NULL,
+    year integer NOT NULL,
+    PRIMARY KEY (emp_id, quarter, year)
+);
+
+CREATE TABLE public.vop_table
+(
+    product character varying(64) NOT NULL,
+    achieved_percent integer NOT NULL,
+    vop_value NUMERIC (10, 3) NOT NULL,
+    extra_pay NUMERIC (10, 3) NOT NULL,
+    created timestamp with time zone NOT NULL,
+    modified timestamp with time zone NOT NULL,
+    deleted timestamp with time zone,
+    comment character varying(128) NOT NULL,
+    quarter integer NOT NULL,
+    year integer NOT NULL,  
+    PRIMARY KEY (product, achieved_percent, quarter, year)
 );
 
 CREATE TABLE public.threshold_table
@@ -156,21 +170,38 @@ CREATE TABLE public.threshold_table
 CREATE TABLE public.sale_transaction_table
 (
     id integer PRIMARY KEY,
-    emp_id character varying(32) NOT NULL,
+    id_sbsc integer NOT NULL,
     region character varying(32) NOT NULL DEFAULT '',
     outlet character varying(64) NOT NULL DEFAULT '',
     product_group character varying(32) NOT NULL DEFAULT '',
-    category_type character varying(32) NOT NULL DEFAULT '', -- new or upgrade
-    prev_product character varying(128) NOT NULL DEFAULT '',
-    curr_product character varying(128) NOT NULL DEFAULT '',
+    transaction_type character varying(32) NOT NULL DEFAULT '', -- new or upgrade
+    prev_plan character varying(128) NOT NULL DEFAULT '',
+    curr_plan character varying(128) NOT NULL DEFAULT '',
     quantity smallint NOT NULL,
     category character varying(32) NOT NULL DEFAULT '',
     subcategory character varying(32) NOT NULL DEFAULT '',
-    sales_date date NOT NULL DEFAULT CURRENT_DATE,
-    inactive_date date NOT NULL DEFAULT CURRENT_DATE,
+    sales_date date NOT NULL,
+    terminate_date date NOT NULL,
     quarter integer NOT NULL DEFAULT 1,
     created timestamp with time zone NOT NULL,
     modified timestamp with time zone NOT NULL,
+    remark character varying(128) NOT NULL DEFAULT '',
+    comment character varying(128) NOT NULL
+);
+
+CREATE TABLE public.sale_terminated_transactions
+(
+    id SERIAL PRIMARY KEY,
+    id_sbsc integer NOT NULL,
+    product_group character varying(32) NOT NULL DEFAULT '',
+    curr_plan character varying(128) NOT NULL DEFAULT '',
+    subcategory character varying(32) NOT NULL DEFAULT '',
+    sales_date date NOT NULL,
+    terminate_date date NOT NULL,
+    quarter integer NOT NULL DEFAULT 1,
+    created timestamp with time zone NOT NULL,
+    modified timestamp with time zone NOT NULL,
+    remark character varying(128) NOT NULL DEFAULT '',
     comment character varying(128) NOT NULL
 );
 
@@ -323,5 +354,3 @@ CREATE TABLE public.outlet_reports_table
     modified timestamp with time zone NOT NULL,
     PRIMARY KEY (outlet, month, quarter, year)
 );
-
-CREATE INDEX quarter_idx ON sale_transaction_table (quarter);

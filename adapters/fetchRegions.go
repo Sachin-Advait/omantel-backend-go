@@ -3,7 +3,6 @@ package adapters
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +11,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 func FetchRegions(ctx *gin.Context) (int, interface{}) {
@@ -19,61 +19,59 @@ func FetchRegions(ctx *gin.Context) (int, interface{}) {
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	queryParam := ctx.Request.URL.Query()
+	userReq, err := fetchRegionPayload(ctx)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("fetchRegions : invalid request param")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "request binding", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
 
-	regions, ok := queryParam[constant.Region]
-	if !ok || regions[0] == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New("EMPTY REGIONS")).Msg("FetchRegions : invalid params")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       "invalid req param",
-			CreateTime: time.Now().Local(),
-		}
-
-		return http.StatusBadRequest, &models.APIResponse{
-			ErrorCode: errors.InvalidReqParameterCode,
-			Message:   errors.InvalidReqParameters,
-			Data:      "EMPTY REGIONS",
+		return http.StatusBadRequest, models.APIFailureResponse{
+			Error:   errors.RequestDecodeErrorCode,
+			Message: errors.RequestDecodeError,
 		}
 	}
 
-	regionsReq := &models.RegionRequest{}
+	req, _ := objecthelper.MarshalJSON(userReq)
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("fetchRegions : req body")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
+		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
 
-	if strings.ToLower(regions[0]) != constant.All {
-		for _, v := range regions {
-			regionsReq.RegionCodes = append(regionsReq.RegionCodes, v)
+	if err := models.ValidateFetchRegion(userReq); err != nil {
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("fetchRegions : req validation failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params",
+			Text: err.Error(), CreateTime: time.Now().Local()})
+
+		return http.StatusBadRequest, &models.APIFailureResponse{
+			Error:   errors.InvalidReqParameters,
+			Message: err.Error(),
 		}
 	}
 
-	response, errs := theProvider.FetchRegions(ctx, regionsReq)
-	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("FetchRegions : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+	response, customErr := theProvider.FetchRegions(ctx, userReq)
+	if customErr != nil {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(customErr.Details.(string))).Msg("fetchRegions : provider failed")
+		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: customErr.Details.(string), CreateTime: time.Now().Local()})
 
-		return errs.StatusCode, &models.APIFailureResponse{
-			Error: errs.Message,
+		return customErr.StatusCode, &models.APIFailureResponse{
+			Error: customErr.Message,
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("FetchRegions : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", response),
-		CreateTime: time.Now().Local(),
-	}
+	res, _ := objecthelper.MarshalJSON(response)
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, string(res)).Msg("fetchRegions : success")
+	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success",
+		Text: string(res), CreateTime: time.Now().Local()})
 
 	return http.StatusOK, response
+}
+
+func fetchRegionPayload(ctx *gin.Context) (*models.FetchDeleteRegionRequest, error) {
+
+	userReq := &models.FetchDeleteRegionRequest{}
+	if err := ctx.ShouldBindJSON(userReq); err != nil {
+		return nil, err
+	}
+
+	return userReq, nil
 }

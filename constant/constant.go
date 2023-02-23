@@ -170,6 +170,8 @@ const (
 	SalesIncentiveV2Route    = "/sales/incentive/v2"
 	SalesIncentiveV2DocRoute = "/sales/incentive/v2"
 
+	GenerateTokenPath = "/token"
+
 	ClientPath                 = "/client"
 	TargetChartPath            = "/target-chart"
 	SalePerPlanPath            = "/sale-per-plan"

@@ -2,6 +2,7 @@ package psqldb
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -150,40 +151,18 @@ func (dbConn *DBImplementation) FetchSaleTarget(year int) *errors.Error {
 // FetchValueOfPoint loads the global variable ValOfPoint with the value of point for each product type
 func (dbConn *DBImplementation) FetchValueOfPoint(year int) *errors.Error {
 
-	// rows, err := dbConn.Operation.Query("select group, top_percentage, vop, extra_pay from Product_Plans_Table where deleted IS NULL and quarter=$1 and year=$2", quarter, year)
-	// if err != nil {
-	// 	return err
-	// }
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
 
-	// var (
-	// 	group          string
-	// 	top_percentage int
-	// 	vop            float64
-	// 	extra_pay      float64
-	// )
-
-	// for rows.Next() {
-	// 	if err := rows.Scan(&group, &top_percentage, &vop, &extra_pay); err != nil {
-	// 		return err
-	// 	}
-
-	// 	ValOfPoint.Mutex.Lock()
-	// 	if ValOfPoint.VopMap == nil {
-	// 		ValOfPoint.VopMap = make(map[string]map[int]*VOP)
-	// 	}
-
-	// 	if ValOfPoint.VopMap[group] == nil {
-	// 		ValOfPoint.VopMap[group] = make(map[int]*VOP)
-	// 	}
-
-	// 	ValOfPoint.VopMap[group][top_percentage] = &VOP{
-	// 		Point:    vop,
-	// 		ExtraPay: extra_pay,
-	// 	}
-
-	// 	ValOfPoint.Mutex.Unlock()
-
-	// }
+	rows, err := dbConn.Operation.QueryContext(ctx, "select product, achieved_percent, vop_value, extra_pay, quarter from vop_table where deleted IS NULL and year=$1", year)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "FetchValueOfPoint Query: failed",
+			Details:    "FetchValueOfPoint Query: " + err.Error(),
+		}
+	}
 
 	models.ValOfPoint.Mutex.Lock()
 	defer models.ValOfPoint.Mutex.Unlock()
@@ -196,179 +175,92 @@ func (dbConn *DBImplementation) FetchValueOfPoint(year int) *errors.Error {
 		models.ValOfPoint.VopMap[year] = make(map[int]map[string]map[int]*models.VOP)
 	}
 
-	for quarter := 1; quarter <= 4; quarter++ {
+	for rows.Next() {
+
+		var (
+			product         string
+			achievedPercent int
+			vopValue        float64
+			extraPay        float64
+			quarter         int
+		)
+
+		if err := rows.Scan(&product, &achievedPercent, &vopValue, &extraPay, &quarter); err != nil {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchValueOfPoint Scan: failed",
+				Details:    "FetchValueOfPoint Scan: " + err.Error(),
+			}
+		}
+
+		if quarter < 1 || quarter > 4 {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchValueOfPoint: invalid quarter record",
+				Details:    "FetchValueOfPoint: invalid quarter record - " + fmt.Sprintf("year:%v, quarter:%v", year, quarter),
+			}
+		}
+
+		if !(product == constant.HBBCategory || product == constant.HayyakCategory || product == constant.BaqatiCategory || product == constant.UpgradeCategory) {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchValueOfPoint: invalid product record",
+				Details:    "FetchValueOfPoint: invalid product record - " + fmt.Sprintf("year:%v, quarter:%v, product:%v", year, quarter, product),
+			}
+		}
+
+		if !(achievedPercent == 75 || achievedPercent == 95 || achievedPercent == 110 || achievedPercent == 139 || achievedPercent == 140 || achievedPercent == 159 ||
+			achievedPercent == 179 || achievedPercent == 189 || achievedPercent == 199 || achievedPercent == 200) {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchValueOfPoint: invalid achievedPercent record",
+				Details: "FetchValueOfPoint: invalid achievedPercent record - " + fmt.Sprintf("year:%v, quarter:%v, product:%v, achievedPercent:%v",
+					year, quarter, product, achievedPercent),
+			}
+		}
 
 		if models.ValOfPoint.VopMap[year][quarter] == nil {
 			models.ValOfPoint.VopMap[year][quarter] = make(map[string]map[int]*models.VOP)
 		}
 
-		models.ValOfPoint.VopMap[year][quarter]["HBB"] = make(map[int]*models.VOP)
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"] = make(map[int]*models.VOP)
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"] = make(map[int]*models.VOP)
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"] = make(map[int]*models.VOP)
-
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][75] = &models.VOP{
-			Point:    0.0,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][95] = &models.VOP{
-			Point:    0.15,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][110] = &models.VOP{
-			Point:    0.25,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][139] = &models.VOP{
-			Point:    0.45,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][140] = &models.VOP{
-			Point:    0.75,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][159] = &models.VOP{
-			Point:    0,
-			ExtraPay: 17.5,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][179] = &models.VOP{
-			Point:    0,
-			ExtraPay: 35.0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][189] = &models.VOP{
-			Point:    0,
-			ExtraPay: 52.5,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][199] = &models.VOP{
-			Point:    0,
-			ExtraPay: 70.0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HBB"][200] = &models.VOP{
-			Point:    0,
-			ExtraPay: 87.5,
+		if models.ValOfPoint.VopMap[year][quarter][product] == nil {
+			models.ValOfPoint.VopMap[year][quarter][product] = make(map[int]*models.VOP)
 		}
 
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][75] = &models.VOP{
-			Point:    0.0,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][95] = &models.VOP{
-			Point:    0.15,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][110] = &models.VOP{
-			Point:    0.25,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][139] = &models.VOP{
-			Point:    0.45,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][140] = &models.VOP{
-			Point:    0.75,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][159] = &models.VOP{
-			Point:    0,
-			ExtraPay: 17.5,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][179] = &models.VOP{
-			Point:    0,
-			ExtraPay: 35.0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][189] = &models.VOP{
-			Point:    0,
-			ExtraPay: 53,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][199] = &models.VOP{
-			Point:    0,
-			ExtraPay: 70.0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["BAQATI"][200] = &models.VOP{
-			Point:    0,
-			ExtraPay: 87.5,
+		if models.ValOfPoint.VopMap[year][quarter][product] == nil {
+			models.ValOfPoint.VopMap[year][quarter][product] = make(map[int]*models.VOP)
 		}
 
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][75] = &models.VOP{
-			Point:    0.0,
-			ExtraPay: 0,
+		if models.ValOfPoint.VopMap[year][quarter][product][achievedPercent] == nil {
+			models.ValOfPoint.VopMap[year][quarter][product][achievedPercent] = &models.VOP{Point: vopValue, ExtraPay: extraPay}
 		}
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][95] = &models.VOP{
-			Point:    0.15,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][110] = &models.VOP{
-			Point:    0.25,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][139] = &models.VOP{
-			Point:    0.45,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][140] = &models.VOP{
-			Point:    0.75,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][159] = &models.VOP{
-			Point:    0,
-			ExtraPay: 11,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][179] = &models.VOP{
-			Point:    0,
-			ExtraPay: 22,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][189] = &models.VOP{
-			Point:    0,
-			ExtraPay: 33,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][199] = &models.VOP{
-			Point:    0,
-			ExtraPay: 44,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["HAYYAK"][200] = &models.VOP{
-			Point:    0,
-			ExtraPay: 55,
+	}
+
+	//validation
+	for _, quarterMap := range models.ValOfPoint.VopMap[year] {
+		if len(quarterMap) != 4 {
+			return &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "FetchValueOfPoint: all products not found",
+				Details:    "FetchValueOfPoint: all products not found - " + fmt.Sprintf("%v", len(quarterMap)),
+			}
 		}
 
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][75] = &models.VOP{
-			Point:    0.0,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][95] = &models.VOP{
-			Point:    0.1,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][110] = &models.VOP{
-			Point:    0.15,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][139] = &models.VOP{
-			Point:    0.3,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][140] = &models.VOP{
-			Point:    0.5,
-			ExtraPay: 0,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][159] = &models.VOP{
-			Point:    0,
-			ExtraPay: 4,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][179] = &models.VOP{
-			Point:    0,
-			ExtraPay: 8,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][189] = &models.VOP{
-			Point:    0,
-			ExtraPay: 12,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][199] = &models.VOP{
-			Point:    0,
-			ExtraPay: 16,
-		}
-		models.ValOfPoint.VopMap[year][quarter]["UPGRADE"][200] = &models.VOP{
-			Point:    0,
-			ExtraPay: 20,
+		for _, productMap := range quarterMap {
+			if len(productMap) != 10 {
+				return &errors.Error{
+					StatusCode: http.StatusInternalServerError,
+					Code:       errors.InternalServerError,
+					Message:    "FetchValueOfPoint: all achievedPercent not found",
+					Details:    "FetchValueOfPoint: all achievedPercent not found - " + fmt.Sprintf("%v", len(productMap)),
+				}
+			}
+
 		}
 	}
 
