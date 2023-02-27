@@ -17,9 +17,6 @@ import (
 
 func (dbConn *DBImplementation) FetchOutletDetailsViaName(regionName, outletName string, quarter, year int) (*models.OutletResponse, *errors.Error) {
 
-	// logger.FileLogger.Info().Str("region", regionName).Str("outlet", outletName).Time("start", time.Now()).Msg("FetchOutletDetailsViaName start")
-	// defer logger.FileLogger.Info().Str("region", regionName).Str("outlet", outletName).Time("end", time.Now()).Msg("FetchOutletDetailsViaName done")
-
 	if regionName == "" || outletName == "" {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,

@@ -41,6 +41,8 @@ const (
 
 //db configuration keywords
 const (
+	MasterCronTime = "masterCronTime"
+
 	PsqlDatabase    = "psqlDB"
 	PsqlHost        = PsqlDatabase + "." + "host"
 	PsqlPort        = PsqlDatabase + "." + "port"

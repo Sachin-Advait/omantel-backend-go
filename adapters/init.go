@@ -1,8 +1,13 @@
 package adapters
 
 import (
+	"context"
+
 	"github.com/jasonlvhit/gocron"
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/configs"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/flags"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
@@ -14,56 +19,61 @@ func InitIncentive(provider models.IncentiveProvider) {
 
 func InitIncentiveCron() {
 
+	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
+	if err != nil {
+		logger.Fatal(context.TODO()).Stack().Err(err).Msg("Cron Init: error loading application config file, env - " + flags.Env())
+	}
+
 	if err := theProvider.LoadPlansFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("LoadPlansFromDB: load planRate failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadPlansFromDB")
 	}
 
 	if err := theProvider.LoadTargetFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("LoadTargetFromDB: load target failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadTargetFromDB")
 	}
 
 	if err := theProvider.LoadValueOfPointFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("LoadValueOfPointFromDB: load VOP failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadValueOfPointFromDB")
 	}
 
 	if err := theProvider.LoadMaxPayFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("LoadMaxPayFromDB: load maxPay failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadMaxPayFromDB")
 	}
 
 	if err := theProvider.LoadMaxExtraPayFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("LoadMaxExtraPayFromDB: load maxExtraPay failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadMaxExtraPayFromDB")
 	}
 
 	if err := theProvider.LoadThresholdCheckFromDB(false); err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("LoadThresholdCheckFromDB: load threshold failed")
+		logger.FileLogger.Fatal().Err(err).Msg("LoadThresholdCheckFromDB")
 	}
 
 	theProvider.PrintAllInMemData()
 
-	////////
+	masterCronTime := applicationConfig.GetString(constant.MasterCronTime)
 
-	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadPlansFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("LoadPlansFromDB: productPlans cron failed")
+	if err := gocron.Every(1).Day().At(masterCronTime).Do(theProvider.LoadPlansFromDB, true); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("LoadPlansFromDB: cron")
 	}
 
-	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadTargetFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("LoadTargetFromDB: saleTarget cron failed")
+	if err := gocron.Every(1).Day().At(masterCronTime).Do(theProvider.LoadTargetFromDB, true); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("LoadTargetFromDB: cron")
 	}
 
-	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadValueOfPointFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("LoadScaleOrderFromDB: vop cron failed")
+	if err := gocron.Every(1).Day().At(masterCronTime).Do(theProvider.LoadValueOfPointFromDB, true); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("LoadValueOfPointFromDB: cron")
 	}
 
-	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadMaxPayFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("LoadMaxPayFromDB: maxPay cron failed")
+	if err := gocron.Every(1).Day().At(masterCronTime).Do(theProvider.LoadMaxPayFromDB, true); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("LoadMaxPayFromDB: cron")
 	}
 
-	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadMaxExtraPayFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("LoadMaxExtraPayFromDB: maxExtraPay cron failed")
+	if err := gocron.Every(1).Day().At(masterCronTime).Do(theProvider.LoadMaxExtraPayFromDB, true); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("LoadMaxExtraPayFromDB: cron")
 	}
 
-	if err := gocron.Every(1).Day().At("01:00").Do(theProvider.LoadThresholdCheckFromDB, true); err != nil {
-		logger.FileLogger.Error().Err(err).Msg("LoadThresholdCheckFromDB: threshold cron failed")
+	if err := gocron.Every(1).Day().At(masterCronTime).Do(theProvider.LoadThresholdCheckFromDB, true); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("LoadThresholdCheckFromDB: cron")
 	}
 
 	<-gocron.Start()

@@ -150,6 +150,34 @@ CREATE TABLE public.vop_table
     PRIMARY KEY (product, achieved_percent, quarter, year)
 );
 
+CREATE TABLE public.max_payout_table
+(
+    position character varying(32) NOT NULL,
+    product character varying(64) NOT NULL,
+    max_pay NUMERIC (10, 3) NOT NULL,
+    created timestamp with time zone NOT NULL,
+    modified timestamp with time zone NOT NULL,
+    deleted timestamp with time zone,
+    comment character varying(128) NOT NULL,
+    quarter integer NOT NULL,
+    year integer NOT NULL,  
+    PRIMARY KEY (position, product, quarter, year)
+);
+
+CREATE TABLE public.max_extra_payout_table
+(
+    position character varying(32) NOT NULL,
+    product character varying(64) NOT NULL,
+    max_pay NUMERIC (10, 3) NOT NULL,
+    created timestamp with time zone NOT NULL,
+    modified timestamp with time zone NOT NULL,
+    deleted timestamp with time zone,
+    comment character varying(128) NOT NULL,
+    quarter integer NOT NULL,
+    year integer NOT NULL,  
+    PRIMARY KEY (position, product, quarter, year)
+);
+
 CREATE TABLE public.threshold_table
 (
     id character varying(32),
@@ -163,7 +191,7 @@ CREATE TABLE public.threshold_table
     comment character varying(128) NOT NULL,
     quarter integer NOT NULL,
     year integer NOT NULL,  
-    PRIMARY KEY (id, quarter, year)
+    PRIMARY KEY (position, product, achieved_percent, quarter, year)
 );
 
 
@@ -221,136 +249,4 @@ CREATE TABLE public.user_authentication_table
     created timestamp with time zone NOT NULL,
     modified timestamp with time zone NOT NULL,
     comment character varying(32) NOT NULL
-);
-
-
-CREATE TABLE public.user_reports_table
-(
-    emp_id character varying(32),
-    position character varying(32) NOT NULL DEFAULT '',
-    reporting_manager character varying(32) NOT NULL DEFAULT '',
-    reporting_manager_position character varying(32) NOT NULL DEFAULT '',
-    region character varying(32) NOT NULL DEFAULT '',
-    outlet character varying(64) NOT NULL DEFAULT'',
-    latitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    longitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_sales_count integer NOT NULL DEFAULT 0,
-    hayyak_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_achieved_percentage NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_extra_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hbb_sales_count integer NOT NULL DEFAULT 0,
-    hbb_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hbb_achieved_percentage NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hbb_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hbb_extra_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_sales_count integer NOT NULL DEFAULT 0,
-    baqati_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_achieved_percentage NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_extra_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    upgrade_sales_count integer NOT NULL DEFAULT 0,
-    upgrade_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    uprade_achieved_percentage NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    upgrade_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    upgrade_extra_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    total_payout numeric(10,3) NOT NULL DEFAULT 0,
-    hayyak_sales_count_per_plan text,
-    hbb_sales_count_per_plan text,
-    baqati_sales_count_per_plan text,
-    upgrade_sales_count_per_plan text,
-    isquarterly bool NOT NULL DEFAULT false,
-    month integer NOT NULL DEFAULT 0,
-    quarter integer NOT NULL DEFAULT 0,
-    year integer NOT NULL,
-    created timestamp with time zone NOT NULL,
-    modified timestamp with time zone NOT NULL,
-    PRIMARY KEY (emp_id, month, quarter, year)
-);
-
-CREATE TABLE public.manager_reports_table
-(
-    mngr_id character varying(32),
-    position character varying(32) NOT NULL DEFAULT '',
-    reporting_manager character varying(32) NOT NULL DEFAULT '',
-    reporting_manager_position character varying(32) NOT NULL DEFAULT '',
-    region character varying(32) NOT NULL DEFAULT '',
-    outlet character varying(64) NOT NULL DEFAULT'',
-    latitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    longitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_sales_count integer NOT NULL DEFAULT 0,
-    hayyak_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_achieved_percentage NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_extra_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hbb_sales_count integer NOT NULL DEFAULT 0,
-    hbb_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hbb_achieved_percentage NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hbb_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hbb_extra_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_sales_count integer NOT NULL DEFAULT 0,
-    baqati_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_achieved_percentage NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_extra_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    upgrade_sales_count integer NOT NULL DEFAULT 0,
-    upgrade_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    uprade_achieved_percentage NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    upgrade_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    upgrade_extra_payout NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    total_payout numeric(10,3) NOT NULL DEFAULT 0,
-    hayyak_sales_count_per_plan text,
-    hbb_sales_count_per_plan text,
-    baqati_sales_count_per_plan text,
-    upgrade_sales_count_per_plan text,
-    isquarterly bool NOT NULL DEFAULT false,
-    month integer NOT NULL DEFAULT 0,
-    quarter integer NOT NULL DEFAULT 0,
-    year integer NOT NULL,
-    created timestamp with time zone NOT NULL,
-    modified timestamp with time zone NOT NULL,
-    PRIMARY KEY (mngr_id, month, quarter, year)
-);
-
-CREATE TABLE public.region_reports_table
-(
-    region character varying(32),
-    hbb_sales_count integer NOT NULL DEFAULT 0,
-    hbb_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_sales_count integer NOT NULL DEFAULT 0,
-    hayyak_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_sales_count integer NOT NULL DEFAULT 0,
-    baqati_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    upgrade_sales_count integer NOT NULL DEFAULT 0,
-    upgrade_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    isquarterly bool NOT NULL DEFAULT false,
-    month integer NOT NULL DEFAULT 0,
-    quarter integer NOT NULL DEFAULT 0,
-    year integer NOT NULL,
-    created timestamp with time zone NOT NULL,
-    modified timestamp with time zone NOT NULL,
-    PRIMARY KEY (region, month, quarter, year)
-);
-
-CREATE TABLE public.outlet_reports_table
-(
-    outlet character varying(32),
-    region character varying(32) NOT NULL DEFAULT '',
-    latitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    longitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hbb_sales_count integer NOT NULL DEFAULT 0,
-    hbb_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    hayyak_sales_count integer NOT NULL DEFAULT 0,
-    hayyak_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    baqati_sales_count integer NOT NULL DEFAULT 0,
-    baqati_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    upgrade_sales_count integer NOT NULL DEFAULT 0,
-    upgrade_target NUMERIC (10, 3) NOT NULL DEFAULT 0,
-    isquarterly bool NOT NULL DEFAULT false,
-    month integer NOT NULL DEFAULT 0,
-    quarter integer NOT NULL DEFAULT 0,
-    year integer NOT NULL,
-    created timestamp with time zone NOT NULL,
-    modified timestamp with time zone NOT NULL,
-    PRIMARY KEY (outlet, month, quarter, year)
 );

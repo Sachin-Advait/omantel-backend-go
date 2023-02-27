@@ -1,3 +1,4 @@
+masterCronTime: "04:30"
 secretKey: gis-jwt-token
 adminSecretKey: gis-admin-jwt-token
 sessionExpiryTimeMinutes: 3600
