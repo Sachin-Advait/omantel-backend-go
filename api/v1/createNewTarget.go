@@ -24,8 +24,8 @@ func upsertNewTarget(ctx *gin.Context) {
 			Text: "auth token not found", CreateTime: time.Now().Local()})
 
 		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
-			Error:   errors.UnauthorizedUserCode,
-			Message: errors.UnauthorizedUser,
+			Error:   errors.TokenNotFound,
+			Message: "AUTHENTICATE YOUR REQUEST",
 		})
 		return
 	}
@@ -36,8 +36,8 @@ func upsertNewTarget(ctx *gin.Context) {
 			Text: "not an admin", CreateTime: time.Now().Local()})
 
 		ctx.JSON(http.StatusForbidden, models.APIFailureResponse{
-			Error:   errors.UnauthorizedUserCode,
-			Message: errors.UnauthorizedUser,
+			Error:   errors.UnauthorizedUser,
+			Message: "USER IS NOT ADMIN",
 		})
 		return
 	}

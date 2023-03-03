@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
@@ -22,7 +23,7 @@ func ContextCreator() gin.HandlerFunc {
 
 		if err := ctx.ShouldBindHeader(&ctxHeader); err != nil {
 			logger.FileLogger.CtxError(ctx).Err(err).Msg("ContextCreator Middleware - error binding request header")
-			ctx.JSON(http.StatusBadRequest, APIResponse{
+			ctx.JSON(http.StatusBadRequest, models.APIResponse{
 				ErrorCode: errors.InvalidReqParameterCode,
 				Message:   errors.InvalidReqParameters,
 				Data:      "INCORRECT HEADER FOUND",

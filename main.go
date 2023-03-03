@@ -159,7 +159,7 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		MaxOpenConnections: applicationConfig.GetInt(constant.PsqlMaxOpenConn),
 		MaxIdleConnections: applicationConfig.GetInt(constant.PsqlMaxIdleConn),
 		MaxLifetime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxLifetime)) * time.Hour,
-		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxIdleTime)) * time.Hour,
+		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxIdleTime)) * time.Minute,
 	}
 
 	incentiveConfig := &configs.IncentiveConfig{
@@ -177,7 +177,7 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		MaxOpenConnections: applicationConfig.GetInt(constant.LogPsqlMaxOpenConn),
 		MaxIdleConnections: applicationConfig.GetInt(constant.LogPsqlMaxIdleConn),
 		MaxLifetime:        time.Duration(applicationConfig.GetInt(constant.LogConnMaxLifetime)) * time.Hour,
-		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.LogConnMaxIdleTime)) * time.Hour,
+		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.LogConnMaxIdleTime)) * time.Minute,
 	}
 
 	logger.InitDBLogger(dbLogConfig)

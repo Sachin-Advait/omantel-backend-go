@@ -31,7 +31,8 @@ func CreateNewProduct(ctx *gin.Context) (int, interface{}) {
 				Text: err.Error(), CreateTime: time.Now().Local()})
 
 			return http.StatusBadRequest, models.APIFailureResponse{
-				Error:   errors.RequestDecodeErrorCode,
+				Status:  false,
+				Error:   errors.InvalidReqParameters,
 				Message: errors.RequestDecodeError,
 			}
 		}
@@ -48,6 +49,7 @@ func CreateNewProduct(ctx *gin.Context) (int, interface{}) {
 			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
+			Status:  false,
 			Error:   errors.InvalidReqParameters,
 			Message: err.Error(),
 		}
@@ -60,11 +62,17 @@ func CreateNewProduct(ctx *gin.Context) (int, interface{}) {
 			Text: customErr.Details.(string), CreateTime: time.Now().Local()})
 
 		if len(failedResp) != 0 {
-			return http.StatusOK, failedResp
+			return http.StatusOK, models.APIResponse{
+				Status:  false,
+				Message: "PARTIAL SUCCESS AND FAILURE",
+				Data:    failedResp,
+			}
 		}
 
 		return customErr.StatusCode, &models.APIFailureResponse{
-			Error: customErr.Message,
+			Status:  false,
+			Error:   customErr.Err,
+			Message: customErr.Message,
 		}
 	}
 

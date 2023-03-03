@@ -2,8 +2,10 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
+	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
@@ -215,6 +217,90 @@ func ValidateUpsertTarget(target []*CreateTargetRequest) error {
 	return nil
 }
 
+func ValidateUpsertVOCCriteria(voc []*CreateVOCCriteriaRequest) error {
+
+	if len(voc) == 0 || voc[0] == nil {
+		return errors.New("invalid request")
+	}
+
+	for _, eachRecord := range voc {
+
+		if eachRecord.Unsatisfactory == 0 {
+			return errors.New("invalid unsatisfactory")
+		}
+
+		if eachRecord.AlmostAchieved == 0 {
+			return errors.New("invalid almostAchieved")
+		}
+
+		if eachRecord.Achieved == 0 {
+			return errors.New("invalid achieved")
+		}
+
+		if eachRecord.WellAchieved == 0 {
+			return errors.New("invalid wellAchieved")
+		}
+
+		if eachRecord.Outstanding == 0 {
+			return errors.New("invalid outstanding")
+		}
+
+		if eachRecord.Year < 2022 {
+			return errors.New("invalid year")
+		}
+	}
+
+	return nil
+}
+
+func ValidateUpsertVOCMaxPay(voc []*CreateVOCMaxPayRequest) error {
+
+	if len(voc) == 0 || voc[0] == nil {
+		return errors.New("invalid request")
+	}
+
+	for _, eachRecord := range voc {
+
+		if _, ok := constant.EmployeePositionMap[eachRecord.Position]; !ok {
+			return errors.New("invalid position-" + eachRecord.Position)
+		}
+
+		if eachRecord.MaxPay == 0 {
+			return errors.New("invalid maxPay")
+		}
+
+		if eachRecord.Year < 2022 {
+			return errors.New("invalid year")
+		}
+	}
+
+	return nil
+}
+
+func ValidateUpsertVOCUser(voc []*CreateVOCUserRequest) error {
+
+	if len(voc) == 0 || voc[0] == nil {
+		return errors.New("invalid request")
+	}
+
+	for _, eachRecord := range voc {
+
+		if eachRecord.UserId == "" {
+			return errors.New("invalid userId")
+		}
+
+		if eachRecord.AchievedPercent == 0 {
+			return errors.New("invalid achievedPercent")
+		}
+
+		if eachRecord.Year < 2022 {
+			return errors.New("invalid year")
+		}
+	}
+
+	return nil
+}
+
 func ValidateFetchRegion(region *FetchDeleteRegionRequest) error {
 
 	if region.Quarter < 1 || region.Quarter > 4 {
@@ -312,6 +398,42 @@ func ValidateFetchTarget(target *FetchDeleteTargetRequest) error {
 	}
 
 	return errors.New("invalid month or quarter")
+}
+
+func ValidateFetchVOCCriteria(voc *FetchDeleteVOCCriteriaRequest) error {
+
+	if voc == nil {
+		return errors.New("invalid request")
+	}
+
+	if voc.Year < 2022 {
+		return errors.New("invalid year")
+	}
+
+	return nil
+}
+
+func ValidateFetchVOCUser(voc *FetchDeleteVOCUserRequest) error {
+
+	if voc == nil {
+		return errors.New("invalid request")
+	}
+
+	if len(voc.UserIds) == 0 {
+		return errors.New("zero userIds")
+	}
+
+	if voc.Year < 2022 {
+		return errors.New("invalid year")
+	}
+
+	for index, user := range voc.UserIds {
+		if user == "" {
+			return errors.New("blank userId at index-" + fmt.Sprintf("%v", index))
+		}
+	}
+
+	return nil
 }
 
 func ValidateDeleteRegion(region *FetchDeleteRegionRequest) error {
@@ -455,4 +577,59 @@ func ValidateDeleteTarget(target *FetchDeleteTargetRequest) error {
 	}
 
 	return errors.New("invalid month or quarter")
+}
+
+func ValidateDeleteVOCCriteria(voc *FetchDeleteVOCCriteriaRequest) error {
+
+	if voc == nil {
+		return errors.New("invalid request")
+	}
+
+	if voc.Year < 2022 {
+		return errors.New("invalid year")
+	}
+
+	return nil
+}
+
+func ValidateDeleteVOCMaxPay(voc []*FetchDeleteVOCMaxPayRequest) error {
+
+	if len(voc) == 0 {
+		return errors.New("invalid request")
+	}
+
+	for i, val := range voc {
+		if _, ok := constant.EmployeePositionMap[val.Position]; !ok {
+			return fmt.Errorf("invalid position, index-%v, position-%v", i, val.Position)
+		}
+
+		if val.Year < 2022 {
+			return fmt.Errorf("invalid year, index-%v, year-%v", i, val.Year)
+		}
+	}
+
+	return nil
+}
+
+func ValidateDeleteVOCUser(voc *FetchDeleteVOCUserRequest) error {
+
+	if voc == nil {
+		return errors.New("invalid request")
+	}
+
+	if len(voc.UserIds) == 0 {
+		return errors.New("zero userIds")
+	}
+
+	if voc.Year < 2022 {
+		return errors.New("invalid year")
+	}
+
+	for index, user := range voc.UserIds {
+		if user == "" {
+			return errors.New("blank userId at index-" + fmt.Sprintf("%v", index))
+		}
+	}
+
+	return nil
 }

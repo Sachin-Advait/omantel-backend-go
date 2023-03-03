@@ -58,28 +58,82 @@ func IncentiveRoutes(group *gin.RouterGroup) {
 	group.POST(constant.TopTenSalesTargetPath, getTopTenEmpSalesAndTarget)
 	group.GET(constant.RenewTokenPath, renewAccessToken)
 
+	group.GET(constant.FetchNotificationPath, fetchNotification)
+
+	group.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
+}
+
+func IncentiveSwaggerRoutes(group *gin.RouterGroup) {
+
+	group.GET("/", func(c *gin.Context) {
+
+		pong := models.Pong{
+			DT: time.Now(),
+		}
+
+		res := models.APIResponse{
+			Status:  true,
+			Message: errors.SuccessInfoMessage,
+			Data:    pong,
+		}
+
+		c.JSON(http.StatusOK, res)
+	})
+
+	group.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
+}
+
+// Incentive Admin Routes
+func IncentiveAdminRoutes(group *gin.RouterGroup) {
+
+	group.GET("/", func(c *gin.Context) {
+
+		pong := models.Pong{
+			DT: time.Now(),
+		}
+
+		res := models.APIResponse{
+			Status:  true,
+			Message: errors.SuccessInfoMessage,
+			Data:    pong,
+		}
+
+		c.JSON(http.StatusOK, res)
+	})
+
 	group.POST(constant.UpsertRegionPath, upsertNewRegion)
 	group.POST(constant.UpsertOutletPath, upsertNewOutlet)
 	group.POST(constant.UpsertProductPath, upsertNewProduct)
 	group.POST(constant.UpsertPlanPath, upsertNewPlan)
 	group.POST(constant.UpsertTargetPath, upsertNewTarget)
+	group.POST(constant.UpsertVOCCriteriaPath, upsertVOCCriteria)
+	group.POST(constant.UpsertVOCMaxPayPath, upsertVOCMaxPay)
+	group.POST(constant.UpsertVOCUserPath, upsertVOCUser)
 
 	group.POST(constant.FetchRegionPath, fetchRegions)
 	group.POST(constant.FetchOutletPath, fetchOutlets)
 	group.POST(constant.FetchProductPath, fetchProducts)
 	group.POST(constant.FetchPlanPath, fetchPlans)
 	group.POST(constant.FetchTargetPath, fetchTargets)
+	group.POST(constant.FetchVOCCriteriaPath, fetchVOCCriteria)
+	group.POST(constant.FetchVOCMaxPayPath, fetchVOCMaxPay)
+	group.POST(constant.FetchVOCUserPath, fetchVOCUser)
 
 	group.POST(constant.DeleteRegionPath, deleteRegions)
 	group.POST(constant.DeleteOutletPath, deleteOutlets)
 	group.POST(constant.DeleteProductPath, deleteProducts)
 	group.POST(constant.DeletePlanPath, deletePlans)
 	group.POST(constant.DeleteTargetPath, deleteTargets)
+	group.POST(constant.DeleteVOCCriteriaPath, deleteVOCCriteria)
+	group.POST(constant.DeleteVOCMaxPayPath, deleteVOCMaxPay)
+	group.POST(constant.DeleteVOCUserPath, deleteVOCUser)
+
+	group.POST(constant.UpsertNotificationPath, upsertNotification)
 
 	group.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
-func IncentiveSwaggerRoutes(group *gin.RouterGroup) {
+func IncentiveSwaggerAdminRoutes(group *gin.RouterGroup) {
 
 	group.GET("/", func(c *gin.Context) {
 

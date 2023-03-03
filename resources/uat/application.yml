@@ -18,7 +18,7 @@ psqlDB:
   maxOpenConnections: 20
   maxIdleConnections: 10
   connMaxLifetimeInHour: 24
-  connMaxIdleTimeInMinute: 48
+  connMaxIdleTimeInMinute: 30
 logPsqlDB:
   host: 86.105.252.94
   port: 5432
@@ -28,7 +28,7 @@ logPsqlDB:
   maxOpenConnections: 20
   maxIdleConnections: 10
   connMaxLifetimeInHour: 24
-  connMaxIdleTimeInMinute: 48
+  connMaxIdleTimeInMinute: 30
 userIncentiveRedis:
   address: 127.0.0.1:6379
   password: 

@@ -36,8 +36,12 @@ func GetRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 	incentiveSwagV1Router := router.Group(constant.SalesIncentiveDocRoute)
 	v1.IncentiveSwaggerRoutes(incentiveSwagV1Router)
 
-	// incentiveSwagV2Router := router.Group(constant.SalesIncentiveV2DocRoute)
-	// v2.IncentiveSwaggerRoutes(incentiveSwagV2Router)
+	//version 1
+	incentiveAdminV1Router := router.Group(constant.SalesIncentiveAdminRoute, middleware.ApiVersionHandler("1"), middleware.MandatoryAdminAuthHandler())
+	v1.IncentiveAdminRoutes(incentiveAdminV1Router)
+
+	incentiveSwagAdminV1Router := router.Group(constant.SalesIncentiveDocAdminRoute)
+	v1.IncentiveSwaggerAdminRoutes(incentiveSwagAdminV1Router)
 
 	logger.FileLogger.Info().Str("env", flags.Env()).Int("port", flags.Port()).Msg("Router started...")
 	return router

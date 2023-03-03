@@ -164,13 +164,12 @@ const (
 
 //routes
 const (
-	SwaggerRoute           = "/swagger/*any"
-	ActuatorRoute          = "/actuator/*any"
-	SalesIncentiveRoute    = "/sales/incentive"
-	SalesIncentiveDocRoute = "/sales/incentive/v1"
-
-	SalesIncentiveV2Route    = "/sales/incentive/v2"
-	SalesIncentiveV2DocRoute = "/sales/incentive/v2"
+	SwaggerRoute                = "/swagger/*any"
+	ActuatorRoute               = "/actuator/*any"
+	SalesIncentiveRoute         = "/sales/incentive"
+	SalesIncentiveDocRoute      = "/sales/incentive/v1"
+	SalesIncentiveAdminRoute    = "/sales/incentive/admin"
+	SalesIncentiveDocAdminRoute = "/sales/incentive/admin/v1"
 
 	GenerateTokenPath = "/token"
 
@@ -198,21 +197,40 @@ const (
 
 	CaptchaVerificationPath = "/captcha_verify"
 
-	FetchRegionPath   = "/fetch_region"
-	UpsertRegionPath  = "/upsert_region"
-	DeleteRegionPath  = "/delete_region"
-	FetchOutletPath   = "/fetch_outlet"
-	UpsertOutletPath  = "/upsert_outlet"
-	DeleteOutletPath  = "/delete_outlet"
+	FetchRegionPath  = "/fetch_region"
+	UpsertRegionPath = "/upsert_region"
+	DeleteRegionPath = "/delete_region"
+
+	FetchOutletPath  = "/fetch_outlet"
+	UpsertOutletPath = "/upsert_outlet"
+	DeleteOutletPath = "/delete_outlet"
+
 	FetchProductPath  = "/fetch_product"
 	UpsertProductPath = "/upsert_product"
 	DeleteProductPath = "/delete_product"
-	FetchPlanPath     = "/fetch_plan"
-	UpsertPlanPath    = "/upsert_plan"
-	DeletePlanPath    = "/delete_plan"
-	FetchTargetPath   = "/fetch_target"
-	UpsertTargetPath  = "/upsert_target"
-	DeleteTargetPath  = "/delete_target"
+
+	FetchPlanPath  = "/fetch_plan"
+	UpsertPlanPath = "/upsert_plan"
+	DeletePlanPath = "/delete_plan"
+
+	FetchTargetPath  = "/fetch_target"
+	UpsertTargetPath = "/upsert_target"
+	DeleteTargetPath = "/delete_target"
+
+	FetchVOCCriteriaPath  = "/fetch_voc_criteria"
+	UpsertVOCCriteriaPath = "/upsert_voc_criteria"
+	DeleteVOCCriteriaPath = "/delete_voc_criteria"
+
+	FetchVOCMaxPayPath  = "/fetch_voc_pay"
+	UpsertVOCMaxPayPath = "/upsert_voc_pay"
+	DeleteVOCMaxPayPath = "/delete_voc_pay"
+
+	FetchVOCUserPath  = "/fetch_voc_user"
+	UpsertVOCUserPath = "/upsert_voc_user"
+	DeleteVOCUserPath = "/delete_voc_user"
+
+	UpsertNotificationPath = "/upsert_notification"
+	FetchNotificationPath  = "/fetch_notification"
 )
 
 var (
@@ -253,6 +271,14 @@ const (
 	OutletManagerAbb = "OM"
 	PromoterAbb      = "A"
 	CSRAbb           = "A"
+)
+
+const (
+	VOCUnsatisfactory = "unsatisfactory"
+	VOCAlmostAchieved = "almost_achieved"
+	VOCAchieved       = "achieved"
+	VOCWellAchieved   = "well_achieved"
+	VOCOutstanding    = "outstanding"
 )
 
 // var (
@@ -358,6 +384,18 @@ var ProductGroupMap = map[string]struct{}{
 	BaqatiCategory:  struct{}{},
 	HayyakCategory:  struct{}{},
 	UpgradeCategory: struct{}{},
+}
+
+var NotificationTypeMap = map[string]struct{}{
+	"NOTIFICATION": struct{}{},
+	"OFFER":        struct{}{},
+	"TRAINING":     struct{}{},
+}
+
+var SupportedFileTypeMap = map[string]struct{}{
+	"PDF":   struct{}{},
+	"EXCEL": struct{}{},
+	"VIDEO": struct{}{},
 }
 
 const (

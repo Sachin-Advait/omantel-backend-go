@@ -26,7 +26,8 @@ func FetchPlans(ctx *gin.Context) (int, interface{}) {
 			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, models.APIFailureResponse{
-			Error:   errors.RequestDecodeErrorCode,
+			Status:  false,
+			Error:   errors.InvalidReqParameters,
 			Message: errors.RequestDecodeError,
 		}
 	}
@@ -42,6 +43,7 @@ func FetchPlans(ctx *gin.Context) (int, interface{}) {
 			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
+			Status:  false,
 			Error:   errors.InvalidReqParameters,
 			Message: err.Error(),
 		}
@@ -54,7 +56,9 @@ func FetchPlans(ctx *gin.Context) (int, interface{}) {
 			Text: customErr.Details.(string), CreateTime: time.Now().Local()})
 
 		return customErr.StatusCode, &models.APIFailureResponse{
-			Error: customErr.Message,
+			Status:  false,
+			Error:   customErr.Err,
+			Message: customErr.Message,
 		}
 	}
 

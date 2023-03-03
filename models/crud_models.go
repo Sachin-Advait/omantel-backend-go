@@ -1,5 +1,18 @@
 package models
 
+import "time"
+
+type Notification struct {
+	Id         string    `json:"id"`
+	Category   string    `json:"category"`
+	Subject    string    `json:"subject"`
+	Body       string    `json:"body"`
+	FileType   string    `json:"file_type"`
+	FileLink   string    `json:"file_link"`
+	CreatedAt  time.Time `json:"created"`
+	ModifiedAt time.Time `json:"modified"`
+}
+
 type CreateRegionRequest struct {
 	RegionCode string `json:"region_code"`
 	RegionName string `json:"region_name"`
@@ -55,6 +68,30 @@ type CreateTargetRequest struct {
 	IsUpdate   bool    `json:"isUpdate"`
 }
 
+type CreateVOCCriteriaRequest struct {
+	Unsatisfactory float64 `json:"unsatisfactory"`
+	AlmostAchieved float64 `json:"almost_achieved"`
+	Achieved       float64 `json:"achieved"`
+	WellAchieved   float64 `json:"well_achieved"`
+	Outstanding    float64 `json:"outstanding"`
+	Year           int     `json:"year"`
+	IsUpdate       bool    `json:"isUpdate"`
+}
+
+type CreateVOCMaxPayRequest struct {
+	Position string  `json:"position"`
+	MaxPay   float64 `json:"max_pay"`
+	Year     int     `json:"year"`
+	IsUpdate bool    `json:"isUpdate"`
+}
+
+type CreateVOCUserRequest struct {
+	UserId          string  `json:"emp_id"`
+	AchievedPercent float64 `json:"achieved_percent"`
+	Year            int     `json:"year"`
+	IsUpdate        bool    `json:"isUpdate"`
+}
+
 type FetchDeleteRegionRequest struct {
 	RegionCodes []string `json:"region_codes"`
 	Quarter     int      `json:"quarter"`
@@ -86,6 +123,20 @@ type FetchDeleteTargetRequest struct {
 	Month       int      `json:"month"`
 	Quarter     int      `json:"quarter"`
 	Year        int      `json:"year"`
+}
+
+type FetchDeleteVOCCriteriaRequest struct {
+	Year int `json:"year"`
+}
+
+type FetchDeleteVOCMaxPayRequest struct {
+	Position string `json:"position"`
+	Year     int    `json:"year"`
+}
+
+type FetchDeleteVOCUserRequest struct {
+	UserIds []string `json:"user_ids"`
+	Year    int      `json:"year"`
 }
 
 type RegionResponse struct {
@@ -128,6 +179,24 @@ type TargetResponse struct {
 	Upgrade    float64 `json:"upgrade"`
 }
 
+type VOCCriteriaResponse struct {
+	Unsatisfactory float64 `json:"unsatisfactory"`
+	AlmostAchieved float64 `json:"almost_achieved"`
+	Achieved       float64 `json:"achieved"`
+	WellAchieved   float64 `json:"well_achieved"`
+	Outstanding    float64 `json:"outstanding"`
+}
+
+type VOCMaxPayResponse struct {
+	Position string  `json:"position"`
+	MaxPay   float64 `json:"max_pay"`
+}
+
+type VOCUserResponse struct {
+	UserId          string  `json:"emp_id"`
+	AchievedPercent float64 `json:"achieved_percent"`
+}
+
 type RegionFailedResponse struct {
 	RegionCode string `json:"region_code"`
 	Message    string `json:"message"`
@@ -151,4 +220,21 @@ type PlanFailedResponse struct {
 type TargetFailedResponse struct {
 	TargetCode string `json:"target_code"`
 	Message    string `json:"message"`
+}
+
+type VOCCriteriaFailedResponse struct {
+	Year    int    `json:"voc_year"`
+	Message string `json:"message"`
+}
+
+type VOCMaxPayFailedResponse struct {
+	Position string `json:"position"`
+	Year     int    `json:"voc_year"`
+	Message  string `json:"message"`
+}
+
+type VOCCUserFailedResponse struct {
+	UserId  string `json:"user_id"`
+	Year    int    `json:"year"`
+	Message string `json:"message"`
 }

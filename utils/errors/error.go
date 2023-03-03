@@ -11,6 +11,7 @@ var errorType = reflect.TypeOf((*error)(nil)).Elem()
 type Error struct {
 	StatusCode int         `json:"-"`
 	Code       string      `json:"code"`
+	Err        string      `json:"error"`
 	Message    string      `json:"message"`
 	Details    interface{} `json:"details,omitempty"`
 }

@@ -250,3 +250,17 @@ CREATE TABLE public.user_authentication_table
     modified timestamp with time zone NOT NULL,
     comment character varying(32) NOT NULL
 );
+
+CREATE TABLE public.user_notification
+(
+    id character varying(128) PRIMARY KEY,
+    category character varying(32) NOT NULL,
+    subject text NOT NULL,
+    body text NOT NULL DEFAULT '',
+    file_type character varying(32) NOT NULL,
+    file_link character varying(32) NOT NULL,
+    created timestamp with time zone NOT NULL,
+    modified timestamp with time zone NOT NULL,
+    deleted timestamp with time zone,
+    comment character varying(128) NOT NULL
+);

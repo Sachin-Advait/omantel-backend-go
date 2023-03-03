@@ -181,6 +181,56 @@ func (impl *IncentiveImpl) LoadThresholdCheckFromDB(printLog bool) error {
 	return nil
 }
 
+func (impl *IncentiveImpl) LoadVOCFromDB(printLog bool) error {
+
+	currTime := time.Now()
+	currYear, _, _ := currTime.Date()
+
+	if err := impl.PsqlDb.FetchVOCCriteria(currYear); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear).Err(err).Msg("LoadVOCCriteriaFromDB : criteria fetching failed")
+		}
+		return err
+	}
+
+	if err := impl.PsqlDb.FetchVOCCriteria(currYear - 1); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear-1).Err(err).Msg("LoadVOCCriteriaFromDB : criteria fetching failed")
+		}
+		return err
+	}
+
+	if err := impl.PsqlDb.FetchVOCCriteria(currYear + 1); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear+1).Err(err).Msg("LoadVOCCriteriaFromDB : criteria fetching failed")
+		}
+		return err
+	}
+
+	if err := impl.PsqlDb.FetchVOCMaxPay(currYear); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear).Err(err).Msg("LoadVOCCriteriaFromDB : maxPay fetching failed")
+		}
+		return err
+	}
+
+	if err := impl.PsqlDb.FetchVOCMaxPay(currYear - 1); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear-1).Err(err).Msg("LoadVOCCriteriaFromDB : maxPay fetching failed")
+		}
+		return err
+	}
+
+	if err := impl.PsqlDb.FetchVOCMaxPay(currYear + 1); err != nil {
+		if printLog {
+			logger.FileLogger.Error().Int("year", currYear+1).Err(err).Msg("LoadVOCCriteriaFromDB : maxPay fetching failed")
+		}
+		return err
+	}
+
+	return nil
+}
+
 func (impl *IncentiveImpl) PrintAllInMemData() {
 
 	currTime := time.Now()
@@ -195,6 +245,8 @@ func (impl *IncentiveImpl) PrintAllInMemData() {
 	logger.FileLogger.Info().Int("year", year).Interface("maxPay", models.MaxPay.Payoutmap[year]).Msg("Load MaxPay")
 	logger.FileLogger.Info().Int("year", year).Interface("maxExtraPay", models.MaxExtraPay.ExtraPayoutmap[year]).Msg("Load MaxExtraPay")
 	logger.FileLogger.Info().Int("year", year).Interface("threshold", models.MaxExtraPay.ExtraPayoutmap[year]).Msg("Load Threshold")
+	logger.FileLogger.Info().Int("year", year).Interface("vocCriteria", models.VOCDetail.Criteria[year]).Msg("Load VOCCriteria")
+	logger.FileLogger.Info().Int("year", year).Interface("vocMaxPay", models.VOCDetail.MaxPay[year]).Msg("Load VOCMaxPay")
 
 	year = year - 1
 
@@ -205,6 +257,8 @@ func (impl *IncentiveImpl) PrintAllInMemData() {
 	logger.FileLogger.Info().Int("year", year).Interface("maxPay", models.MaxPay.Payoutmap[year]).Msg("Load MaxPay")
 	logger.FileLogger.Info().Int("year", year).Interface("maxExtraPay", models.MaxExtraPay.ExtraPayoutmap[year]).Msg("Load MaxExtraPay")
 	logger.FileLogger.Info().Int("year", year).Interface("threshold", models.MaxExtraPay.ExtraPayoutmap[year]).Msg("Load Threshold")
+	logger.FileLogger.Info().Int("year", year).Interface("vocCriteria", models.VOCDetail.Criteria[year]).Msg("Load VOCCriteria")
+	logger.FileLogger.Info().Int("year", year).Interface("vocMaxPay", models.VOCDetail.MaxPay[year]).Msg("Load VOCMaxPay")
 
 	year = year + 2
 
@@ -215,4 +269,6 @@ func (impl *IncentiveImpl) PrintAllInMemData() {
 	logger.FileLogger.Info().Int("year", year).Interface("maxPay", models.MaxPay.Payoutmap[year]).Msg("Load MaxPay")
 	logger.FileLogger.Info().Int("year", year).Interface("maxExtraPay", models.MaxExtraPay.ExtraPayoutmap[year]).Msg("Load MaxExtraPay")
 	logger.FileLogger.Info().Int("year", year).Interface("threshold", models.MaxExtraPay.ExtraPayoutmap[year]).Msg("Load Threshold")
+	logger.FileLogger.Info().Int("year", year).Interface("vocCriteria", models.VOCDetail.Criteria[year]).Msg("Load VOCCriteria")
+	logger.FileLogger.Info().Int("year", year).Interface("vocMaxPay", models.VOCDetail.MaxPay[year]).Msg("Load VOCMaxPay")
 }

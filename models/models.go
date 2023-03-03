@@ -314,6 +314,12 @@ type ThresholdCheckout struct {
 	Limit map[int]map[int]map[string]map[string]map[int]float64
 }
 
+type VOCDetails struct {
+	Mutex    sync.RWMutex
+	Criteria map[int]map[string]float64
+	MaxPay   map[int]map[string]float64
+}
+
 type OtpModel struct {
 	StaffID              string
 	StaffName            string
@@ -361,6 +367,7 @@ var ValOfPoint ValueOfPoint
 var MaxPay MaxPayout
 var MaxExtraPay MaxExtraPayout
 var ThresholdCheck ThresholdCheckout
+var VOCDetail VOCDetails
 
 var (
 	ProductTypeMap = map[string]string{

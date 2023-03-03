@@ -85,6 +85,19 @@ type UserBasicDetailsDB struct {
 	IsActive        bool
 }
 
+type NotificationDB struct {
+	Id         string
+	Category   string
+	Subject    string
+	Body       string
+	FileType   string
+	FileLink   string
+	CreatedAt  time.Time
+	ModifiedAt time.Time
+	DeletedAt  time.Time
+	IsUpdate   bool
+}
+
 type RedisConfigStruct struct {
 	Address                     string
 	Password                    string

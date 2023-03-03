@@ -5,18 +5,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	jwthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/jwtHelper"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
-
-type APIResponse struct {
-	Status    bool        `json:"status" example:"false" enums:"true,false"`
-	Message   string      `json:"message" example:"CE10001"`
-	ErrorCode string      `json:"errorcode" example:"INTERNAL SERVER ERROR"`
-	Data      interface{} `json:"data"`
-}
 
 // OptionalAuthHandler:
 //	* fetches values from header and sets into contextHeader in upperCase
@@ -33,7 +27,7 @@ func OptionalAuthHandler() gin.HandlerFunc {
 
 		if tokenLength > 0 && tokenLength <= 7 {
 			logger.FileLogger.CtxError(ctx).Err(errors.New("MIDDLEWARE AUTH FAILED")).Msg("AuthMiddleware : incorrect token length")
-			ctx.JSON(http.StatusBadRequest, APIResponse{
+			ctx.JSON(http.StatusBadRequest, models.APIResponse{
 				ErrorCode: errors.InvalidTokenCode,
 				Message:   errors.InvalidToken,
 			})
@@ -54,7 +48,7 @@ func OptionalAuthHandler() gin.HandlerFunc {
 				if err != nil {
 					if status == constant.TokenExpired {
 						logger.FileLogger.CtxError(ctx).Err(err).Msg("AuthMiddleware : expired token")
-						ctx.JSON(http.StatusUnauthorized, APIResponse{
+						ctx.JSON(http.StatusUnauthorized, models.APIResponse{
 							ErrorCode: errors.TokenExpiredCode,
 							Message:   errors.TokenExpired,
 						})
@@ -63,7 +57,7 @@ func OptionalAuthHandler() gin.HandlerFunc {
 					}
 
 					logger.FileLogger.CtxError(ctx).Err(err).Msg("AuthMiddleware : invalid token")
-					ctx.JSON(http.StatusBadRequest, APIResponse{
+					ctx.JSON(http.StatusBadRequest, models.APIResponse{
 						ErrorCode: errors.InvalidTokenCode,
 						Message:   errors.InvalidToken,
 					})
@@ -73,7 +67,7 @@ func OptionalAuthHandler() gin.HandlerFunc {
 
 				if ctxHeader.XUserId != "" && authUser != ctxHeader.XUserId {
 					logger.FileLogger.CtxError(ctx).Err(errors.New("USERID AND AUTHTOKEN ARE CONTRADICTORY")).Msg("AuthMiddleware : userID contradicting with token")
-					ctx.JSON(http.StatusBadRequest, APIResponse{
+					ctx.JSON(http.StatusBadRequest, models.APIResponse{
 						ErrorCode: errors.ContradictoryReqParamCode,
 						Message:   errors.ContradictoryReqParam,
 						Data:      "USERID AND AUTHTOKEN ARE CONTRADICTORY",

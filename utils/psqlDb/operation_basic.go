@@ -2,6 +2,7 @@ package psqldb
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -456,6 +457,106 @@ func (dbConn *DBImplementation) FetchMaxThreshold(year int) error {
 			}
 		}
 	}
+
+	return nil
+}
+
+// FetchVOCCriteria loads the gloabal variable VOCDetail with the voc criteria value
+func (dbConn *DBImplementation) FetchVOCCriteria(year int) error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	var (
+		unsatisfactory float64
+		almostAchieved float64
+		achieved       float64
+		wellAchieved   float64
+		outstanding    float64
+	)
+
+	models.VOCDetail.Mutex.Lock()
+	defer models.VOCDetail.Mutex.Unlock()
+
+	if models.VOCDetail.Criteria == nil {
+		models.VOCDetail.Criteria = make(map[int]map[string]float64)
+	}
+
+	if models.VOCDetail.Criteria[year] == nil {
+		models.VOCDetail.Criteria[year] = make(map[string]float64)
+	}
+
+	err := dbConn.Operation.QueryRowContext(ctx, "select unsatisfactory, almost_achieved, achieved, well_achieved, outstanding from voc_criteria_table where deleted IS NULL and year=$1",
+		year).Scan(&unsatisfactory, &almostAchieved, &achieved, &wellAchieved, &outstanding)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return fmt.Errorf("FetchVOCCriteria: query - " + err.Error())
+	}
+
+	models.VOCDetail.Criteria[year] = map[string]float64{
+		constant.VOCUnsatisfactory: unsatisfactory,
+		constant.VOCAlmostAchieved: almostAchieved,
+		constant.VOCAchieved:       achieved,
+		constant.VOCWellAchieved:   wellAchieved,
+		constant.VOCOutstanding:    outstanding,
+	}
+
+	return nil
+}
+
+// FetchVOCMaxPay loads the gloabal variable VOCDetail with the voc maxPay value
+func (dbConn *DBImplementation) FetchVOCMaxPay(year int) error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	models.VOCDetail.Mutex.Lock()
+	defer models.VOCDetail.Mutex.Unlock()
+
+	if models.VOCDetail.MaxPay == nil {
+		models.VOCDetail.MaxPay = make(map[int]map[string]float64)
+	}
+
+	if models.VOCDetail.MaxPay[year] == nil {
+		models.VOCDetail.MaxPay[year] = make(map[string]float64)
+	}
+
+	rows, err := dbConn.Operation.QueryContext(ctx, "select position, max_pay from voc_max_pay_table where deleted IS NULL and year=$1", year)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return fmt.Errorf("FetchVOCMaxPay: query - " + err.Error())
+	}
+
+	for rows.Next() {
+
+		var (
+			position string
+			maxPay   float64
+		)
+
+		if err := rows.Scan(&position, &maxPay); err != nil {
+			return fmt.Errorf("FetchVOCMaxPay: scan - " + err.Error())
+		}
+
+		if !(position == constant.PromoterCC || position == constant.OutletManagerCC || position == constant.ManagerCC || position == constant.SeniorManagerCC) {
+			return fmt.Errorf("FetchVOCMaxPay: invalid position - " + fmt.Sprintf("year:%v, position:%v", year, position))
+		}
+
+		if maxPay == 0 {
+			return fmt.Errorf("FetchVOCMaxPay: invalid maxPay - " + fmt.Sprintf("year:%v, position:%v, maxPay:%v", year, position, maxPay))
+		}
+
+		models.VOCDetail.MaxPay[year][constant.EmployeePositionMap[position]] = maxPay
+	}
+
+	//validation
+	// if len(models.VOCDetail.MaxPay[year]) != 4 {
+	// 	return fmt.Errorf("FetchVOCMaxPay: invalid position length - " + fmt.Sprintf("year:%v, positionLen:%v", year, len(models.VOCDetail.MaxPay[year])))
+	// }
 
 	return nil
 }

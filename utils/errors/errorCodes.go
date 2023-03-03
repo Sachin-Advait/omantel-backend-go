@@ -56,6 +56,7 @@ const (
 	LoginLimitReached      = "MAX SUCCESS LOGIN LIMIT REACHED"
 	RetryLoginLimitReached = "MAX INCORRECT LOGIN LIMIT REACHED, BLOCKED FOR 15 MINS"
 	InvalidDetails         = "DETAILS ARE INCORRECT"
+	TokenNotFound          = "TOKEN NOT FOUND"
 	InvalidToken           = "INVALID TOKEN"
 	TokenExpired           = "TOKEN EXPIRED"
 	InvalidTokenDetails    = "TOKEN DETAILS ARE INVALID"

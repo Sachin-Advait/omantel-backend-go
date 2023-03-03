@@ -12,6 +12,7 @@ type IncentiveProvider interface {
 	LoadMaxPayFromDB(printLogs bool) error
 	LoadMaxExtraPayFromDB(printLog bool) error
 	LoadThresholdCheckFromDB(printLog bool) error
+	LoadVOCFromDB(printLog bool) error
 
 	PrintAllInMemData()
 
@@ -58,4 +59,19 @@ type IncentiveProvider interface {
 	FetchTargets(ctx *gin.Context, req *FetchDeleteTargetRequest) (map[string][]*TargetResponse, *errors.Error)
 	CreateNewTarget(ctx *gin.Context, req []*CreateTargetRequest) ([]*TargetFailedResponse, *errors.Error)
 	DeleteTargets(ctx *gin.Context, req *FetchDeleteTargetRequest) *errors.Error
+
+	FetchVOCCriteria(ctx *gin.Context, req *FetchDeleteVOCCriteriaRequest) (*VOCCriteriaResponse, *errors.Error)
+	CreateVOCCriteria(ctx *gin.Context, req []*CreateVOCCriteriaRequest) ([]*VOCCriteriaFailedResponse, *errors.Error)
+	DeleteVOCCriteria(ctx *gin.Context, req *FetchDeleteVOCCriteriaRequest) *errors.Error
+
+	FetchVOCMaxPay(ctx *gin.Context, req *FetchDeleteVOCCriteriaRequest) ([]*VOCMaxPayResponse, *errors.Error)
+	CreateVOCMaxPay(ctx *gin.Context, req []*CreateVOCMaxPayRequest) ([]*VOCMaxPayFailedResponse, *errors.Error)
+	DeleteVOCMaxPay(ctx *gin.Context, req []*FetchDeleteVOCMaxPayRequest) ([]*VOCMaxPayFailedResponse, *errors.Error)
+
+	FetchVOCUser(ctx *gin.Context, req *FetchDeleteVOCUserRequest) ([]*VOCUserResponse, *errors.Error)
+	CreateVOCUser(ctx *gin.Context, req []*CreateVOCUserRequest) ([]*VOCCUserFailedResponse, *errors.Error)
+	DeleteVOCUer(ctx *gin.Context, req *FetchDeleteVOCUserRequest) *errors.Error
+
+	UpsertNotification(ctx *gin.Context, req *Notification) (*APISuccessResponse, *errors.Error)
+	FetchNotification(ctx *gin.Context, category string) ([]*Notification, *errors.Error)
 }

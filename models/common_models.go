@@ -25,6 +25,7 @@ type APISuccessResponse struct {
 }
 
 type APIFailureResponse struct {
+	Status  bool   `json:"status" example:"false" enums:"true,false"`
 	Error   string `json:"error" example:"INTERNAL SERVER ERROR"`
 	Message string `json:"message" example:"failed reason"`
 }

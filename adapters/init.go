@@ -48,6 +48,10 @@ func InitIncentiveCron() {
 		logger.FileLogger.Fatal().Err(err).Msg("LoadThresholdCheckFromDB")
 	}
 
+	if err := theProvider.LoadVOCFromDB(false); err != nil {
+		logger.FileLogger.Fatal().Err(err).Msg("LoadVOCFromDB")
+	}
+
 	theProvider.PrintAllInMemData()
 
 	masterCronTime := applicationConfig.GetString(constant.MasterCronTime)
@@ -74,6 +78,10 @@ func InitIncentiveCron() {
 
 	if err := gocron.Every(1).Day().At(masterCronTime).Do(theProvider.LoadThresholdCheckFromDB, true); err != nil {
 		logger.FileLogger.Error().Err(err).Msg("LoadThresholdCheckFromDB: cron")
+	}
+
+	if err := gocron.Every(1).Day().At(masterCronTime).Do(theProvider.LoadVOCFromDB, true); err != nil {
+		logger.FileLogger.Error().Err(err).Msg("LoadVOCFromDB: cron")
 	}
 
 	<-gocron.Start()
