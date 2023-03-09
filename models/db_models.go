@@ -32,6 +32,8 @@ type UserReportDB struct {
 	UpgradePayout                float64
 	UpgradeExtraPayout           float64
 	UpradeAchievedPercentage     float64
+	VOCPayout                    float64
+	VOCExtraPayout               float64
 	TotalPayout                  float64
 	HBBSaleCountPerPlanArray     string
 	HayyakSaleCountPerPlanArray  string

@@ -3,7 +3,7 @@ package logger
 import (
 	"testing"
 
-	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 )
 
 func TestInitLogger(t *testing.T) {

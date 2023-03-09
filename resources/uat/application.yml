@@ -1,8 +1,12 @@
-masterCronTime: "04:30"
+masterCronTime: "* 5 * * *"
 secretKey: gis-jwt-token
 adminSecretKey: gis-admin-jwt-token
 sessionExpiryTimeMinutes: 3600
 refreshTokenExpiryHours: 12
+fcmConfigFileName: fcmConfig.json
+fcmOfferTopic: omantel-offers
+fcmTrainingTopic: omantel-training
+fcmNotificationTopic: omantel-notifications
 captchaSitesEnableKey: 6LeOsMAhAAAAAFvMjuG5TX3nE_ZGYGvvbHKsyDjd
 captchaSecretKey: 6LeOsMAhAAAAAA66_QKasMPd2ghVhA6Phr1se6FK
 verifyCaptchaGoogleApi: https://www.google.com/recaptcha/api/siteverify

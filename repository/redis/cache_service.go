@@ -1,0 +1,20 @@
+package redis
+
+import (
+	"time"
+
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+)
+
+type CacheService interface {
+	InsertUserReport(isQuarterReport bool, month, quarter, year int, userReport *models.UserReportDB, keyTTL time.Duration) *errors.Error
+	GetUserReport(userId string, isQuarterReport bool, month, quarter, year int) (*models.UserReportDB, *errors.Error)
+	DelUserReport(userId string, isQuarterReport bool, month, quarter, year int) *errors.Error
+	InsertOutletReport(isQuarterReport bool, month, quarter, year int, outletReport *models.OutletReportDB, keyTTL time.Duration) *errors.Error
+	GetOutletReport(outlet, region string, isQuarterReport bool, month, quarter, year int) (*models.OutletReportDB, *errors.Error)
+	DelOutletReport(outlet, region string, isQuarterReport bool, month, quarter, year int) *errors.Error
+	InsertRegionReport(isQuarterReport bool, month, quarter, year int, regionReport *models.RegionReportDB, keyTTL time.Duration) *errors.Error
+	GetRegionReport(region string, isQuarterReport bool, month, quarter, year int) (*models.RegionReportDB, *errors.Error)
+	DelRegionReport(region string, isQuarterReport bool, month, quarter, year int) *errors.Error
+}

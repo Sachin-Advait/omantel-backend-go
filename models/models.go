@@ -5,19 +5,6 @@ import (
 	"time"
 )
 
-type SingleUserIncentiveRequest struct {
-	ClientId  string `json:"client_id"`
-	Monthly   string `json:"monthly"`
-	Quarterly string `json:"quarterly"`
-}
-
-type SalesCountRequest struct {
-	ClientId  string `json:"client_id"`
-	Monthly   string `json:"monthly"`
-	Quarterly string `json:"quarterly"`
-	Product   string `json:"product"`
-}
-
 type GenerateOTP struct {
 	ClientId string `json:"client_id"`
 }
@@ -26,6 +13,25 @@ type VerifyOTP struct {
 	IsAdmin  bool   `json:"is_admin"`
 	ClientId string `json:"client_id"`
 	Otp      int    `json:"otp"`
+}
+
+type UserIncentiveRequest struct {
+	ClientId  string `json:"client_id"`
+	Monthly   string `json:"monthly"`
+	Quarterly string `json:"quarterly"`
+}
+
+type UserSalesRequest struct {
+	ClientId  string `json:"client_id"`
+	Monthly   string `json:"monthly"`
+	Quarterly string `json:"quarterly"`
+	Product   string `json:"product"`
+}
+
+type UserReportRequest struct {
+	ClientId string `json:"client_id"`
+	Month    int    `json:"month"`
+	Quarter  int    `json:"quarter"`
 }
 
 type VerifyOTPResponse struct {
@@ -39,38 +45,6 @@ type VerifyOTPResponse struct {
 	AccessToken   string    `json:"access_token"`
 	RefreshToken  string    `json:"refresh_token"`
 	LastLoginTime time.Time `json:"lastLoginTime"`
-}
-
-type UserReportRequest struct {
-	ClientId string `json:"client_id"`
-	Month    int    `json:"month"`
-	Quarter  int    `json:"quarter"`
-}
-
-type UserReporting struct {
-	ClientId  string `json:"client_id"`
-	Monthly   string `json:"monthly"`
-	Quarterly string `json:"quarterly"`
-}
-
-/*
-
- */
-
-type DbClientConfig struct {
-	Host     string
-	Port     int
-	DbName   string
-	UserName string
-	Password string
-	//MaxOpenConnections <= 0 means unlimited
-	MaxOpenConnections int
-	//MaxIdleConnections zero means defaultMaxIdleConns; negative means 0
-	MaxIdleConnections int
-	//MaxLifetime maximum amount of time a connection may be reused
-	MaxLifetime time.Duration
-	//MaxIdletime maximum amount of time a connection may be idle before being closed
-	MaxIdletime time.Duration
 }
 
 type UserRecord struct {
@@ -160,16 +134,8 @@ type TotalIncentive struct {
 	Baqati   *IndividualIncentive
 	Hayyak   *IndividualIncentive
 	Upgrade  *IndividualIncentive
+	VOC      *IndividualIncentive
 	TotalPay float64 `json:"total_pay"`
-}
-
-type UserAllInfo struct {
-	TotalIncentive               *TotalIncentive
-	ChartDataResponse            *ChartDataResponse
-	HBBSaleCountPerPlanArray     map[string]int
-	HayyakSaleCountPerPlanArray  map[string]int
-	BaqatiSaleCountPerPlanArray  map[string]int
-	UpgradeSaleCountPerPlanArray map[string]int
 }
 
 type TargetAchievementData struct {
@@ -368,66 +334,3 @@ var MaxPay MaxPayout
 var MaxExtraPay MaxExtraPayout
 var ThresholdCheck ThresholdCheckout
 var VOCDetail VOCDetails
-
-var (
-	ProductTypeMap = map[string]string{
-		"EBU Fixed":    "HBB",
-		"CBU Fixed":    "HBB",
-		"EBU Prepaid":  "Hayyak",
-		"CBU Prepaid":  "Hayyak",
-		"EBU Postpaid": "Baqati",
-		"CBU Postpaid": "Baqati",
-	}
-)
-
-var (
-	ShortCode          = "OMSIP"
-	RequestorChannelId = "OMSIP"
-)
-
-var SMSRequestTemplate = []byte(`<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sen="http://www.omantel.om/esb/messages/sendnotification">
-<soapenv:Header/>
-<soapenv:Body>
-   <sen:SendNotificationRq>
-	  <sen:RequestHeader>
-		 <FunctionId>{{.FunctionId}}</FunctionId>
-		 <TransactionId>{{.TransactionId}}</TransactionId>
-		 <RequestId>{{.RequestId}}</RequestId>
-		 <RequestorChannelId>{{.RequestorChannelId}}</RequestorChannelId>
-		 <RequestorUserId>{{.RequestorUserId}}</RequestorUserId>
-		 <Timestamp>{{.Timestamp}}</Timestamp>
-	  </sen:RequestHeader>
-	  <sen:RequestBody>
-		 <sen:Notification>
-			<NotificationType>SMS</NotificationType>
-			<NotificationDateTime>{{.NotificationDateTime}}</NotificationDateTime>
-			<NotificationLanguage>1</NotificationLanguage>
-			<ShortCode>{{.ShortCode}}</ShortCode>
-			<IsDeliveryStatusRequired>1</IsDeliveryStatusRequired>
-			<NotificaitionValidityPeriod>{{.NotificaitionValidityPeriod}}</NotificaitionValidityPeriod>
-			<Body>{{.Body}}</Body>
-			<BodyCoding>8</BodyCoding>
-			<BodyContentType>1</BodyContentType>
-			<ReceiverList>
-			   <Receiver>{{.Receiver}}</Receiver>
-			</ReceiverList>
-		 </sen:Notification>
-	  </sen:RequestBody>
-   </sen:SendNotificationRq>
-</soapenv:Body>
-</soapenv:Envelope>`)
-
-// var SMSResponseTemplate = []byte(`<?xml version="1.0" encoding="UTF-8"?>
-// <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-//    <soapenv:Body>
-//       <NS1:SendNotificationRs xmlns:NS1="http://www.omantel.om/esb/messages/sendnotification">
-//          <NS1:ResponseHeader>
-//             <FunctionId>17002004</FunctionId>
-//             <TransactionId>36896</TransactionId>
-//             <RequestId>OMSIP_1669540763</RequestId>
-//             <ReturnCode>0</ReturnCode>
-//             <ReturnDesc>Success/ Successfully validated the request</ReturnDesc>
-//          </NS1:ResponseHeader>
-//       </NS1:SendNotificationRs>
-//    </soapenv:Body>
-// </soapenv:Envelope>`)

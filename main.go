@@ -2,44 +2,73 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net"
-	"net/http"
-	"runtime"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"gitlab.com/rendezvousPoint/incentive_calculator/adapters"
+	adminApi "gitlab.com/rendezvousPoint/incentive_calculator/adapters/admin"
+	healthApi "gitlab.com/rendezvousPoint/incentive_calculator/adapters/health"
+	schedulerAdp "gitlab.com/rendezvousPoint/incentive_calculator/adapters/scheduler"
+	userApi "gitlab.com/rendezvousPoint/incentive_calculator/adapters/user"
 	"gitlab.com/rendezvousPoint/incentive_calculator/api"
-	"gitlab.com/rendezvousPoint/incentive_calculator/business"
-	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/scheduler"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/cache"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/configs"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/database"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/fcm"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/flags"
-	jwthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/jwtHelper"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/http"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 	middlewares "gitlab.com/rendezvousPoint/incentive_calculator/utils/middlewares"
 )
 
 func init() {
 
+	go handleSigTerm()
+
 	initEnvConfigs()
 	initLogger()
 	initFileLogger()
+
 	initHTTPClient()
+	initDatabase()
+	initCache()
+	initFCM()
 }
 
 func main() {
 
-	incentiveProvider := buildIncentiveProvider()
-	adapters.InitIncentive(incentiveProvider)
+	defer closeDatabase()
+	defer closeCache()
+	defer closeFCM()
 
-	go adapters.InitIncentiveCron()
+	components := LoadApplicationComponents()
+	healthApi.InitHealthCheck(components.HealthProvider)
+	adminApi.InitAdminAPI(components.AdminProvider)
+	userApi.InitUserAPI(components.UserProvider)
+	schedulerAdp.InitScheduler(components.Scheduler)
 
+	startCron()
 	startRouter()
+}
+
+func handleSigTerm() {
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+
+	sig := <-done
+	switch sig {
+	case syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT:
+		os.Exit(0)
+	}
+
 }
 
 func initEnvConfigs() {
@@ -85,68 +114,29 @@ func initHTTPClient() {
 
 	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
 	if err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("initHTTPClient: error loading application config file, env - " + flags.Env())
+		logger.FileLogger.Fatal().Err(err).Msg("HTTP: error loading application config file, env - " + flags.Env())
 	}
 
-	certificate := applicationConfig.GetString(constant.HTTPTLSCertificateFileLocation)
-	connectTimeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPConnectTimeoutInMillisKey)
-	keepAliveDuration := time.Millisecond * applicationConfig.GetDuration(constant.HTTPKeepAliveDurationInMillisKey)
-	maxIdleConnections := applicationConfig.GetInt(constant.HTTPMaxIdleConnectionsKey)
-	idleConnectionTimeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPIdleConnectionTimeoutInMillisKey)
-	tLSHandshakeTimeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPTlsHandshakeTimeoutInMillisKey)
-	expectContinueTimeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPExpectContinueTimeoutInMillisKey)
-	timeout := time.Millisecond * applicationConfig.GetDuration(constant.HTTPTimeoutInMillisKey)
-
-	dialer := &net.Dialer{
-		Timeout:   connectTimeout,
-		KeepAlive: keepAliveDuration,
+	//http config load
+	httpConfig := &models.HttpClientConfig{
+		CertificatePath:       applicationConfig.GetString(constant.HTTPTLSCertificateFileLocation),
+		ConnectionTimeout:     time.Millisecond * applicationConfig.GetDuration(constant.HTTPConnectTimeoutInMillisKey),
+		KeepAliveDuration:     time.Millisecond * applicationConfig.GetDuration(constant.HTTPKeepAliveDurationInMillisKey),
+		MaxIdleConnections:    applicationConfig.GetInt(constant.HTTPMaxIdleConnectionsKey),
+		IdleConnectionTimeout: time.Millisecond * applicationConfig.GetDuration(constant.HTTPIdleConnectionTimeoutInMillisKey),
+		TLSHandshakeTimeout:   time.Millisecond * applicationConfig.GetDuration(constant.HTTPTlsHandshakeTimeoutInMillisKey),
+		ExpectContinueTimeout: time.Millisecond * applicationConfig.GetDuration(constant.HTTPExpectContinueTimeoutInMillisKey),
+		Timeout:               time.Millisecond * applicationConfig.GetDuration(constant.HTTPTimeoutInMillisKey),
 	}
 
-	caCert, err := ioutil.ReadFile(certificate)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
-	business.HttpClient = &http.Client{
-		Transport: &http.Transport{
-			DialContext: dialer.DialContext,
-			TLSClientConfig: &tls.Config{
-				//RootCAs: caCertPool,
-				InsecureSkipVerify: true,
-			},
-			MaxIdleConns:          maxIdleConnections,
-			IdleConnTimeout:       idleConnectionTimeout,
-			TLSHandshakeTimeout:   tLSHandshakeTimeout,
-			ExpectContinueTimeout: expectContinueTimeout,
-			MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
-		},
-		Timeout: timeout,
-	}
+	http.InitHttpClient(httpConfig)
 }
 
-func buildIncentiveProvider() models.IncentiveProvider {
+func initDatabase() {
 
 	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
 	if err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("error loading application config file, env - " + flags.Env())
-	}
-
-	jwthelper.JwtSecretKey = applicationConfig.GetString(constant.JwtKey)
-	jwthelper.AdminJwtSecretKey = applicationConfig.GetString(constant.AdminJwtKey)
-	if jwthelper.JwtSecretKey == "" || jwthelper.AdminJwtSecretKey == "" || jwthelper.JwtSecretKey == jwthelper.AdminJwtSecretKey {
-		logger.FileLogger.Fatal().Err(err).Msg("jwt secret key invalid, env - " + flags.Env())
-	}
-
-	models.ShortCode = applicationConfig.GetString(constant.ShortCodeKey)
-	models.RequestorChannelId = applicationConfig.GetString(constant.RequestorChannelIdKey)
-	models.CaptchaSitesEnableKey = applicationConfig.GetString(constant.CaptchaSitesEnableKey)
-	models.CaptchaSecretKey = applicationConfig.GetString(constant.CaptchaSecretKey)
-	models.VerifyCaptchaGoogleApi = applicationConfig.GetString(constant.VerifyCaptchaGoogleApi)
-	if models.CaptchaSitesEnableKey == "" || models.CaptchaSecretKey == "" || models.VerifyCaptchaGoogleApi == "" {
-		logger.FileLogger.Fatal().Err(err).Msg("captcha keys not found, env - " + flags.Env())
+		logger.FileLogger.Fatal().Err(err).Msg("DB: error loading application config file, env - " + flags.Env())
 	}
 
 	//db config load
@@ -162,25 +152,23 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxIdleTime)) * time.Minute,
 	}
 
-	incentiveConfig := &configs.IncentiveConfig{
-		OTPUrl:                 applicationConfig.GetString(constant.OTPEndpoint),
-		SessionExpiryTime:      time.Duration(applicationConfig.GetInt(constant.SessionExpiryTimeMinutes)) * time.Minute,
-		RefreshTokenExpiryTime: time.Duration(applicationConfig.GetInt(constant.RefreshTokenExpiryHours)) * time.Hour,
-	}
+	database.InitDatabase(dbConfig)
+	logger.InitDBLogger(dbConfig)
+}
 
-	dbLogConfig := &models.DbClientConfig{
-		Host:               applicationConfig.GetString(constant.LogPsqlHost),
-		Port:               applicationConfig.GetInt(constant.LogPsqlPort),
-		DbName:             applicationConfig.GetString(constant.LogPsqlDbName),
-		UserName:           applicationConfig.GetString(constant.LogPsqlUser),
-		Password:           applicationConfig.GetString(constant.LogPsqlPassword),
-		MaxOpenConnections: applicationConfig.GetInt(constant.LogPsqlMaxOpenConn),
-		MaxIdleConnections: applicationConfig.GetInt(constant.LogPsqlMaxIdleConn),
-		MaxLifetime:        time.Duration(applicationConfig.GetInt(constant.LogConnMaxLifetime)) * time.Hour,
-		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.LogConnMaxIdleTime)) * time.Minute,
+func closeDatabase() {
+	err := database.Close()
+	if err != nil {
+		logger.FileLogger.Fatal().Err(err).Stack().Err(err).Msg("error closing database")
 	}
+}
 
-	logger.InitDBLogger(dbLogConfig)
+func initCache() {
+
+	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
+	if err != nil {
+		logger.FileLogger.Fatal().Err(err).Msg("Cache: error loading application config file, env - " + flags.Env())
+	}
 
 	redisConfig := &models.RedisConfigStruct{
 		Address:                     applicationConfig.GetString(constant.UserIncentiveRedisAddress),
@@ -197,7 +185,42 @@ func buildIncentiveProvider() models.IncentiveProvider {
 		Mode:                        applicationConfig.GetString(constant.UserIncentiveRedisMode),
 	}
 
-	return business.NewIncentiveService(incentiveConfig, dbConfig, redisConfig)
+	cache.InitCache(redisConfig)
+}
+
+func closeCache() {
+	err := cache.Close()
+	if err != nil {
+		logger.FileLogger.Fatal().Err(err).Stack().Err(err).Msg("error closing cache")
+	}
+}
+
+func initFCM() {
+
+	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
+	if err != nil {
+		logger.FileLogger.Fatal().Err(err).Msg("FCM: error loading application config file, env - " + flags.Env())
+	}
+
+	fcmConfig := flags.BaseConfigPath() + "/" + flags.Env() + "/" + applicationConfig.GetString(constant.FCMConfigFileName)
+
+	fcm.InitFCM(fcmConfig)
+}
+
+func closeFCM() {
+	err := fcm.Close()
+	if err != nil {
+		logger.FileLogger.Fatal().Err(err).Stack().Err(err).Msg("error closing fcm")
+	}
+}
+
+func startCron() {
+	err := scheduler.StartCronJob()
+	if err != nil {
+		logger.FileLogger.Fatal().Err(err).Stack().Msg("error getting cron")
+	}
+
+	logger.FileLogger.Info().Str("env", flags.Env()).Msg("Cron started...")
 }
 
 func startRouter() {

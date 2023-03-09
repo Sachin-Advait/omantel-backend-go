@@ -20,8 +20,8 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/configs"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/flags"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )

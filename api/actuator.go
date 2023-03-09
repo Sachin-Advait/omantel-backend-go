@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	goActuator "github.com/sinhashubham95/go-actuator"
-	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/flags"
 )
 

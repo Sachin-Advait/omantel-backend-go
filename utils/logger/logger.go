@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime/debug"
 
-	"gitlab.com/rendezvousPoint/incentive_calculator/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
