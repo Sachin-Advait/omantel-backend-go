@@ -18,10 +18,11 @@ func FetchNotifications(ctx *gin.Context) (int, interface{}) {
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	str := "" //ctx.Request.URL
+	str := ctx.Request.URL.Query().Get("category")
 
 	category := strings.ToUpper(strings.TrimSpace(str))
-	if _, ok := constant.NotificationTypeMap[category]; !ok {
+	_, ok := constant.NotificationTypeMap[category]
+	if category != "" && !ok {
 		err := errors.New("invalid category query param")
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("FetchNotifications : validation failed")
 		logger.LogChan <- &logger.Logging{

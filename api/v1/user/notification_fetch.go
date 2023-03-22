@@ -30,17 +30,5 @@ func FetchNotification(ctx *gin.Context) {
 		return
 	}
 
-	if !ctxHeader.IsAdmin {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("fetchNotification : not an admin")
-		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "not admin", Code: http.StatusForbidden,
-			Text: "not an admin", CreateTime: time.Now().Local()})
-
-		ctx.JSON(http.StatusForbidden, models.APIFailureResponse{
-			Error:   errors.UnauthorizedUserCode,
-			Message: errors.UnauthorizedUser,
-		})
-		return
-	}
-
 	ctx.JSON(user.FetchNotifications(ctx))
 }

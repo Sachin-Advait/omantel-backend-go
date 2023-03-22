@@ -70,6 +70,53 @@ func (dbConn *DbServiceImpl) UpsertNotificationRecord(userId string, dbReq *mode
 	return dbReq.Id, nil
 }
 
+func (dbConn *DbServiceImpl) FetchBasicNotificationRecord(category string) ([]*models.NotificationDB, *errors.Error) {
+
+	if category == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "invalid db arguments",
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	query := "SELECT id, category, subject, file_type FROM user_notification where deleted IS NULL and category=$1"
+
+	rows, err := dbConn.DBClient.QueryContext(ctx, query, category)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "FetchBasicNotificationRecord query failed: " + err.Error(),
+		}
+	}
+
+	response := make([]*models.NotificationDB, 0)
+
+	for rows.Next() {
+
+		var notif models.NotificationDB
+
+		if err := rows.Scan(&notif.Id, &notif.Category, &notif.Subject, &notif.Body, &notif.FileType, &notif.FileLink, &notif.CreatedAt, &notif.ModifiedAt); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    errors.InternalServerError,
+				Details:    "FetchBasicNotificationRecord scan failed: " + err.Error(),
+			}
+		}
+
+		response = append(response, &notif)
+	}
+
+	return response, nil
+}
+
 func (dbConn *DbServiceImpl) FetchNotificationRecord(category string) ([]*models.NotificationDB, *errors.Error) {
 
 	if category == "" {

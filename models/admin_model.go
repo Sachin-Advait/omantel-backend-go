@@ -3,14 +3,14 @@ package models
 import "time"
 
 type Notification struct {
-	Id         string    `json:"id"`
-	Category   string    `json:"category"`
-	Subject    string    `json:"subject"`
-	Body       string    `json:"body"`
-	FileType   string    `json:"file_type"`
-	FileLink   string    `json:"file_link"`
-	CreatedAt  time.Time `json:"created"`
-	ModifiedAt time.Time `json:"modified"`
+	Id         string    `json:"id,omitempty"`
+	Category   string    `json:"category,omitempty"`
+	Subject    string    `json:"subject,omitempty"`
+	Body       string    `json:"body,omitempty"`
+	FileType   string    `json:"file_type,omitempty"`
+	FileLink   string    `json:"file_link,omitempty"`
+	CreatedAt  time.Time `json:"created,omitempty"`
+	ModifiedAt time.Time `json:"modified,omitempty"`
 }
 
 type CreateRegionRequest struct {

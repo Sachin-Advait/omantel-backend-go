@@ -3,30 +3,49 @@ package impl
 import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *UserImpl) FetchNotification(ctx *gin.Context, category string) ([]*models.Notification, *errors.Error) {
+func (impl *UserImpl) FetchNotification(ctx *gin.Context, category string) (map[string][]*models.Notification, *errors.Error) {
 
-	dbResponse, err := impl.DbService.FetchNotificationRecord(category)
-	if err != nil {
-		return nil, err
+	response := make(map[string][]*models.Notification)
+
+	if category != "" {
+		dbResponse, err := impl.DbService.FetchNotificationRecord(category)
+		if err != nil {
+			return nil, err
+		}
+
+		response[category] = append(response[category], impl.notificationResponse(dbResponse)...)
+
+		return response, nil
 	}
+
+	for key := range constant.NotificationTypeMap {
+		dbResponse, err := impl.DbService.FetchNotificationRecord(key)
+		if err != nil {
+			return nil, err
+		}
+
+		response[key] = append(response[key], impl.notificationResponse(dbResponse)...)
+	}
+
+	return response, nil
+}
+
+func (impl *UserImpl) notificationResponse(dbResponse []*models.NotificationDB) []*models.Notification {
 
 	response := make([]*models.Notification, 0)
 
 	for _, val := range dbResponse {
 		response = append(response, &models.Notification{
-			Id:         val.Id,
-			Category:   val.Category,
-			Subject:    val.Subject,
-			Body:       val.Body,
-			FileType:   val.FileType,
-			FileLink:   val.FileLink,
-			CreatedAt:  val.CreatedAt,
-			ModifiedAt: val.ModifiedAt,
+			Id:       val.Id,
+			Subject:  val.Subject,
+			Body:     val.Body,
+			FileLink: val.FileLink,
 		})
 	}
 
-	return response, nil
+	return response
 }

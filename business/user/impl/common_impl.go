@@ -1402,7 +1402,7 @@ func (impl *UserImpl) updateManagerReport(ctx *gin.Context, mngr *models.UserBas
 
 	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Err(errors.New(err.Details.(string))).Msg("MngrReport : fetch om list failed")
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Err(errors.New(err.Details.(string))).Msg("MngrReport : fetch om list failed")
 		return nil, err
 	}
 

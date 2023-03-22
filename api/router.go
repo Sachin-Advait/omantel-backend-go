@@ -171,6 +171,7 @@ func incentiveAdminRoutes(group *gin.RouterGroup) {
 	group.POST(constant.DeleteVOCUserPath, admin.DeleteVOCUser)
 
 	group.POST(constant.UpsertNotificationPath, admin.UpsertNotification)
+	group.GET(constant.FetchNotificationPath, admin.FetchNotification)
 
 	group.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
