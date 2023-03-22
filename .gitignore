@@ -4,4 +4,5 @@ incentive_calculator
 main
 Logs/*
 .DS_Store
+dump.rdb
 resources/.DS_Store

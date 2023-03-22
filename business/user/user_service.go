@@ -13,6 +13,8 @@ type UserProvider interface {
 	RenewAccessToken(ctx *gin.Context) (string, *errors.Error)
 	CaptchaVerification(ctx *gin.Context, req *models.CaptchRequest) (interface{}, *errors.Error)
 
+	GetUserFromRegionOrOutlet(ctx *gin.Context, outlet, region string, quarter, year int) ([]*models.UserMapResponse, *errors.Error)
+
 	FetchNotification(ctx *gin.Context, category string) ([]*models.Notification, *errors.Error)
 
 	GetUserPayout(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*models.TotalIncentive, *errors.Error)
@@ -27,8 +29,8 @@ type UserProvider interface {
 	GetUsersReportingToVicePresident(ctx *gin.Context, vicePresidentID string, isQuarterReport bool, quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
 	GetOutletTotalSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error)
 	GetOutletSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error)
-	GetRegionTotalSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerOutlet, *errors.Error)
-	GetRegionSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error)
+	GetRegionTotalSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (map[string]*models.ProductWiseSalesCountPerOutlet, *errors.Error)
+	GetRegionSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (map[string]*models.ProductWiseSalesTargetPerOutlet, *errors.Error)
 	GetTopTenEmpProductSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerStaff, *errors.Error)
 	GetTopTenEmpSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error)
 }

@@ -12,7 +12,7 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) GetRegionSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error) {
+func (impl *UserImpl) GetRegionSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (map[string]*models.ProductWiseSalesTargetPerOutlet, *errors.Error) {
 
 	// cRH, _ := ctx.Get(constant.HeaderInContext)
 	// ctxHeader, _ := (cRH).(context.ContextHeader)
@@ -44,7 +44,7 @@ func (impl *UserImpl) GetRegionSalesAndTarget(ctx *gin.Context, userID string, i
 	}
 	user.Position = position
 
-	resp := make([]*models.ProductWiseSalesTargetPerOutlet, 0)
+	resp := make(map[string]*models.ProductWiseSalesTargetPerOutlet, 0)
 
 	/*
 		For Outlet Managers
@@ -54,7 +54,9 @@ func (impl *UserImpl) GetRegionSalesAndTarget(ctx *gin.Context, userID string, i
 
 		cacheReport, err := impl.CacheService.GetRegionReport(user.Region, isQuarterReport, month, quarter, year)
 		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
-			return append(resp, impl.singleRegionSalesAndTarget(ctx, cacheReport)), nil
+			rcrd := impl.singleRegionSalesAndTarget(ctx, cacheReport)
+			resp[rcrd.Region] = rcrd
+			return resp, nil
 		}
 
 		regionResp, err := impl.updateRegionReport(ctx, user.Region, isQuarterReport, quarter, month, year)
@@ -65,7 +67,9 @@ func (impl *UserImpl) GetRegionSalesAndTarget(ctx *gin.Context, userID string, i
 		// val, _ := json.Marshal(outletResp)
 		// logger.FileLogger.CtxInfo(ctx).Interface("OM regionReport", string(val)).Msg("GetRegionSalesAndTarget : trace")
 
-		return append(resp, impl.singleRegionSalesAndTarget(ctx, regionResp)), nil
+		rcrd := impl.singleRegionSalesAndTarget(ctx, regionResp)
+		resp[rcrd.Region] = rcrd
+		return resp, nil
 	}
 
 	/*
@@ -94,9 +98,10 @@ func (impl *UserImpl) GetRegionSalesAndTarget(ctx *gin.Context, userID string, i
 
 		cacheReport, err := impl.CacheService.GetRegionReport(eachOM.Region, isQuarterReport, month, quarter, year)
 		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
-			resp = append(resp, impl.singleRegionSalesAndTarget(ctx, cacheReport))
+			rcrd := impl.singleRegionSalesAndTarget(ctx, cacheReport)
+			resp[rcrd.Region] = rcrd
 		} else {
-			outletResp, err := impl.updateRegionReport(ctx, eachOM.Region, isQuarterReport, quarter, month, year)
+			regionResp, err := impl.updateRegionReport(ctx, eachOM.Region, isQuarterReport, quarter, month, year)
 			if err != nil {
 				return nil, err
 			}
@@ -104,7 +109,8 @@ func (impl *UserImpl) GetRegionSalesAndTarget(ctx *gin.Context, userID string, i
 			// val, _ := json.Marshal(outletResp)
 			// logger.FileLogger.CtxInfo(ctx).Interface("OtherMngr regionReport", string(val)).Msg("GetRegionSalesAndTarget : trace")
 
-			resp = append(resp, impl.singleRegionSalesAndTarget(ctx, outletResp))
+			rcrd := impl.singleRegionSalesAndTarget(ctx, regionResp)
+			resp[rcrd.Region] = rcrd
 		}
 	}
 

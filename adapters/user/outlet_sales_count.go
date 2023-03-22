@@ -3,6 +3,7 @@ package user
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -52,6 +53,10 @@ func GetOutletTotalSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest
 			Error: errs.Message,
 		}
 	}
+
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Total > response[j].Total
+	})
 
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetOutletTotalSalesCount : success")
 	logger.LogChan <- &logger.Logging{

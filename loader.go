@@ -64,6 +64,9 @@ func LoadApplicationComponents() Components {
 
 	userConfig := &configs.UserConfig{
 		OTPUrl:                 applicationConfig.GetString(constant.OTPEndpoint),
+		FCMOfferTopic:          applicationConfig.GetString(constant.FCMOfferTopicKey),
+		FCMTrainingTopic:       applicationConfig.GetString(constant.FCMTrainingTopicKey),
+		FCMNotificationTopic:   applicationConfig.GetString(constant.FCMNotificationTopicKey),
 		SessionExpiryTime:      time.Duration(applicationConfig.GetInt(constant.SessionExpiryTimeMinutes)) * time.Minute,
 		RefreshTokenExpiryTime: time.Duration(applicationConfig.GetInt(constant.RefreshTokenExpiryHours)) * time.Hour,
 	}

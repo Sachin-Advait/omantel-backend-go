@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
@@ -62,6 +63,77 @@ func (dbConn *DbServiceImpl) FetchUserBasicDetails(userID string, quarter, year 
 		Message:    errors.InternalServerError,
 		Details:    "FetchUserBasicDetails: err - " + err.Error(),
 	}
+}
+
+// FetchUserIdFromOutletAndRegion - userID, name, position, region, outlet, mobile, isAdmin, isActive
+func (dbConn *DbServiceImpl) FetchUserIdFromOutletAndRegion(region, outlet string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error) {
+
+	err := &errors.Error{
+		StatusCode: http.StatusInternalServerError,
+		Code:       errors.InternalServerErrorCode,
+		Message:    errors.InternalServerError,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	var (
+		rows  *sql.Rows
+		dbErr error
+	)
+
+	switch {
+	case region != "" && outlet != "":
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1 and outlet=$2 and quarter=$3 and year=$4",
+			region, outlet, quarter, year)
+	case region != "":
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1 and quarter=$2 and year=$3",
+			region, quarter, year)
+	case outlet != "":
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and outlet=$1 and quarter=$2 and year=$3",
+			outlet, quarter, year)
+	}
+
+	if dbErr != nil {
+		if dbErr == sql.ErrNoRows {
+			return nil, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidDetailsCode,
+				Err:        errors.InvalidDetails,
+				Message:    "NO RECORDS FOUND",
+				Details:    "FetchUserIdFromOutletAndRegion: query failed-" + dbErr.Error(),
+			}
+		}
+
+		err.Details = "FetchUserIdFromOutletAndRegion: query failed-" + dbErr.Error()
+		return nil, err
+	}
+
+	response := make([]*models.UserBasicDetailsDB, 0)
+
+	for rows.Next() {
+
+		user := &models.UserBasicDetailsDB{}
+
+		if dbErr := rows.Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive); dbErr != nil {
+			err.Details = "FetchUserIdFromOutletAndRegion: scan failed-" + dbErr.Error()
+			return nil, err
+		}
+
+		position, ok := constant.EmployeePositionMap[user.Position]
+		if !ok {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Message:    user.UserId + ": INCORRECT USER POSITION - " + user.Position,
+				Details:    "FetchUserIdFromOutletAndRegion: incorrect user position: userId-" + user.UserId + " position-" + user.Position,
+			}
+		}
+		user.Position = position
+
+		response = append(response, user)
+	}
+
+	return response, nil
 }
 
 //TODO: FetchUserDetails - for basic user info and manger of that user

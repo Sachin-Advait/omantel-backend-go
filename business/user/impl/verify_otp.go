@@ -117,6 +117,12 @@ func (impl *UserImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*model
 		refreshToken string
 	)
 
+	err = &errors.Error{
+		StatusCode: http.StatusInternalServerError,
+		Code:       errors.InternalServerErrorCode,
+		Message:    errors.InternalServerError,
+	}
+
 	if user.IsAdmin {
 		accessToken, _, jwtErr = jwthelper.CreateAccessToken(req.ClientId, accessTokenExpiry, jwthelper.AdminJwtSecretKey, true)
 	} else {
@@ -124,12 +130,8 @@ func (impl *UserImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*model
 	}
 
 	if jwtErr != nil {
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "create at failed - " + err.Error(),
-		}
+		err.Details = "jwt create at failed - " + jwtErr.Error()
+		return nil, err
 	}
 
 	if user.IsAdmin {
@@ -139,11 +141,27 @@ func (impl *UserImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*model
 	}
 
 	if jwtErr != nil {
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "create rt failed - " + err.Error(),
+		err.Details = "jwt create rt failed - " + jwtErr.Error()
+		return nil, err
+	}
+
+	if req.Token != "" {
+		_, fcmErr := impl.FCMService.SubscribeToTopic(impl.Config.FCMNotificationTopic, []string{req.Token})
+		if fcmErr != nil {
+			err.Details = "subscribe notif topic failed - " + fcmErr.Error()
+			return nil, err
+		}
+
+		_, fcmErr = impl.FCMService.SubscribeToTopic(impl.Config.FCMOfferTopic, []string{req.Token})
+		if fcmErr != nil {
+			err.Details = "subscribe offer topic failed - " + fcmErr.Error()
+			return nil, err
+		}
+
+		_, fcmErr = impl.FCMService.SubscribeToTopic(impl.Config.FCMTrainingTopic, []string{req.Token})
+		if fcmErr != nil {
+			err.Details = "subscribe training topic failed - " + fcmErr.Error()
+			return nil, err
 		}
 	}
 

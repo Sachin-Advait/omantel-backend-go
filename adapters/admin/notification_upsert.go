@@ -75,8 +75,12 @@ func validateUpsertNotification(req *models.Notification, ctxHeader context.Cont
 		return errors.New("invalid subject")
 	}
 
+	if req.Body == "" {
+		return errors.New("invalid body")
+	}
+
 	req.FileType = strings.ToUpper(strings.TrimSpace(req.FileType))
-	if _, ok := constant.SupportedFileTypeMap[req.Category]; !ok {
+	if _, ok := constant.SupportedFileTypeMap[req.FileType]; !ok {
 		return errors.New("invalid file type")
 	}
 

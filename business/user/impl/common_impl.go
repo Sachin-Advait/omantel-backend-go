@@ -933,8 +933,9 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		}
 
 		if len(achievedPercent) > 0 {
-			resp.VOC.ExtraPayout, _ = impl.getVOCCriteria(year, achievedPercent[0].AchievedPercent)
-			report.VOCExtraPayout = resp.VOC.ExtraPayout
+			report.VOCAchievedPercentage = achievedPercent[0].AchievedPercent
+			report.VOCExtraPayout = report.VOCAchievedPercentage
+			resp.VOC.ExtraPayout = report.VOCAchievedPercentage
 		}
 	}
 
@@ -1309,7 +1310,8 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 		}
 
 		if len(achievedPercent) > 0 {
-			report.VOCExtraPayout, _ = impl.getVOCCriteria(year, achievedPercent[0].AchievedPercent)
+			report.VOCAchievedPercentage = achievedPercent[0].AchievedPercent
+			report.VOCExtraPayout = report.VOCAchievedPercentage
 		}
 	}
 
@@ -1699,7 +1701,8 @@ func (impl *UserImpl) updateManagerReport(ctx *gin.Context, mngr *models.UserBas
 		}
 
 		if len(achievedPercent) > 0 {
-			report.VOCExtraPayout, _ = impl.getVOCCriteria(year, achievedPercent[0].AchievedPercent)
+			report.VOCAchievedPercentage = achievedPercent[0].AchievedPercent
+			report.VOCExtraPayout = report.VOCAchievedPercentage
 		}
 	}
 

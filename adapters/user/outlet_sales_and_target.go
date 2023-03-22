@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -64,6 +65,10 @@ func GetOutletSalesAndTarget(ctx *gin.Context, req *models.UserIncentiveRequest)
 		response[index].UpgradeAchievedPercentage = math.Round(val.UpgradeAchievedPercentage*1000) / 1000
 		response[index].TotalAchievedPercentage = math.Round(val.TotalAchievedPercentage*1000) / 1000
 	}
+
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].TotalSales > response[j].TotalSales
+	})
 
 	responseBytes, _ := json.Marshal(response)
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, string(responseBytes)).Msg("GetOutletSalesAndTarget : success")

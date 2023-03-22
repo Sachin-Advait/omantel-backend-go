@@ -13,6 +13,22 @@ type VerifyOTP struct {
 	IsAdmin  bool   `json:"is_admin"`
 	ClientId string `json:"client_id"`
 	Otp      int    `json:"otp"`
+	Token    string `json:"token"`
+}
+
+type UserMapRequest struct {
+	OutletName string `json:"outlet"`
+	RegionName string `json:"region"`
+	Quarterly  string `json:"quarterly"`
+}
+
+type UserMapResponse struct {
+	ClientId   string `json:"client_id"`
+	Name       string `json:"name"`
+	Position   string `json:"position"`
+	RegionName string `json:"region"`
+	OutletName string `json:"outlet"`
+	IsAdmin    bool   `json:"isAdmin"`
 }
 
 type UserIncentiveRequest struct {

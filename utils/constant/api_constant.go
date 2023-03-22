@@ -66,6 +66,7 @@ const (
 	TopTenSalesCountPath       = "/top_ten_sales_count"
 	TopTenSalesTargetPath      = "/top_ten_sales_target"
 	RenewTokenPath             = "/renew_token"
+	GetUserPath                = "/get_user"
 
 	CaptchaVerificationPath = "/captcha_verify"
 

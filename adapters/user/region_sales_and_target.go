@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -54,23 +55,30 @@ func GetRegionSalesAndTarget(ctx *gin.Context, req *models.UserIncentiveRequest)
 		}
 	}
 
-	for index, val := range response {
-		response[index].BaqatiAchievedPercentage = math.Round(val.BaqatiAchievedPercentage*1000) / 1000
-		response[index].HBBAchievedPercentage = math.Round(val.HBBAchievedPercentage*1000) / 1000
-		response[index].HayyakAchievedPercentage = math.Round(val.HayyakAchievedPercentage*1000) / 1000
-		response[index].UpgradeAchievedPercentage = math.Round(val.UpgradeAchievedPercentage*1000) / 1000
-		response[index].TotalAchievedPercentage = math.Round(val.TotalAchievedPercentage*1000) / 1000
+	resp := make([]*models.ProductWiseSalesTargetPerOutlet, 0)
+
+	for _, val := range response {
+		val.BaqatiAchievedPercentage = math.Round(val.BaqatiAchievedPercentage*1000) / 1000
+		val.HBBAchievedPercentage = math.Round(val.HBBAchievedPercentage*1000) / 1000
+		val.HayyakAchievedPercentage = math.Round(val.HayyakAchievedPercentage*1000) / 1000
+		val.UpgradeAchievedPercentage = math.Round(val.UpgradeAchievedPercentage*1000) / 1000
+		val.TotalAchievedPercentage = math.Round(val.TotalAchievedPercentage*1000) / 1000
+		resp = append(resp, val)
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetRegionSalesAndTarget : success")
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].TotalSales > resp[j].TotalSales
+	})
+
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("GetRegionSalesAndTarget : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),
 		Type:       "info",
 		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", response),
+		Text:       fmt.Sprintf("%+v", resp),
 		CreateTime: time.Now().Local(),
 	}
 
-	return http.StatusOK, response
+	return http.StatusOK, resp
 }

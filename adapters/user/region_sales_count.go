@@ -3,6 +3,7 @@ package user
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -53,15 +54,25 @@ func GetRegionTotalSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetRegionTotalSalesCount : success")
+	resp := make([]*models.ProductWiseSalesCountPerOutlet, 0)
+
+	for _, val := range response {
+		resp = append(resp, val)
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].Total > resp[j].Total
+	})
+
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("GetRegionTotalSalesCount : success")
 	logger.LogChan <- &logger.Logging{
 		UserID:     ctxHeader.XUserId,
 		URL:        ctx.Request.URL.String(),
 		Type:       "info",
 		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", response),
+		Text:       fmt.Sprintf("%+v", resp),
 		CreateTime: time.Now().Local(),
 	}
 
-	return http.StatusOK, response
+	return http.StatusOK, resp
 }

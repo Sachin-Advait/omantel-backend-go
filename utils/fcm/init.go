@@ -14,6 +14,8 @@ import (
 
 type FCM interface {
 	Send(ctx context.Context, message *messaging.Message) (string, error)
+	SubscribeToTopic(ctx context.Context, tokens []string, topic string) (*messaging.TopicManagementResponse, error)
+	UnsubscribeFromTopic(ctx context.Context, tokens []string, topic string) (*messaging.TopicManagementResponse, error)
 }
 
 // dbClient is the default client

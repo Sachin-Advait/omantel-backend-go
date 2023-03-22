@@ -54,6 +54,7 @@ type DbService interface {
 	FetchVP(quarter, year int) ([]string, *errors.Error)
 
 	FetchUserBasicDetails(userID string, quarter, year int, args ...bool) (*models.UserBasicDetailsDB, *errors.Error)
+	FetchUserIdFromOutletAndRegion(region, outlet string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error)
 	FetchUserDetails(userID string, quarter, year int) (*models.UserBasicDetailsDB, *errors.Error)
 	FetchOTPValidity(userID string) (*models.OtpModel, *errors.Error)
 	InsertStaffOTP(update bool, otpModel *models.OtpModel) *errors.Error

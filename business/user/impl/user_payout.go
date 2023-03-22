@@ -43,11 +43,39 @@ func (impl *UserImpl) GetUserPayout(ctx *gin.Context, userID string, isQuarterRe
 		return nil, err
 	}
 
-	totalPay := q1Report.TotalPay + q2Report.TotalPay + q3Report.TotalPay + q4Report.TotalPay
-	q4Report.VOC.Payout = (q4Report.VOC.ExtraPayout * totalPay) / 100
-	q4Report.VOC.Payout = math.Round(q4Report.VOC.Payout*1000) / 1000
+	vocCriteria, vocErr := impl.getVOCCriteria(year, q4Report.VOC.ExtraPayout)
+	if vocErr != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    vocErr.Error(),
+			Details:    fmt.Sprintf("vocCriteria: year-%v, err-%v", year, vocErr),
+		}
+	}
 
-	q4Report.TotalPay = q4Report.TotalPay + q4Report.VOC.Payout
+	var achievedCount int
+
+	if q1Report.TotalPay != 0 {
+		achievedCount++
+	}
+	if q2Report.TotalPay != 0 {
+		achievedCount++
+	}
+	if q3Report.TotalPay != 0 {
+		achievedCount++
+	}
+	if q4Report.TotalPay != 0 {
+		achievedCount++
+	}
+
+	if achievedCount < 3 {
+		q4Report.VOC.Payout = 0
+	} else {
+		totalPay := q1Report.TotalPay + q2Report.TotalPay + q3Report.TotalPay + q4Report.TotalPay
+		q4Report.VOC.Payout = (vocCriteria * totalPay) / 100
+		q4Report.VOC.Payout = math.Round(q4Report.VOC.Payout*1000) / 1000
+		q4Report.TotalPay = q4Report.TotalPay + q4Report.VOC.Payout
+	}
 
 	return q4Report, nil
 }

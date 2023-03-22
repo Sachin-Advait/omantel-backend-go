@@ -10,6 +10,9 @@ type AdminConfig struct {
 
 type UserConfig struct {
 	OTPUrl                 string
+	FCMOfferTopic          string
+	FCMTrainingTopic       string
+	FCMNotificationTopic   string
 	SessionExpiryTime      time.Duration
 	RefreshTokenExpiryTime time.Duration
 }
