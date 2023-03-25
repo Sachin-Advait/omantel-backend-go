@@ -1,7 +1,12 @@
+masterCronTime: "* 5 * * *"
 secretKey: gis-jwt-token
 adminSecretKey: gis-admin-jwt-token
 sessionExpiryTimeMinutes: 30
 refreshTokenExpiryHours: 3
+fcmConfigFileName: fcmConfig.json
+fcmOfferTopic: omantel-offers
+fcmTrainingTopic: omantel-training
+fcmNotificationTopic: omantel-notifications
 captchaSitesEnableKey: 6Lc61GciAAAAAALcJjbHg364YaqPKyJ3_8jbj_Ks
 captchaSecretKey: 6Lc61GciAAAAALKJWSKqfOtMea39MG9H3FCux1JG
 verifyCaptchaGoogleApi: https://www.google.com/recaptcha/api/siteverify
@@ -28,6 +33,19 @@ logPsqlDB:
   maxIdleConnections: 10
   connMaxLifetimeInHour: 24
   connMaxIdleTimeInMinute: 48
+userIncentiveRedis:
+  address: redis.omantel-sip.svc.cluster.local:6379
+  password: redis12345
+  db: 0
+  poolSize: 36
+  minIdleConn: 8
+  maxConnAgeInHour: 2
+  poolTimeoutInMilliSecond: 4000
+  readTimeoutInMilliSecond: 3000
+  writeTimeoutInMilliSecond: 3000
+  contextTimeoutInMilliSecond: 5000
+  keyTTLInHour: 12
+  mode: "CLUSTER"
 http:
   tlsCertificate: ./cert/omantel.om.cer
   connectTimeoutInMillis: 10000
