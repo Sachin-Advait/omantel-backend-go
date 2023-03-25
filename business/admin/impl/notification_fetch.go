@@ -9,7 +9,7 @@ import (
 
 func (impl *AdminImpl) FetchNotification(ctx *gin.Context, category, id string) (interface{}, *errors.Error) {
 
-	response := make(map[string][]*models.Notification)
+	response := make([]*models.Notification, 0)
 
 	if id != "" {
 		dbResponse, err := impl.DbService.FetchSingleNotificationRecord(id)
@@ -26,7 +26,7 @@ func (impl *AdminImpl) FetchNotification(ctx *gin.Context, category, id string) 
 			return nil, err
 		}
 
-		response[category] = append(response[category], impl.notificationResponse(dbResponse)...)
+		response = append(response, impl.notificationResponse(dbResponse)...)
 
 		return response, nil
 	}
@@ -37,7 +37,7 @@ func (impl *AdminImpl) FetchNotification(ctx *gin.Context, category, id string) 
 			return nil, err
 		}
 
-		response[key] = append(response[key], impl.notificationResponse(dbResponse)...)
+		response = append(response, impl.notificationResponse(dbResponse)...)
 	}
 
 	return response, nil
