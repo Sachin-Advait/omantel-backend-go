@@ -70,9 +70,9 @@ func (dbConn *DbServiceImpl) UpsertNotificationRecord(userId string, dbReq *mode
 	return dbReq.Id, nil
 }
 
-func (dbConn *DbServiceImpl) FetchBasicNotificationRecord(category string) ([]*models.NotificationDB, *errors.Error) {
+func (dbConn *DbServiceImpl) FetchSingleNotificationRecord(id string) (*models.NotificationDB, *errors.Error) {
 
-	if category == "" {
+	if id == "" {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
@@ -84,37 +84,29 @@ func (dbConn *DbServiceImpl) FetchBasicNotificationRecord(category string) ([]*m
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	query := "SELECT id, category, subject, file_type FROM user_notification where deleted IS NULL and category=$1"
+	var notif models.NotificationDB
 
-	rows, err := dbConn.DBClient.QueryContext(ctx, query, category)
+	query := "SELECT id, category, subject, body, file_type, file_link, created, modified FROM user_notification where deleted IS NULL and id=$1"
+	err := dbConn.DBClient.QueryRowContext(ctx, query, id).Scan(&notif.Id, &notif.Category, &notif.Subject, &notif.Body, &notif.FileType, &notif.FileLink, &notif.CreatedAt, &notif.ModifiedAt)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidDetailsCode,
+				Message:    errors.InvalidDetails,
+				Details:    "FetchSingleNotificationRecord query failed: " + err.Error(),
+			}
+		}
+
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
-			Details:    "FetchBasicNotificationRecord query failed: " + err.Error(),
+			Details:    "FetchSingleNotificationRecord query failed: " + err.Error(),
 		}
 	}
 
-	response := make([]*models.NotificationDB, 0)
-
-	for rows.Next() {
-
-		var notif models.NotificationDB
-
-		if err := rows.Scan(&notif.Id, &notif.Category, &notif.Subject, &notif.Body, &notif.FileType, &notif.FileLink, &notif.CreatedAt, &notif.ModifiedAt); err != nil {
-			return nil, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerErrorCode,
-				Message:    errors.InternalServerError,
-				Details:    "FetchBasicNotificationRecord scan failed: " + err.Error(),
-			}
-		}
-
-		response = append(response, &notif)
-	}
-
-	return response, nil
+	return &notif, nil
 }
 
 func (dbConn *DbServiceImpl) FetchNotificationRecord(category string) ([]*models.NotificationDB, *errors.Error) {
@@ -131,7 +123,7 @@ func (dbConn *DbServiceImpl) FetchNotificationRecord(category string) ([]*models
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	query := "SELECT id, category, subject, body, file_type, file_link, created, modified FROM user_notification where deleted IS NULL and category=$1"
+	query := "SELECT id, category, subject, body, file_type, file_link, created, modified FROM user_notification where deleted IS NULL and category=$1 order by created desc"
 
 	rows, err := dbConn.DBClient.QueryContext(ctx, query, category)
 	if err != nil {
@@ -162,4 +154,46 @@ func (dbConn *DbServiceImpl) FetchNotificationRecord(category string) ([]*models
 	}
 
 	return response, nil
+}
+
+func (dbConn *DbServiceImpl) DeleteNotificationRecord(userId, id string) *errors.Error {
+
+	err := &errors.Error{
+		StatusCode: http.StatusInternalServerError,
+		Code:       errors.InternalServerErrorCode,
+		Message:    errors.InternalServerError,
+	}
+
+	if userId == "" || id == "" {
+		err.Details = "invalid db arguments"
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	query := `UPDATE user_notification SET deleted=$1, comment=$2 WHERE id=$3 and deleted IS NULL`
+	result, dbErr := dbConn.DBClient.ExecContext(ctx, query, time.Now(), "deleted by user - "+userId, id)
+	if dbErr != nil {
+		err.Details = fmt.Sprintf("DeleteNotificationRecord: query failed: %v", dbErr.Error())
+		return err
+	}
+
+	affectedRow, dbErr := result.RowsAffected()
+	if dbErr != nil {
+		err.Details = fmt.Sprintf("DeleteNotificationRecord: affected row failed: %v", dbErr.Error())
+		return err
+	}
+
+	if affectedRow != 1 {
+		err.Details = fmt.Sprintf("DeleteNotificationRecord: affected row invalid: %v", affectedRow)
+		return &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    "NO RECORDS FOUND",
+			Details:    fmt.Sprintf("DeleteNotificationRecord: affected row invalid: %v", affectedRow),
+		}
+	}
+
+	return nil
 }

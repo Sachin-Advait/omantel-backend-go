@@ -34,7 +34,7 @@ const (
 	All     = "all"
 )
 
-//routes
+// routes
 const (
 	SwaggerRoute                = "/swagger/*any"
 	ActuatorRoute               = "/actuator/*any"
@@ -104,4 +104,5 @@ const (
 
 	UpsertNotificationPath = "/upsert_notification"
 	FetchNotificationPath  = "/fetch_notification"
+	DeleteNotificationPath = "/delete_notification"
 )

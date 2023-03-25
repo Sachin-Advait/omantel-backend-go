@@ -7,9 +7,18 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *UserImpl) FetchNotification(ctx *gin.Context, category string) (map[string][]*models.Notification, *errors.Error) {
+func (impl *UserImpl) FetchNotification(ctx *gin.Context, category, id string) (interface{}, *errors.Error) {
 
 	response := make(map[string][]*models.Notification)
+
+	if id != "" {
+		dbResponse, err := impl.DbService.FetchSingleNotificationRecord(id)
+		if err != nil {
+			return nil, err
+		}
+
+		return dbResponse, nil
+	}
 
 	if category != "" {
 		dbResponse, err := impl.DbService.FetchNotificationRecord(category)
@@ -40,10 +49,14 @@ func (impl *UserImpl) notificationResponse(dbResponse []*models.NotificationDB) 
 
 	for _, val := range dbResponse {
 		response = append(response, &models.Notification{
-			Id:       val.Id,
-			Subject:  val.Subject,
-			Body:     val.Body,
-			FileLink: val.FileLink,
+			Id:         val.Id,
+			Category:   val.Category,
+			Subject:    val.Subject,
+			Body:       val.Body,
+			FileType:   val.FileType,
+			FileLink:   val.FileLink,
+			CreatedAt:  val.CreatedAt,
+			ModifiedAt: val.ModifiedAt,
 		})
 	}
 

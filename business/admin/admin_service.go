@@ -40,5 +40,6 @@ type AdminProvider interface {
 	DeleteVOCUer(ctx *gin.Context, req *models.FetchDeleteVOCUserRequest) *errors.Error
 
 	UpsertNotification(ctx *gin.Context, req *models.Notification) (*models.APISuccessResponse, *errors.Error)
-	FetchNotification(ctx *gin.Context, category string) (map[string][]*models.Notification, *errors.Error)
+	FetchNotification(ctx *gin.Context, category, id string) (interface{}, *errors.Error)
+	DeleteNotification(ctx *gin.Context, id string) *errors.Error
 }
