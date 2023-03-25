@@ -15,7 +15,7 @@ type UserProvider interface {
 
 	GetUserFromRegionOrOutlet(ctx *gin.Context, outlet, region string, quarter, year int) ([]*models.UserMapResponse, *errors.Error)
 
-	FetchNotification(ctx *gin.Context, category string) (map[string][]*models.Notification, *errors.Error)
+	FetchNotification(ctx *gin.Context, category, id string) (interface{}, *errors.Error)
 
 	GetUserPayout(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*models.TotalIncentive, *errors.Error)
 	GetUserSalesAndTargetChart(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error)

@@ -19,6 +19,7 @@ func FetchNotifications(ctx *gin.Context) (int, interface{}) {
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	str := ctx.Request.URL.Query().Get("category")
+	id := ctx.Request.URL.Query().Get("id")
 
 	category := strings.ToUpper(strings.TrimSpace(str))
 	_, ok := constant.NotificationTypeMap[category]
@@ -41,7 +42,7 @@ func FetchNotifications(ctx *gin.Context) (int, interface{}) {
 		}
 	}
 
-	response, errs := userAPIProvider.FetchNotification(ctx, category)
+	response, errs := userAPIProvider.FetchNotification(ctx, category, id)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("FetchNotifications : provider failed")
 		logger.LogChan <- &logger.Logging{

@@ -460,7 +460,7 @@ func (dbConn *DbServiceImpl) FetchAllOMReportingToGivenManager(managerPosition s
 	return response, nil
 }
 
-// FetchAllEmpReportingToGivenManagerRole -
+// FetchAllMngrReportingToManagerRole -
 func (dbConn *DbServiceImpl) FetchAllMngrReportingToManagerRole(managerID, managerPosition string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllMngrReportingToManagerRole start")
