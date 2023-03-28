@@ -85,14 +85,14 @@ func (dbConn *DbServiceImpl) FetchUserIdFromOutletAndRegion(region, outlet strin
 
 	switch {
 	case region != "" && outlet != "":
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1 and outlet=$2",
-			region, outlet)
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1 and outlet=$2 and quarter=$3 and year=$4",
+			region, outlet, quarter, year)
 	case region != "":
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1",
-			region)
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1 and quarter=$2 and year=$3",
+			region, quarter, year)
 	case outlet != "":
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and outlet=$1",
-			outlet)
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and outlet=$1 and quarter=$2 and year=$3",
+			outlet, quarter, year)
 	}
 
 	if dbErr != nil {

@@ -49,11 +49,11 @@ func (impl *AdminImpl) UpsertNotification(ctx *gin.Context, req *models.Notifica
 
 	switch req.Category {
 	case "OFFER":
-		topic, notif, data = impl.getOfferFCMNotif(req)
+		topic, notif, data = impl.getOfferFCMNotif(dbReq)
 	case "TRAINING":
-		topic, notif, data = impl.getTrainingFCMNotif(req)
+		topic, notif, data = impl.getTrainingFCMNotif(dbReq)
 	case "NOTIFICATION":
-		topic, notif, data = impl.getNotificationFCMNotif(req)
+		topic, notif, data = impl.getNotificationFCMNotif(dbReq)
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -85,7 +85,7 @@ func (impl *AdminImpl) UpsertNotification(ctx *gin.Context, req *models.Notifica
 	}, nil
 }
 
-func (impl *AdminImpl) getOfferFCMNotif(req *models.Notification) (topic string, notif *messaging.Notification, data map[string]string) {
+func (impl *AdminImpl) getOfferFCMNotif(req *models.NotificationDB) (topic string, notif *messaging.Notification, data map[string]string) {
 	topic = impl.Config.FCMOfferTopic
 	notif = &messaging.Notification{
 		Title:    "A NEW OFFER",
@@ -104,7 +104,7 @@ func (impl *AdminImpl) getOfferFCMNotif(req *models.Notification) (topic string,
 	return
 }
 
-func (impl *AdminImpl) getNotificationFCMNotif(req *models.Notification) (topic string, notif *messaging.Notification, data map[string]string) {
+func (impl *AdminImpl) getNotificationFCMNotif(req *models.NotificationDB) (topic string, notif *messaging.Notification, data map[string]string) {
 	topic = impl.Config.FCMNotificationTopic
 	notif = &messaging.Notification{
 		Title:    "A NEW NOTIFICATION",
@@ -123,7 +123,7 @@ func (impl *AdminImpl) getNotificationFCMNotif(req *models.Notification) (topic 
 	return
 }
 
-func (impl *AdminImpl) getTrainingFCMNotif(req *models.Notification) (topic string, notif *messaging.Notification, data map[string]string) {
+func (impl *AdminImpl) getTrainingFCMNotif(req *models.NotificationDB) (topic string, notif *messaging.Notification, data map[string]string) {
 	topic = impl.Config.FCMTrainingTopic
 	notif = &messaging.Notification{
 		Title:    "NEW TRAINING VIDEO",

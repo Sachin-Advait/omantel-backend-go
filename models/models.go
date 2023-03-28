@@ -20,6 +20,7 @@ type UserMapRequest struct {
 	OutletName string `json:"outlet"`
 	RegionName string `json:"region"`
 	Quarterly  string `json:"quarterly"`
+	Monthly    string `json:"monthly"`
 }
 
 type UserMapResponse struct {
