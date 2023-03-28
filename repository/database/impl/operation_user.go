@@ -78,20 +78,21 @@ func (dbConn *DbServiceImpl) FetchUserIdFromOutletAndRegion(region, outlet strin
 	defer cancel()
 
 	var (
-		rows  *sql.Rows
-		dbErr error
+		rows      *sql.Rows
+		dbErr     error
+		duplicacy = make(map[string]bool)
 	)
 
 	switch {
 	case region != "" && outlet != "":
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1 and outlet=$2 and quarter=$3 and year=$4",
-			region, outlet, quarter, year)
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1 and outlet=$2",
+			region, outlet)
 	case region != "":
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1 and quarter=$2 and year=$3",
-			region, quarter, year)
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and region=$1",
+			region)
 	case outlet != "":
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and outlet=$1 and quarter=$2 and year=$3",
-			outlet, quarter, year)
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and outlet=$1",
+			outlet)
 	}
 
 	if dbErr != nil {
@@ -109,7 +110,7 @@ func (dbConn *DbServiceImpl) FetchUserIdFromOutletAndRegion(region, outlet strin
 		return nil, err
 	}
 
-	response := make([]*models.UserBasicDetailsDB, 0)
+	var response []*models.UserBasicDetailsDB
 
 	for rows.Next() {
 
@@ -130,13 +131,26 @@ func (dbConn *DbServiceImpl) FetchUserIdFromOutletAndRegion(region, outlet strin
 		}
 		user.Position = position
 
-		response = append(response, user)
+		if _, ok := duplicacy[user.UserId]; !ok {
+			duplicacy[user.UserId] = true
+			response = append(response, user)
+		}
+	}
+
+	if len(response) == 0 {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Err:        errors.InvalidDetails,
+			Message:    "NO RECORDS FOUND",
+			Details:    "FetchUserIdFromOutletAndRegion: no records",
+		}
 	}
 
 	return response, nil
 }
 
-//TODO: FetchUserDetails - for basic user info and manger of that user
+// TODO: FetchUserDetails - for basic user info and manger of that user
 func (dbConn *DbServiceImpl) FetchUserDetails(userID string, quarter, year int) (*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchAgentUserDetails start")

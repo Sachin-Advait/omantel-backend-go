@@ -22,36 +22,36 @@ func ValidateUserMapRequest(req *UserMapRequest, ctxHeader context.ContextHeader
 	req.OutletName = strings.ToUpper(strings.TrimSpace(req.OutletName))
 	req.RegionName = strings.ToUpper(strings.TrimSpace(req.RegionName))
 
-	if req.Quarterly == "" {
-		err = errors.New("quartlerly type is blank")
-		return
-	}
+	// if req.Quarterly == "" {
+	// 	err = errors.New("quartlerly type is blank")
+	// 	return
+	// }
 
-	splitQuarter := strings.Split(strings.TrimSpace(req.Quarterly), "-")
-	if len(splitQuarter) < 2 {
-		err = errors.New("quarterly type is incorrect, avoid spaces")
-		return
-	}
+	// splitQuarter := strings.Split(strings.TrimSpace(req.Quarterly), "-")
+	// if len(splitQuarter) < 2 {
+	// 	err = errors.New("quarterly type is incorrect, avoid spaces")
+	// 	return
+	// }
 
-	quarter, err = strconv.Atoi(strings.TrimSpace(splitQuarter[0]))
-	if err != nil {
-		err = errors.New("quarter conversion: " + err.Error())
-		return
+	// quarter, err = strconv.Atoi(strings.TrimSpace(splitQuarter[0]))
+	// if err != nil {
+	// 	err = errors.New("quarter conversion: " + err.Error())
+	// 	return
 
-	}
+	// }
 
-	if quarter < 1 || quarter > 4 {
-		err = errors.New("incorrect quarter value - should be between 1 and 4")
-		return
-	}
+	// if quarter < 1 || quarter > 4 {
+	// 	err = errors.New("incorrect quarter value - should be between 1 and 4")
+	// 	return
+	// }
 
-	date, err := time.Parse("2006", strings.TrimSpace(splitQuarter[1]))
-	if err != nil {
-		err = errors.New("quarter year parsing: " + err.Error())
-		return
-	}
+	// date, err := time.Parse("2006", strings.TrimSpace(splitQuarter[1]))
+	// if err != nil {
+	// 	err = errors.New("quarter year parsing: " + err.Error())
+	// 	return
+	// }
 
-	year = date.Year()
+	// year = date.Year()
 
 	return
 }

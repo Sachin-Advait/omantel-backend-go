@@ -346,13 +346,18 @@ And port 8090 is routed on http://omantel.moheoman.live/
 
 https://stackoverflow.com/questions/38822764/how-to-send-a-https-request-with-a-certificate-golang
 
+omantelsip@gmail.com
+Insync@12345
+
+https://bitbucket.org/gismohe/bitool-backend-scheduler/src/master/
+https://bitbucket.org/gismohe/bitool_backend/src/master/
 
 ./incentive_calculator --port 8090 --env uat
 
 scp ./incentive_calculator root@93.115.22.132:/root/go/src/gitlab.com/rendezvousPoint/incentive_calculator
 
 ssh root@93.115.22.132
-sseLbscK3xZ9AE2P!
+r4W7VQpTzDQEuLak!
 
 NEW
 ssh root@86.105.252.94
