@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/flags"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 
 	_ "github.com/lib/pq"
@@ -45,11 +46,13 @@ func InitDatabase(conf *models.DbClientConfig) {
 
 	err = conn.PingContext(ctx)
 	if err != nil {
+		logger.Error(context.TODO()).Str("env", flags.BaseConfigPath()+"/"+flags.Env()).Err(err).Msg("PsqlDatabaseService - ping failed")
 		logger.FileLogger.Fatal().Err(err).Msg("PsqlDatabaseService - ping failed")
 	}
 
 	// now create the database
 	db = &dbClient{DB: conn}
+	logger.Info(context.TODO()).Str("env", flags.BaseConfigPath()+"/"+flags.Env()).Msg("PsqlDatabaseService - ping successfull")
 }
 
 // Get is used to get the database instance client
