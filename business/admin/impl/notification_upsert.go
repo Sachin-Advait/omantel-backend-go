@@ -49,11 +49,11 @@ func (impl *AdminImpl) UpsertNotification(ctx *gin.Context, req *models.Notifica
 
 	switch req.Category {
 	case "OFFER":
-		topic, notif, data = impl.getOfferFCMNotif(req.FileType, req.FileLink)
+		topic, notif, data = impl.getOfferFCMNotif(dbReq)
 	case "TRAINING":
-		topic, notif, data = impl.getTrainingFCMNotif(req.FileType, req.FileLink)
+		topic, notif, data = impl.getTrainingFCMNotif(dbReq)
 	case "NOTIFICATION":
-		topic, notif, data = impl.getNotificationFCMNotif(req.FileType, req.FileLink)
+		topic, notif, data = impl.getNotificationFCMNotif(dbReq)
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -85,7 +85,7 @@ func (impl *AdminImpl) UpsertNotification(ctx *gin.Context, req *models.Notifica
 	}, nil
 }
 
-func (impl *AdminImpl) getOfferFCMNotif(fileType, fileLink string) (topic string, notif *messaging.Notification, data map[string]string) {
+func (impl *AdminImpl) getOfferFCMNotif(req *models.NotificationDB) (topic string, notif *messaging.Notification, data map[string]string) {
 	topic = impl.Config.FCMOfferTopic
 	notif = &messaging.Notification{
 		Title:    "A NEW OFFER",
@@ -93,15 +93,18 @@ func (impl *AdminImpl) getOfferFCMNotif(fileType, fileLink string) (topic string
 		ImageURL: "",
 	}
 	data = map[string]string{
-		"start": "from today 12:00AM",
-		"file":  fileType,
-		"link":  fileLink,
+		"contentId":    req.Id,
+		"category":     req.Category,
+		"fileLink":     req.FileLink,
+		"fileType":     req.FileType,
+		"createdTime":  req.CreatedAt.String(),
+		"modifiedTime": req.ModifiedAt.String(),
 	}
 
 	return
 }
 
-func (impl *AdminImpl) getNotificationFCMNotif(fileType, fileLink string) (topic string, notif *messaging.Notification, data map[string]string) {
+func (impl *AdminImpl) getNotificationFCMNotif(req *models.NotificationDB) (topic string, notif *messaging.Notification, data map[string]string) {
 	topic = impl.Config.FCMNotificationTopic
 	notif = &messaging.Notification{
 		Title:    "A NEW NOTIFICATION",
@@ -109,14 +112,18 @@ func (impl *AdminImpl) getNotificationFCMNotif(fileType, fileLink string) (topic
 		ImageURL: "",
 	}
 	data = map[string]string{
-		"file": fileType,
-		"link": fileLink,
+		"contentId":    req.Id,
+		"category":     req.Category,
+		"fileLink":     req.FileLink,
+		"fileType":     req.FileType,
+		"createdTime":  req.CreatedAt.String(),
+		"modifiedTime": req.ModifiedAt.String(),
 	}
 
 	return
 }
 
-func (impl *AdminImpl) getTrainingFCMNotif(fileType, fileLink string) (topic string, notif *messaging.Notification, data map[string]string) {
+func (impl *AdminImpl) getTrainingFCMNotif(req *models.NotificationDB) (topic string, notif *messaging.Notification, data map[string]string) {
 	topic = impl.Config.FCMTrainingTopic
 	notif = &messaging.Notification{
 		Title:    "NEW TRAINING VIDEO",
@@ -124,8 +131,12 @@ func (impl *AdminImpl) getTrainingFCMNotif(fileType, fileLink string) (topic str
 		ImageURL: "",
 	}
 	data = map[string]string{
-		"file": fileType,
-		"link": fileLink,
+		"contentId":    req.Id,
+		"category":     req.Category,
+		"fileLink":     req.FileLink,
+		"fileType":     req.FileType,
+		"createdTime":  req.CreatedAt.String(),
+		"modifiedTime": req.ModifiedAt.String(),
 	}
 
 	return

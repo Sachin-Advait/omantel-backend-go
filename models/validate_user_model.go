@@ -12,7 +12,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func ValidateUserMapRequest(req *UserMapRequest, ctxHeader context.ContextHeader) (quarter, year int, err error) {
+func ValidateUserMapRequest(req *UserMapRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, quarter, month, year int, err error) {
 
 	if req.OutletName == "" && req.RegionName == "" {
 		err = errors.New("blank outlet and region")
@@ -22,36 +22,55 @@ func ValidateUserMapRequest(req *UserMapRequest, ctxHeader context.ContextHeader
 	req.OutletName = strings.ToUpper(strings.TrimSpace(req.OutletName))
 	req.RegionName = strings.ToUpper(strings.TrimSpace(req.RegionName))
 
-	if req.Quarterly == "" {
-		err = errors.New("quartlerly type is blank")
+	var date time.Time
+
+	isQuarterReport = true
+
+	if req.Monthly == "" && req.Quarterly == "" {
+		err = errors.New("monthy and quartlerly type is blank")
 		return
 	}
 
-	splitQuarter := strings.Split(strings.TrimSpace(req.Quarterly), "-")
-	if len(splitQuarter) < 2 {
-		err = errors.New("quarterly type is incorrect, avoid spaces")
-		return
+	if req.Monthly != "" {
+		date, err = time.Parse("01-2006", strings.TrimSpace(req.Monthly))
+		if err != nil {
+			err = errors.New("monthly parsing: " + err.Error())
+			return
+		}
+
+		isQuarterReport = false
+		month = int(date.Month())
+		year = date.Year()
 	}
 
-	quarter, err = strconv.Atoi(strings.TrimSpace(splitQuarter[0]))
-	if err != nil {
-		err = errors.New("quarter conversion: " + err.Error())
-		return
+	if isQuarterReport && req.Quarterly != "" {
 
+		req := strings.Split(strings.TrimSpace(req.Quarterly), "-")
+		if len(req) < 2 {
+			err = errors.New("quarterly type is incorrect, avoid spaces")
+			return
+		}
+
+		quarter, err = strconv.Atoi(strings.TrimSpace(req[0]))
+		if err != nil {
+			err = errors.New("quarter conversion: " + err.Error())
+			return
+
+		}
+
+		if quarter < 1 || quarter > 4 {
+			err = errors.New("incorrect quarter value - should be between 1 and 4")
+			return
+		}
+
+		date, err = time.Parse("2006", strings.TrimSpace(req[1]))
+		if err != nil {
+			err = errors.New("quarter year parsing: " + err.Error())
+			return
+		}
+
+		year = date.Year()
 	}
-
-	if quarter < 1 || quarter > 4 {
-		err = errors.New("incorrect quarter value - should be between 1 and 4")
-		return
-	}
-
-	date, err := time.Parse("2006", strings.TrimSpace(splitQuarter[1]))
-	if err != nil {
-		err = errors.New("quarter year parsing: " + err.Error())
-		return
-	}
-
-	year = date.Year()
 
 	return
 }
@@ -249,6 +268,9 @@ func ValidateUserPayoutResponse(ctx *gin.Context, res *TotalIncentive) {
 	}
 	if res.Upgrade == nil {
 		res.Upgrade = &IndividualIncentive{}
+	}
+	if res.VOC == nil {
+		res.VOC = &IndividualIncentive{}
 	}
 
 	if res.HBB.Payout != 0 {

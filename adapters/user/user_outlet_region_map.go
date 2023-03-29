@@ -19,7 +19,7 @@ func GetUserFromRegionOrOutlet(ctx *gin.Context, req *models.UserMapRequest) (in
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	quarter, year, err := models.ValidateUserMapRequest(req, ctxHeader)
+	isQuarterReport, quarter, month, year, err := models.ValidateUserMapRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetUserFromRegionOrOutlet : validation failed")
 		logger.LogChan <- &logger.Logging{
@@ -35,6 +35,10 @@ func GetUserFromRegionOrOutlet(ctx *gin.Context, req *models.UserMapRequest) (in
 			Error:   errors.InvalidReqParameters,
 			Message: err.Error(),
 		}
+	}
+
+	if !isQuarterReport {
+		quarter = objecthelper.GetQuarterFromMonth(month)
 	}
 
 	response, errs := userAPIProvider.GetUserFromRegionOrOutlet(ctx, req.OutletName, req.RegionName, quarter, year)

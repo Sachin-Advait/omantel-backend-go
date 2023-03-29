@@ -53,14 +53,18 @@ func InitCache(redisConfig *models.RedisConfigStruct) {
 	}
 
 	if client == nil {
+		logger.Error(context.TODO()).Str("env", flags.BaseConfigPath()+"/"+flags.Env()).Msg("IncentiveCacheService - client nil")
 		logger.FileLogger.Fatal().Str("env", flags.Env()).Stack().Msg("IncentiveCacheService - incorrect redis mode " + mode)
 	}
 	ctx, _ := context.WithTimeout(context.Background(), redisConfig.ContextTimeoutInMilliSecond)
 
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
+		logger.Error(context.TODO()).Str("env", flags.BaseConfigPath()+"/"+flags.Env()).Err(err).Msg("IncentiveCacheService - ping failed")
 		logger.FileLogger.Fatal().Err(err).Str("env", flags.Env()).Stack().Msg("IncentiveCacheService - ping error")
 	}
+
+	logger.Info(context.TODO()).Str("env", flags.BaseConfigPath()+"/"+flags.Env()).Msg("IncentiveCacheService - ping successfull")
 }
 
 // Get is used to get the cache client instance
