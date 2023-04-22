@@ -357,7 +357,7 @@ https://bitbucket.org/gismohe/bitool_backend/src/master/
 scp ./incentive_calculator root@93.115.22.132:/root/go/src/gitlab.com/rendezvousPoint/incentive_calculator
 
 ssh root@93.115.22.132
-r4W7VQpTzDQEuLak!
+npXpsWCG7a82tW4j#
 
 NEW
 ssh root@86.105.252.94

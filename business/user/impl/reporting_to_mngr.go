@@ -12,12 +12,22 @@ import (
 
 func (impl *UserImpl) GetUsersReportingToManager(ctx *gin.Context, managerID string, isQuarterReport bool, quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
+	cRH, _ := ctx.Get(constant.HeaderInContext)
+	ctxHeader, _ := (cRH).(context.ContextHeader)
+
+	if err := impl.CacheService.IsSessionTokenValid(ctxHeader.XUserId, ctxHeader.Authorization[7:]); err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusUnauthorized,
+			Code:       errors.UnauthorizedUserCode,
+			Message:    errors.UnauthorizedUser,
+			Details:    err.Details,
+		}
+	}
+
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
 	}
 
-	cRH, _ := ctx.Get(constant.HeaderInContext)
-	ctxHeader, _ := (cRH).(context.ContextHeader)
 	if ctxHeader.IsAdmin {
 		vps, err := impl.DbService.FetchVP(quarter, year)
 		if err != nil {

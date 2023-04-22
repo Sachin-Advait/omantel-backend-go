@@ -6,6 +6,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/repository/redis"
 	"gitlab.com/rendezvousPoint/incentive_calculator/repository/soap"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/configs"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
@@ -31,4 +32,22 @@ func GetUserService(config *configs.UserConfig, dbService database.DbService, ca
 		FCMService:   fcmService,
 		SOAPService:  soapService,
 	}
+}
+
+func (impl *UserImpl) SessionValidation(userId, currentAccessToken string) bool {
+
+	session, err := impl.CacheService.GetUserSessionToken(userId)
+	if err != nil && err.Code != errors.UserNotFoundCode {
+		return false
+	}
+
+	if err != nil && err.Code == errors.UserNotFoundCode {
+		return true
+	}
+
+	if session.AccessToken == currentAccessToken {
+		return true
+	}
+
+	return false
 }

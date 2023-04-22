@@ -102,7 +102,7 @@ func (impl *UserImpl) GenerateOTP(ctx *gin.Context, userID string) (map[string]s
 		return nil, err
 	}
 
-	if err := impl.SOAPService.CallSOAPClientSteps(userID, user.MobileNumber, impl.Config.OTPUrl, otpModel.OTP); err != nil {
+	if err := impl.SOAPService.CallSOAPClientSteps(userID, user.Name, user.MobileNumber, impl.Config.OTPUrl, otpModel.OTP); err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerError,

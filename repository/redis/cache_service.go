@@ -8,6 +8,11 @@ import (
 )
 
 type CacheService interface {
+	InsertUseSessionToken(userId string, userSession *models.UserSessionToken, keyTTL time.Duration) *errors.Error
+	GetUserSessionToken(userId string) (*models.UserSessionToken, *errors.Error)
+	DelUserSessionToken(userId string) *errors.Error
+	IsSessionTokenValid(userId, sessionToken string) *errors.Error
+
 	InsertUserReport(isQuarterReport bool, month, quarter, year int, userReport *models.UserReportDB, keyTTL time.Duration) *errors.Error
 	GetUserReport(userId string, isQuarterReport bool, month, quarter, year int) (*models.UserReportDB, *errors.Error)
 	DelUserReport(userId string, isQuarterReport bool, month, quarter, year int) *errors.Error

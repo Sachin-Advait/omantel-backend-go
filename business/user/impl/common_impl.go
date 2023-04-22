@@ -947,7 +947,9 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		err = impl.CacheService.InsertUserReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
 
 		if err != nil {
-			logger.FileLogger.CtxWarn(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("AReport : force report update")
+			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("AReport : force report update")
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Msg("AReport : cache update success")
 		}
 
 		// if err := impl.DbService.InsertAgentUserReport(user, isQuarterReport, month, year, quarter); err != nil {
@@ -1319,7 +1321,9 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 
 		err = impl.CacheService.InsertUserReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
 		if err != nil {
-			logger.FileLogger.CtxWarn(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("OMReport : cache update failed")
+			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("OMReport : cache update failed")
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Msg("OMReport : cache update success")
 		}
 
 		// if err := impl.DbService.InsertManagerReport(user, isQuarterReport, month, year, quarter); err != nil {
@@ -1710,7 +1714,9 @@ func (impl *UserImpl) updateManagerReport(ctx *gin.Context, mngr *models.UserBas
 
 		err = impl.CacheService.InsertUserReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
 		if err != nil {
-			logger.FileLogger.CtxWarn(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("MngrReport : cache update failed")
+			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("MngrReport : cache update failed")
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Msg("MngrReport : cache update success")
 		}
 
 		// if err := impl.DbService.InsertManagerReport(user, isQuarterReport, month, year, quarter); err != nil {
@@ -1819,7 +1825,9 @@ func (impl *UserImpl) updateOutletReport(ctx *gin.Context, regionName, outletNam
 
 		err = impl.CacheService.InsertOutletReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
 		if err != nil {
-			logger.FileLogger.CtxWarn(ctx).Str("outlet", outletName).Str("region", regionName).Err(errors.New(err.Details.(string))).Msg("OutletReport : force report update")
+			logger.FileLogger.CtxError(ctx).Str("outlet", outletName).Str("region", regionName).Err(errors.New(err.Details.(string))).Msg("OutletReport : force report update")
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("outlet", outletName).Msg("OutletReport : cache update success")
 		}
 
 	}(outletReport)
@@ -1899,7 +1907,9 @@ func (impl *UserImpl) updateRegionReport(ctx *gin.Context, regionName string, is
 
 		err = impl.CacheService.InsertRegionReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
 		if err != nil {
-			logger.FileLogger.CtxWarn(ctx).Str("region", regionName).Err(errors.New(err.Details.(string))).Msg("RegionReport : force report update")
+			logger.FileLogger.CtxError(ctx).Str("region", regionName).Err(errors.New(err.Details.(string))).Msg("RegionReport : force report update")
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("region", regionName).Msg("RegionReport` : cache update success")
 		}
 
 	}(regionReport)

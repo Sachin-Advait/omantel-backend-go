@@ -2,9 +2,11 @@ package impl
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
@@ -77,6 +79,17 @@ func (impl *UserImpl) RenewAccessToken(ctx *gin.Context) (string, *errors.Error)
 			Message:    errors.InternalServerError,
 			Details:    "refresh accessToken failed - " + err.Error(),
 		}
+	}
+
+	session := &models.UserSessionToken{
+		AccessToken:  accessToken,
+		RefreshToken: ctxHeader.SuperAuthorization,
+		LoginTime:    time.Now(),
+	}
+
+	//multiple login validation check
+	if cacheErr := impl.CacheService.InsertUseSessionToken(authUserID, session, impl.Config.SessionExpiryTime); cacheErr != nil {
+		return "", cacheErr
 	}
 
 	return accessToken, nil

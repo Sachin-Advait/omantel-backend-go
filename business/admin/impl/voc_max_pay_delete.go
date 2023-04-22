@@ -1,6 +1,8 @@
 package impl
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
@@ -12,6 +14,15 @@ func (impl *AdminImpl) DeleteVOCMaxPay(ctx *gin.Context, req []*models.FetchDele
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
+
+	if err := impl.CacheService.IsSessionTokenValid(ctxHeader.XUserId, ctxHeader.Authorization[7:]); err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusUnauthorized,
+			Code:       errors.UnauthorizedUserCode,
+			Message:    errors.UnauthorizedUser,
+			Details:    err.Details,
+		}
+	}
 
 	position := make([]string, 0)
 	year := make([]int, 0)

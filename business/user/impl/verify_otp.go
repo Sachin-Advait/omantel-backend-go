@@ -145,6 +145,17 @@ func (impl *UserImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*model
 		return nil, err
 	}
 
+	sessionToken := &models.UserSessionToken{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		LoginTime:    time.Now(),
+	}
+
+	//multiple login validation check
+	if cacheErr := impl.CacheService.InsertUseSessionToken(req.ClientId, sessionToken, accessTokenExpiry); cacheErr != nil {
+		return nil, cacheErr
+	}
+
 	if req.Token != "" {
 		_, fcmErr := impl.FCMService.SubscribeToTopic(impl.Config.FCMNotificationTopic, []string{req.Token})
 		if fcmErr != nil {

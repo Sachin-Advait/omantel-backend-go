@@ -6,14 +6,24 @@ import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 func (impl *UserImpl) GetUserSalesAndTargetChart(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error) {
 
-	// cRH, _ := ctx.Get(constant.HeaderInContext)
-	// ctxHeader, _ := (cRH).(context.ContextHeader)
+	cRH, _ := ctx.Get(constant.HeaderInContext)
+	ctxHeader, _ := (cRH).(context.ContextHeader)
+
+	if err := impl.CacheService.IsSessionTokenValid(ctxHeader.XUserId, ctxHeader.Authorization[7:]); err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusUnauthorized,
+			Code:       errors.UnauthorizedUserCode,
+			Message:    errors.UnauthorizedUser,
+			Details:    err.Details,
+		}
+	}
 
 	report, err := impl.CacheService.GetUserReport(userID, isQuarterReport, month, quarter, year)
 	if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {

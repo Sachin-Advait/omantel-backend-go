@@ -7,16 +7,26 @@ import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-//GetOutletSalesAndTarget: userID should be a manager
+// GetOutletSalesAndTarget: userID should be a manager
 func (impl *UserImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error) {
 
-	// cRH, _ := ctx.Get(constant.HeaderInContext)
-	// ctxHeader, _ := (cRH).(context.ContextHeader)
+	cRH, _ := ctx.Get(constant.HeaderInContext)
+	ctxHeader, _ := (cRH).(context.ContextHeader)
+
+	if err := impl.CacheService.IsSessionTokenValid(ctxHeader.XUserId, ctxHeader.Authorization[7:]); err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusUnauthorized,
+			Code:       errors.UnauthorizedUserCode,
+			Message:    errors.UnauthorizedUser,
+			Details:    err.Details,
+		}
+	}
 
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
