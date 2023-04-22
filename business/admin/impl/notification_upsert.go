@@ -19,6 +19,15 @@ func (impl *AdminImpl) UpsertNotification(ctx *gin.Context, req *models.Notifica
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
+	if err := impl.CacheService.IsSessionTokenValid(ctxHeader.XUserId, ctxHeader.Authorization[7:]); err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusUnauthorized,
+			Code:       errors.UnauthorizedUserCode,
+			Message:    errors.UnauthorizedUser,
+			Details:    err.Details,
+		}
+	}
+
 	dbReq := &models.NotificationDB{
 		Id:         req.Id,
 		Category:   req.Category,

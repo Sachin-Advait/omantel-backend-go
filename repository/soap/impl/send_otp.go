@@ -15,9 +15,9 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 )
 
-func (impl *SOAPServiceImpl) CallSOAPClientSteps(userID, mobile, url string, otp int) error {
+func (impl *SOAPServiceImpl) CallSOAPClientSteps(userID, userName, mobile, url string, otp int) error {
 
-	req := impl.populateRequest(userID, mobile, otp)
+	req := impl.populateRequest(userID, userName, mobile, otp)
 
 	httpReq, err := impl.generateSOAPRequest(url, req)
 	if err != nil {
@@ -66,7 +66,7 @@ func (impl *SOAPServiceImpl) generateSOAPRequest(url string, req *models.Request
 	return r, nil
 }
 
-func (impl *SOAPServiceImpl) populateRequest(userId, mobile string, otp int) *models.Request {
+func (impl *SOAPServiceImpl) populateRequest(userId, userName, mobile string, otp int) *models.Request {
 
 	id := strconv.Itoa(int(time.Now().Unix()))
 
@@ -84,7 +84,7 @@ func (impl *SOAPServiceImpl) populateRequest(userId, mobile string, otp int) *mo
 		ShortCode:                   models.ShortCode,
 		IsDeliveryStatusRequired:    "1",
 		NotificaitionValidityPeriod: time.Now().Format("2006-01-02T15:04:05"),
-		Body:                        fmt.Sprintf("Dear %v, Your OTP is %v", userId, otp),
+		Body:                        fmt.Sprintf("Dear %v, Your OTP for Omantel SIP app is %v", userName, otp),
 		BodyCoding:                  "8",
 		BodyContentType:             "1",
 		Receiver:                    mobile,

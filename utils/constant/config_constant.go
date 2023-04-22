@@ -11,11 +11,12 @@ const (
 	PanicLevel = "panic"
 )
 
-//application configuration keywords
+// application configuration keywords
 const (
 	JwtKey                   = "secretKey"
 	AdminJwtKey              = "adminSecretKey"
 	OTPEndpoint              = "otpUrl"
+	CorsOriginEnabled        = "corsOrigin"
 	SessionExpiryTimeMinutes = "sessionExpiryTimeMinutes"
 	RefreshTokenExpiryHours  = "refreshTokenExpiryHours"
 	CaptchaSitesEnableKey    = "captchaSitesEnableKey"
@@ -30,14 +31,14 @@ const (
 	FCMNotificationTopicKey = "fcmNotificationTopic"
 )
 
-//config file names
+// config file names
 const (
 	LoggerConfigFile      = "logger"
 	MoxyConfigFile        = "moxy"
 	ApplicationConfigFile = "application"
 )
 
-//db configuration keywords
+// db configuration keywords
 const (
 	MasterCronTime = "masterCronTime"
 
@@ -77,7 +78,7 @@ const (
 	UserIncentiveRedisMode                        = "userIncentiveRedis.mode"
 )
 
-//log configuration keywords
+// log configuration keywords
 const (
 	LogLevelKey              = "level"
 	ConsoleLoggingEnabledKey = "consoleLoggingEnabled"
@@ -92,7 +93,7 @@ const (
 	Compress                 = "compress"
 )
 
-//http configuration keywords
+// http configuration keywords
 const (
 	HTTPTLSCertificateFileLocation       = "http.tlsCertificate"
 	HTTPConnectTimeoutInMillisKey        = "http.connectTimeoutInMillis"

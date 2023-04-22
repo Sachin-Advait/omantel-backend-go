@@ -12,6 +12,7 @@ type UserProvider interface {
 	GenerateToken(ctx *gin.Context) (string, *errors.Error)
 	RenewAccessToken(ctx *gin.Context) (string, *errors.Error)
 	CaptchaVerification(ctx *gin.Context, req *models.CaptchRequest) (interface{}, *errors.Error)
+	UserLogout(ctx *gin.Context) *errors.Error
 
 	GetUserFromRegionOrOutlet(ctx *gin.Context, outlet, region string, quarter, year int) ([]*models.UserMapResponse, *errors.Error)
 

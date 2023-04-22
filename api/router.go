@@ -75,6 +75,7 @@ func incentiveRoutes(group *gin.RouterGroup) {
 	group.GET(constant.RenewTokenPath, user.RenewAccessToken)
 	group.POST(constant.CaptchaVerificationPath, user.CaptchaVerification)
 	group.POST(constant.GetUserPath, user.GetUserFromRegionOrOutlet)
+	group.GET(constant.UserLogoutPath, user.UserLogout)
 
 	group.POST(constant.ClientPath, user.GetUserPayout)
 	group.POST(constant.UserPayoutPath, user.GetUserPayout)

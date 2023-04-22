@@ -1,5 +1,5 @@
 package soap
 
 type SOAPService interface {
-	CallSOAPClientSteps(userID, mobile, url string, otp int) error
+	CallSOAPClientSteps(userID, userName, mobile, url string, otp int) error
 }
