@@ -14,8 +14,8 @@ import (
 )
 
 // ContextCreator:
-//	* fetches values from header and sets into contextHeader in upperCase
-//	* sets the context Header in the request context with key as 'Context-Header'
+//   - fetches values from header and sets into contextHeader in upperCase
+//   - sets the context Header in the request context with key as 'Context-Header'
 func ContextCreator() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {

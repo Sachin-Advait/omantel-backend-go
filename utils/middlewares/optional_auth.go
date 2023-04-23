@@ -13,11 +13,11 @@ import (
 )
 
 // OptionalAuthHandler:
-//	* fetches values from header and sets into contextHeader in upperCase
-//	* if token is present then it validates if its correct
-//	* if userID is passed in header then it validates if it corresponds to the right token
-//	* if token is not present then it is allowed to bypass
-//	* context authorization field is reset with only the access token part
+//   - fetches values from header and sets into contextHeader in upperCase
+//   - if token is present then it validates if its correct
+//   - if userID is passed in header then it validates if it corresponds to the right token
+//   - if token is not present then it is allowed to bypass
+//   - context authorization field is reset with only the access token part
 func OptionalAuthHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		cRH, _ := ctx.Get(constant.HeaderInContext)

@@ -7,7 +7,7 @@ import (
 )
 
 // ApiVersionHandler:
-//	* sets the version of the api
+//   - sets the version of the api
 func ApiVersionHandler(version string) gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
