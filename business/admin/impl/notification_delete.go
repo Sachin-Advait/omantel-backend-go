@@ -14,7 +14,7 @@ func (impl *AdminImpl) DeleteNotification(ctx *gin.Context, id string) *errors.E
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if err := impl.CacheService.IsSessionTokenValid(ctxHeader.XUserId, ctxHeader.Authorization[7:]); err != nil {
+	if err := impl.CacheService.IsSessionTokenValid(ctxHeader.XUserId, ctxHeader.Authorization); err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusUnauthorized,
 			Code:       errors.UnauthorizedUserCode,

@@ -5,7 +5,7 @@ const (
 	SuccessInfoErrorCode = ""
 )
 
-//Error Code
+// Error Code
 const (
 	//common error code
 	InternalServerErrorCode   = "CE10001"
@@ -42,7 +42,7 @@ const (
 	OtherErrorCode = "OE11046"
 )
 
-//Error Values
+// Error Values
 const (
 	InternalServerError   = "INTERNAL SERVER ERROR"
 	InvalidReqParameters  = "INVALID REQUEST PARAMETERS"

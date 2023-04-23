@@ -2,8 +2,10 @@ package impl
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
@@ -39,6 +41,17 @@ func (impl *UserImpl) GenerateToken(ctx *gin.Context) (string, *errors.Error) {
 			Message:    errors.InternalServerError,
 			Details:    "create at failed - " + err.Error(),
 		}
+	}
+
+	sessionToken := &models.UserSessionToken{
+		AccessToken:  accessToken,
+		RefreshToken: accessToken,
+		LoginTime:    time.Now(),
+	}
+
+	//multiple login validation check
+	if cacheErr := impl.CacheService.InsertUseSessionToken(ctxHeader.XUserId, sessionToken, accessTokenExpiry); cacheErr != nil {
+		return "", cacheErr
 	}
 
 	return accessToken, nil

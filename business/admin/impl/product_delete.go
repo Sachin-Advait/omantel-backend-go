@@ -15,7 +15,7 @@ func (impl *AdminImpl) DeleteProducts(ctx *gin.Context, req *models.FetchDeleteP
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	if err := impl.CacheService.IsSessionTokenValid(ctxHeader.XUserId, ctxHeader.Authorization[7:]); err != nil {
+	if err := impl.CacheService.IsSessionTokenValid(ctxHeader.XUserId, ctxHeader.Authorization); err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusUnauthorized,
 			Code:       errors.UnauthorizedUserCode,

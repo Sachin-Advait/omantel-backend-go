@@ -14,11 +14,11 @@ import (
 )
 
 // MandatoryAdminAuthHandler:
-//	* fetches values from header and sets into contextHeader in upperCase
-//	* token should be present and validated
-//	* if userID is passed in header then it validates if it corresponds to the right token
-//	* if token is not present then it is allowed to bypass
-//	* context authorization field is reset with only the access token part
+//   - fetches values from header and sets into contextHeader in upperCase
+//   - token should be present and validated
+//   - if userID is passed in header then it validates if it corresponds to the right token
+//   - if token is not present then it is allowed to bypass
+//   - context authorization field is reset with only the access token part
 func MandatoryAdminAuthHandler() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {

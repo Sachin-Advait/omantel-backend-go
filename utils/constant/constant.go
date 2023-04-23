@@ -18,7 +18,7 @@ const (
 	RedisOutletRegionReportKey = "%s|%s|%v|%v|%v|Report" // outlet|region|month|quarter|year|Report
 )
 
-//jwt tokens
+// jwt tokens
 const (
 	TokenExpired = -1
 	TokenInvalid = 0

@@ -104,7 +104,7 @@ func initDB() {
 
 }
 
-//NewDatabaseSetup start a new db connection
+// NewDatabaseSetup start a new db connection
 func NewDatabaseSetup(conf *models.DbClientConfig) (*sql.DB, error) {
 
 	logger.FileLogger.Info().Interface("config", conf).Msg("PsqlDatabaseService - config")
