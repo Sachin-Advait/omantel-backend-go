@@ -34,25 +34,25 @@ func (impl *UserImpl) GetUserPayout(ctx *gin.Context, userID string, isQuarterRe
 
 	q1Report, err := impl.CoalesceUserPayout(ctx, userID, isQuarterReport, 1, month, year)
 	if err != nil {
-		err.Details = fmt.Sprintf("coalesces-1, err-%v", err)
+		err.Details = fmt.Sprintf("coalesces-1, err-%v", err.Details)
 		return nil, err
 	}
 
 	q2Report, err := impl.CoalesceUserPayout(ctx, userID, isQuarterReport, 2, month, year)
 	if err != nil {
-		err.Details = fmt.Sprintf("coalesces-2, err-%v", err)
+		err.Details = fmt.Sprintf("coalesces-2, err-%v", err.Details)
 		return nil, err
 	}
 
 	q3Report, err := impl.CoalesceUserPayout(ctx, userID, isQuarterReport, 3, month, year)
 	if err != nil {
-		err.Details = fmt.Sprintf("coalesces-3, err-%v", err)
+		err.Details = fmt.Sprintf("coalesces-3, err-%v", err.Details)
 		return nil, err
 	}
 
 	q4Report, err := impl.CoalesceUserPayout(ctx, userID, isQuarterReport, 4, month, year)
 	if err != nil {
-		err.Details = fmt.Sprintf("coalesces-4, err-%v", err)
+		err.Details = fmt.Sprintf("coalesces-4, err-%v", err.Details)
 		return nil, err
 	}
 
