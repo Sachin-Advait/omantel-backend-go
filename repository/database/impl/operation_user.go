@@ -169,24 +169,24 @@ func (dbConn *DbServiceImpl) FetchUserDetails(userID string, quarter, year int) 
 		return user, nil
 	case user.Position == constant.GeneralManager || user.Position == constant.GeneralManagerAbb || user.Position == constant.GeneralManagerCC:
 		user.ManagerPosition = constant.VicePresidentAbb
-		query = "select vice_president from user_hierarchy_table where deleted IS NULL and general_manager= $1 and quarter=$2 and year=$3 limit 1"
+		query = "select vice_president from user_hierarchy_table where deleted IS NULL and general_manager=$1 and quarter=$2 and year=$3 limit 1"
 
 	case user.Position == constant.SeniorManager || user.Position == constant.SeniorManagerAbb || user.Position == constant.SeniorManagerCC:
 		user.ManagerPosition = constant.GeneralManagerAbb
-		query = "select general_manager from user_hierarchy_table where deleted IS NULL and senior_manager= $1 and quarter=$2 and year=$3 limit 1"
+		query = "select general_manager from user_hierarchy_table where deleted IS NULL and senior_manager=$1 and quarter=$2 and year=$3 limit 1"
 
 	case user.Position == constant.Manager || user.Position == constant.ManagerAbb || user.Position == constant.ManagerCC:
 		user.ManagerPosition = constant.SeniorManagerAbb
-		query = "select senior_manager from user_hierarchy_table where deleted IS NULL and manager= $1 and quarter=$2 and year=$3 limit 1"
+		query = "select senior_manager from user_hierarchy_table where deleted IS NULL and manager=$1 and quarter=$2 and year=$3 limit 1"
 
 	case user.Position == constant.OutletManager || user.Position == constant.OutletManagerAbb || user.Position == constant.OutletManagerCC:
 		user.ManagerPosition = constant.ManagerAbb
-		query = "select manager from user_hierarchy_table where deleted IS NULL and outlet_manager= $1 and quarter=$2 and year=$3 limit 1"
+		query = "select manager from user_hierarchy_table where deleted IS NULL and outlet_manager=$1 and quarter=$2 and year=$3 limit 1"
 
 	case user.Position == constant.Promoter || user.Position == constant.PromoterAbb || user.Position == constant.PromoterCC || user.Position == constant.CSR ||
 		user.Position == constant.CSRAbb || user.Position == constant.CSRCC:
 		user.ManagerPosition = constant.OutletManagerAbb
-		query = "select outlet_manager from user_hierarchy_table where deleted IS NULL and emp_id= $1 and quarter=$2 and year=$3 limit 1"
+		query = "select outlet_manager from user_hierarchy_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3 limit 1"
 
 	default:
 		return nil, &errors.Error{

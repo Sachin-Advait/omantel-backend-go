@@ -432,6 +432,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		resp.Baqati = ind
 		resp.Hayyak = ind
 		resp.Upgrade = ind
+		resp.VOC = ind
 		return resp, report, nil
 	}
 
@@ -441,6 +442,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		resp.Baqati = ind
 		resp.Hayyak = ind
 		resp.Upgrade = ind
+		resp.VOC = ind
 		return resp, report, nil
 	}
 
@@ -498,6 +500,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 			resp.Baqati = ind
 			resp.Hayyak = ind
 			resp.Upgrade = ind
+			resp.VOC = ind
 			return resp, report, nil
 		}
 
@@ -821,6 +824,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Msg("AReport : zero target found")
 		ind.Error = "NO TARGET FOUND FOR OUTLET - " + user.Outlet
 		resp.Upgrade = ind
+		resp.VOC = &models.IndividualIncentive{}
 		return resp, report, nil
 	}
 
@@ -838,6 +842,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Float64("achieved", achieved).Err(internalErr).Msg("AReport : UPGRADE fetch vop failed")
 		ind.Error = internalErr.Error()
 		resp.Upgrade = ind
+		resp.VOC = &models.IndividualIncentive{}
 		return resp, report, nil
 	}
 	extraPayout, internalErr := impl.getExtraPay(quarter, year, constant.UpgradeCategory, achieved)
@@ -845,6 +850,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Float64("achieved", achieved).Err(internalErr).Msg("AReport : UPGRADE fetch extraPayout failed")
 		ind.Error = internalErr.Error()
 		resp.Upgrade = ind
+		resp.VOC = &models.IndividualIncentive{}
 		return resp, report, nil
 	}
 	maxPayAllowed, internalErr := impl.getMaxPayout(quarter, year, constant.PromoterCC, constant.UpgradeCategory)
@@ -852,6 +858,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Str("position", constant.PromoterCC).Err(internalErr).Msg("AReport : UPGRADE fetch maxPay failed")
 		ind.Error = internalErr.Error()
 		resp.Upgrade = ind
+		resp.VOC = &models.IndividualIncentive{}
 		return resp, report, nil
 	}
 	maxExtraPayAllowed, internalErr := impl.getMaxExtraPayout(quarter, year, constant.PromoterCC, constant.UpgradeCategory)
@@ -859,6 +866,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Str("position", constant.PromoterCC).Err(internalErr).Msg("AReport : UPGRADE fetch maxExtraPay failed")
 		ind.Error = internalErr.Error()
 		resp.Upgrade = ind
+		resp.VOC = &models.IndividualIncentive{}
 		return resp, report, nil
 	}
 	threshold, internalErr := impl.getThresholdPayout(quarter, year, constant.PromoterCC, constant.UpgradeCategory, achieved)
@@ -866,6 +874,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).Str("position", constant.PromoterCC).Float64("achieved", achieved).Err(internalErr).Msg("AReport : UPGRADE fetch threshold failed")
 		ind.Error = internalErr.Error()
 		resp.Upgrade = ind
+		resp.VOC = &models.IndividualIncentive{}
 		return resp, report, nil
 	}
 
