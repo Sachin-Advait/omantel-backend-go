@@ -2,6 +2,8 @@ masterCronTime: "* 5 * * *"
 secretKey: gis-jwt-token
 adminSecretKey: gis-admin-jwt-token
 corsOrigin: https://omantelsip.online/
+expectedHostName: omantelsip.online
+expectedReferer: https://omantelsip.online
 sessionExpiryTimeMinutes: 3600
 refreshTokenExpiryHours: 12
 fcmConfigFileName: fcmConfig.json
