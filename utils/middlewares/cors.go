@@ -37,7 +37,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		}
 
 		if c.Request.Referer() == "" || c.Request.Referer() != expectedReferer {
-			fmt.Println("host error: ", c.Request.Host)
+			fmt.Println("referer error: ", c.Request.Host)
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
