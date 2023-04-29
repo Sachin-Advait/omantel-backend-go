@@ -17,6 +17,8 @@ const (
 	AdminJwtKey              = "adminSecretKey"
 	OTPEndpoint              = "otpUrl"
 	CorsOriginEnabled        = "corsOrigin"
+	ExpectedHostName         = "expectedHostName"
+	ExpectedReferer          = "expectedReferer"
 	SessionExpiryTimeMinutes = "sessionExpiryTimeMinutes"
 	RefreshTokenExpiryHours  = "refreshTokenExpiryHours"
 	CaptchaSitesEnableKey    = "captchaSitesEnableKey"
