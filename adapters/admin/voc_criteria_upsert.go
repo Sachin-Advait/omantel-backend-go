@@ -14,6 +14,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
@@ -27,7 +28,7 @@ func UpsertVOCCriteria(ctx *gin.Context) (int, interface{}) {
 		userReq, err = upsertVOCCriteriaLoadFromFileBody(ctx)
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Err(err).Msg("upsertVOCCriteria : invalid request param")
-			logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "request binding", Code: http.StatusBadRequest,
+			dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "request binding", Code: http.StatusBadRequest,
 				Text: err.Error(), CreateTime: time.Now().Local()})
 
 			return http.StatusBadRequest, models.APIFailureResponse{
@@ -40,12 +41,12 @@ func UpsertVOCCriteria(ctx *gin.Context) (int, interface{}) {
 
 	req, _ := objecthelper.MarshalJSON(userReq)
 	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("upsertVOCCriteria : req body")
-	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
 		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
 
 	if err := models.ValidateUpsertVOCCriteria(userReq); err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("upsertVOCCriteria : req validation failed")
-		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params",
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params",
 			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
@@ -58,7 +59,7 @@ func UpsertVOCCriteria(ctx *gin.Context) (int, interface{}) {
 	failedResp, customErr := adminAPIProvider.UpsertVOCCriteria(ctx, userReq)
 	if customErr != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(customErr.Details.(string))).Msg("upsertVOCCriteria : provider failed")
-		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
 			Text: customErr.Details.(string), CreateTime: time.Now().Local()})
 
 		if len(failedResp) != 0 {
@@ -77,7 +78,7 @@ func UpsertVOCCriteria(ctx *gin.Context) (int, interface{}) {
 	}
 
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, errors.SuccessInfoMessage).Msg("upsertVOCCriteria : success")
-	logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success",
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success",
 		Text: errors.SuccessInfoMessage, CreateTime: time.Now().Local()})
 
 	return http.StatusOK, models.APISuccessResponse{

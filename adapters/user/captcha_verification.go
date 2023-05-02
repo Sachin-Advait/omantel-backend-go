@@ -11,6 +11,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 )
 
 func CaptchaVerification(ctx *gin.Context, req *models.CaptchRequest) (int, interface{}) {
@@ -21,15 +22,8 @@ func CaptchaVerification(ctx *gin.Context, req *models.CaptchRequest) (int, inte
 	resp, errs := userAPIProvider.CaptchaVerification(ctx, req)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("CaptchaVerification : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Code:       errs.StatusCode,
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
 		return errs.StatusCode, &models.APIFailureResponse{
 			Error:   errs.Code,
@@ -39,15 +33,8 @@ func CaptchaVerification(ctx *gin.Context, req *models.CaptchRequest) (int, inte
 
 	respBytes, _ := json.Marshal(resp)
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, string(respBytes)).Msg("CaptchaVerification : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Code:       http.StatusOK,
-		Text:       string(respBytes),
-		CreateTime: time.Now().Local(),
-	}
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
+		Text: string(respBytes), CreateTime: time.Now().Local()})
 
 	response := models.APISuccessResponse{
 		Status: true,

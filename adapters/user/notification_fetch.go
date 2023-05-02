@@ -11,6 +11,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 )
 
 func FetchNotifications(ctx *gin.Context) (int, interface{}) {
@@ -26,15 +27,8 @@ func FetchNotifications(ctx *gin.Context) (int, interface{}) {
 	if category != "" && !ok {
 		err := errors.New("invalid category query param")
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("FetchNotifications : validation failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Code:       http.StatusBadRequest,
-			Text:       err.Error(),
-			CreateTime: time.Now().Local(),
-		}
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,
@@ -45,15 +39,8 @@ func FetchNotifications(ctx *gin.Context) (int, interface{}) {
 	response, errs := userAPIProvider.FetchNotification(ctx, category, id)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("FetchNotifications : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Code:       errs.StatusCode,
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
 		return errs.StatusCode, &models.APIFailureResponse{
 			Error: errs.Message,

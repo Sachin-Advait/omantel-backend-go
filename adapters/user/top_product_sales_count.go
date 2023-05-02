@@ -1,6 +1,7 @@
 package user
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 )
 
 func GetTopTenEmpProductSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest) (int, interface{}) {
@@ -21,14 +23,8 @@ func GetTopTenEmpProductSalesCount(ctx *gin.Context, req *models.UserIncentiveRe
 	isQuarterReport, quarter, month, year, err := models.ValidateUserIncentiveRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetTopTenEmpProductSalesCount : validation failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       err.Error(),
-			CreateTime: time.Now().Local(),
-		}
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,
@@ -39,29 +35,18 @@ func GetTopTenEmpProductSalesCount(ctx *gin.Context, req *models.UserIncentiveRe
 	response, errs := userAPIProvider.GetTopTenEmpProductSalesCount(ctx, req.ClientId, isQuarterReport, quarter, month, year)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetTopTenEmpProductSalesCount : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
 		return errs.StatusCode, &models.APIFailureResponse{
 			Error: errs.Message,
 		}
 	}
 
+	responseBytes, _ := json.Marshal(response)
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetTopTenEmpProductSalesCount : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", response),
-		CreateTime: time.Now().Local(),
-	}
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
+		Text: string(responseBytes), CreateTime: time.Now().Local()})
 
 	return http.StatusOK, response
 }

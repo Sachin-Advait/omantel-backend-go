@@ -11,6 +11,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 )
 
 func FetchNotification(ctx *gin.Context) {
@@ -20,7 +21,7 @@ func FetchNotification(ctx *gin.Context) {
 
 	if ctxHeader.Authorization == "" {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("fetchNotification : unauthorized request")
-		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "unauthorized request", Code: http.StatusBadRequest,
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "unauthorized request", Code: http.StatusBadRequest,
 			Text: "auth token not found", CreateTime: time.Now().Local()})
 
 		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
@@ -32,7 +33,7 @@ func FetchNotification(ctx *gin.Context) {
 
 	if !ctxHeader.IsAdmin {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("fetchNotification : not an admin")
-		logger.PrintDBLogs(&logger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "not admin", Code: http.StatusForbidden,
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "not admin", Code: http.StatusForbidden,
 			Text: "not an admin", CreateTime: time.Now().Local()})
 
 		ctx.JSON(http.StatusForbidden, models.APIFailureResponse{

@@ -1,6 +1,7 @@
 package user
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -12,6 +13,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 )
 
 func GetRegionTotalSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest) (int, interface{}) {
@@ -22,14 +24,8 @@ func GetRegionTotalSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest
 	isQuarterReport, quarter, month, year, err := models.ValidateUserIncentiveRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetRegionTotalSalesCount : validation failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "invalid req params",
-			Text:       err.Error(),
-			CreateTime: time.Now().Local(),
-		}
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
 			Error:   errors.InvalidReqParameters,
@@ -40,14 +36,8 @@ func GetRegionTotalSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest
 	response, errs := userAPIProvider.GetRegionTotalSalesCount(ctx, req.ClientId, isQuarterReport, quarter, month, year)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetRegionTotalSalesCount : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
 		return errs.StatusCode, &models.APIFailureResponse{
 			Error: errs.Message,
@@ -64,15 +54,10 @@ func GetRegionTotalSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest
 		return resp[i].Total > resp[j].Total
 	})
 
+	responseBytes, _ := json.Marshal(response)
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", resp)).Msg("GetRegionTotalSalesCount : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Text:       fmt.Sprintf("%+v", resp),
-		CreateTime: time.Now().Local(),
-	}
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
+		Text: string(responseBytes), CreateTime: time.Now().Local()})
 
 	return http.StatusOK, resp
 }

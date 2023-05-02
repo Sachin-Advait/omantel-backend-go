@@ -23,6 +23,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/flags"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/http"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 	middlewares "gitlab.com/rendezvousPoint/incentive_calculator/utils/middlewares"
 )
 
@@ -36,6 +37,7 @@ func init() {
 
 	initHTTPClient()
 	initDatabase()
+	initDbLogger()
 	initCache()
 	initFCM()
 }
@@ -153,7 +155,10 @@ func initDatabase() {
 	}
 
 	database.InitDatabase(dbConfig)
-	logger.InitDBLogger(dbConfig)
+}
+
+func initDbLogger() {
+	dblogger.InitDBLogger()
 }
 
 func closeDatabase() {

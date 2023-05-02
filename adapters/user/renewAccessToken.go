@@ -10,6 +10,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 )
 
 func RenewAccessToken(ctx *gin.Context) (int, interface{}) {
@@ -20,15 +21,8 @@ func RenewAccessToken(ctx *gin.Context) (int, interface{}) {
 	response, errs := userAPIProvider.RenewAccessToken(ctx)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("RenewAccessToken : provider failed")
-		logger.LogChan <- &logger.Logging{
-			UserID:     ctxHeader.XUserId,
-			URL:        ctx.Request.URL.String(),
-			Type:       "error",
-			Msg:        "provider failed",
-			Code:       errs.StatusCode,
-			Text:       errs.Details.(string),
-			CreateTime: time.Now().Local(),
-		}
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
 		return errs.StatusCode, &models.APIFailureResponse{
 			Error: errs.Message,
@@ -36,15 +30,8 @@ func RenewAccessToken(ctx *gin.Context) (int, interface{}) {
 	}
 
 	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, "success").Msg("RenewAccessToken : success")
-	logger.LogChan <- &logger.Logging{
-		UserID:     ctxHeader.XUserId,
-		URL:        ctx.Request.URL.String(),
-		Type:       "info",
-		Msg:        "success",
-		Code:       http.StatusOK,
-		Text:       "success response",
-		CreateTime: time.Now().Local(),
-	}
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
+		Text: "", CreateTime: time.Now().Local()})
 
 	resp := models.APISuccessResponse{
 		Status: true,
