@@ -230,7 +230,7 @@ func startCron() {
 
 func startRouter() {
 
-	router := api.GetRouter(middlewares.Logger(middlewares.LoggerMiddlewareOptions{}), middlewares.ContextCreator(), middlewares.CORSMiddleware())
+	router := api.GetRouter(middlewares.Logger(middlewares.LoggerMiddlewareOptions{}), middlewares.ContextCreator(), middlewares.CORSMiddleware(), middlewares.SecurityCheck())
 
 	err := router.Run(fmt.Sprintf(":%d", flags.Port()))
 	if err != nil {

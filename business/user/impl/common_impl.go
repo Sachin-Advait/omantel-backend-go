@@ -380,7 +380,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 	outletResponse, err := impl.DbService.FetchOutletDetailsViaName(user.Region, user.Outlet, quarter, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAgentUserReport: %v", err.Details)
-		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(err).Msg("AReport : fetch outlet info failed")
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("AReport : fetch outlet info failed")
 		return nil, nil, err
 	}
 
