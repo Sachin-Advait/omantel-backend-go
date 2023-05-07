@@ -24,7 +24,7 @@ psqlDB:
   password: omantel123
   maxOpenConnections: 20
   maxIdleConnections: 10
-  connMaxLifetimeInHour: 24
+  connMaxLifetimeInHour: 2
   connMaxIdleTimeInMinute: 30
 logPsqlDB:
   host: 86.105.252.94
@@ -34,7 +34,7 @@ logPsqlDB:
   password: omantel123
   maxOpenConnections: 20
   maxIdleConnections: 10
-  connMaxLifetimeInHour: 24
+  connMaxLifetimeInHour: 2
   connMaxIdleTimeInMinute: 30
 userIncentiveRedis:
   address: 127.0.0.1:6379

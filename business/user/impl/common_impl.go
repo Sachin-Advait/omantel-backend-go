@@ -1129,7 +1129,7 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    "HBB TARGET NOT FOUND",
-			Details:    fmt.Errorf("hbb target errr - %v", tarErr),
+			Details:    fmt.Sprintf("hbb target errr - %v", tarErr),
 		}
 	}
 
@@ -1177,7 +1177,7 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    "HAYYAK TARGET NOT FOUND",
-			Details:    fmt.Errorf("hayyak target errr - %v", tarErr),
+			Details:    fmt.Sprintf("hayyak target errr - %v", tarErr),
 		}
 	}
 
@@ -1225,7 +1225,7 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    "BAQATI TARGET NOT FOUND",
-			Details:    fmt.Errorf("baqati target errr - %v", tarErr),
+			Details:    fmt.Sprintf("baqati target errr - %v", tarErr),
 		}
 	}
 
@@ -1273,7 +1273,7 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    "UPGRADE TARGET NOT FOUND",
-			Details:    fmt.Errorf("upgrade target errr - %v", tarErr),
+			Details:    fmt.Sprintf("upgrade target errr - %v", tarErr),
 		}
 	}
 
