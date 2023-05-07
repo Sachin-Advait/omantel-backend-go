@@ -157,24 +157,36 @@ func (impl *UserImpl) getSaleTargetPerOutlet(year, month, quarter int, isQuarter
 		switch grp {
 		case constant.HBBCategory:
 			for i := start - 1; i < end; i++ {
+				if models.SalesTrgt.SaleTargetMap[year][region][outlet][i] == nil {
+					return 0, fmt.Errorf("TARGET HBB BLANK FOR MONTH - %v", i)
+				}
 				result += models.SalesTrgt.SaleTargetMap[year][region][outlet][i].HBB
 			}
 			return result, nil
 
 		case constant.HayyakCategory:
 			for i := start - 1; i < end; i++ {
+				if models.SalesTrgt.SaleTargetMap[year][region][outlet][i] == nil {
+					return 0, fmt.Errorf("TARGET HAYYAK BLANK FOR MONTH - %v", i)
+				}
 				result += models.SalesTrgt.SaleTargetMap[year][region][outlet][i].Hayyak
 			}
 			return result, nil
 
 		case constant.BaqatiCategory:
 			for i := start - 1; i < end; i++ {
+				if models.SalesTrgt.SaleTargetMap[year][region][outlet][i] == nil {
+					return 0, fmt.Errorf("TARGET BAQATI BLANK FOR MONTH - %v", i)
+				}
 				result += models.SalesTrgt.SaleTargetMap[year][region][outlet][i].Baqati
 			}
 			return result, nil
 
 		case constant.UpgradeCategory:
 			for i := start - 1; i < end; i++ {
+				if models.SalesTrgt.SaleTargetMap[year][region][outlet][i] == nil {
+					return 0, fmt.Errorf("TARGET UPGRADE BLANK FOR MONTH - %v", i)
+				}
 				result += models.SalesTrgt.SaleTargetMap[year][region][outlet][i].Upgrade
 			}
 			return result, nil
