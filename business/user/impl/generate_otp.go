@@ -7,9 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) GenerateOTPProd(ctx *gin.Context, userID string) (map[string]string, *errors.Error) {
+func (impl *UserImpl) GenerateOTP(ctx *gin.Context, userID string) (map[string]string, *errors.Error) {
 
 	// currTime := time.Now()
 	// currYear, currMonth, _ := currTime.Date()
@@ -85,16 +86,16 @@ func (impl *UserImpl) GenerateOTPProd(ctx *gin.Context, userID string) (map[stri
 	}
 
 	// generate random num as OTP
-	otpModel.OTP = 123456
+	otpModel.OTP = objecthelper.GenerateOTP(6)
 	otpModel.OTPUsed = false
 	otpModel.OtpCreateTime = time.Now()
 
 	otpModel.UpdateReason = "otp generated"
 	otpModel.UpdatedTime = time.Now()
 
-	// if otpModel.OTPResendCount > 0 {
-	// 	otpModel.UpdateReason = "otp re-generated"
-	// }
+	if otpModel.OTPResendCount > 0 {
+		otpModel.UpdateReason = "otp re-generated"
+	}
 
 	//store OTP in db
 	if err := impl.DbService.InsertStaffOTP(isUpdate, otpModel); err != nil {
@@ -113,7 +114,7 @@ func (impl *UserImpl) GenerateOTPProd(ctx *gin.Context, userID string) (map[stri
 	return map[string]string{"error": "nil", "position": userPosition}, nil
 }
 
-func (impl *UserImpl) GenerateOTP(ctx *gin.Context, userID string) (map[string]string, *errors.Error) {
+func (impl *UserImpl) GenerateOTPDev(ctx *gin.Context, userID string) (map[string]string, *errors.Error) {
 
 	// currTime := time.Now()
 	// currYear, currMonth, _ := currTime.Date()

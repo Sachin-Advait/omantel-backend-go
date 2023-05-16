@@ -19,19 +19,39 @@ func SecurityCheck() gin.HandlerFunc {
 		logger.FileLogger.Fatal().Err(err).Msg("SecurityCheck: error loading application config file, env - " + flags.Env())
 	}
 
-	expectedHostName := applicationConfig.GetString(constant.ExpectedHostName)
-	expectedReferer := applicationConfig.GetString(constant.ExpectedReferer)
+	expectedHostName := applicationConfig.GetStringSlice(constant.ExpectedHostName)
+	expectedReferer := applicationConfig.GetStringSlice(constant.ExpectedReferer)
+
+	if len(expectedHostName) == 0 || len(expectedReferer) == 0 {
+		logger.FileLogger.Fatal().Err(err).Msg("SecurityCheck: blank security config, env - " + flags.Env())
+	}
 
 	return func(c *gin.Context) {
 
-		if c.Request.Host == "" || c.Request.Host != expectedHostName {
+		var foundHostName bool
+		for _, hostname := range expectedHostName {
+			if c.Request.Host == hostname {
+				foundHostName = true
+				break
+			}
+		}
+
+		if !foundHostName {
 			fmt.Println("host error: ", c.Request.Host)
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
 
-		if !strings.Contains(c.Request.Referer(), expectedReferer) {
-			fmt.Println("referer error: ", c.Request.Host)
+		var foundExpectedReferer bool
+		for _, referer := range expectedReferer {
+			if strings.Contains(c.Request.Referer(), referer) {
+				foundExpectedReferer = true
+				break
+			}
+		}
+
+		if !foundExpectedReferer {
+			fmt.Println("referer error: ", c.Request.Referer())
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
