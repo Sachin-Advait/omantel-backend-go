@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -37,6 +38,7 @@ func SecurityCheck() gin.HandlerFunc {
 		}
 
 		if !foundHostName {
+			logger.FileLogger.CtxError(c).Interface("expected", expectedHostName).Err(errors.New("found-" + c.Request.Host)).Msg("SecurityCheck: invalid hostname")
 			fmt.Println("host error: ", c.Request.Host)
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
@@ -51,6 +53,7 @@ func SecurityCheck() gin.HandlerFunc {
 		}
 
 		if !foundExpectedReferer {
+			logger.FileLogger.CtxError(c).Interface("expected", expectedReferer).Err(errors.New("found-" + c.Request.Referer())).Msg("SecurityCheck: invalid referer")
 			fmt.Println("referer error: ", c.Request.Referer())
 			c.AbortWithStatus(http.StatusBadRequest)
 			return

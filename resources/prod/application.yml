@@ -21,24 +21,14 @@ psqlDB:
   port: 5432
   dbName: omantel_sip
   user: omantel
-  password: sip@12345
-  maxOpenConnections: 20
-  maxIdleConnections: 10
-  connMaxLifetimeInHour: 24
-  connMaxIdleTimeInMinute: 48
-logPsqlDB:
-  host: 10.64.172.97
-  port: 5432
-  dbName: omantel_sip
-  user: omantel
-  password: sip@12345
+  password: c2lwQDEyMzQ1
   maxOpenConnections: 20
   maxIdleConnections: 10
   connMaxLifetimeInHour: 24
   connMaxIdleTimeInMinute: 48
 userIncentiveRedis:
   address: redis.omantel-sip.svc.cluster.local:6379
-  password: redis12345
+  password: cmVkaXMxMjM0NQ==
   db: 0
   poolSize: 36
   minIdleConn: 8

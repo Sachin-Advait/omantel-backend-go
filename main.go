@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/signal"
@@ -141,13 +142,18 @@ func initDatabase() {
 		logger.FileLogger.Fatal().Err(err).Msg("DB: error loading application config file, env - " + flags.Env())
 	}
 
+	pswd, err := base64.StdEncoding.DecodeString(applicationConfig.GetString(constant.PsqlPassword))
+	if err != nil {
+		logger.FileLogger.Fatal().Err(err).Msg("DB: error decoding password, env - " + flags.Env())
+	}
+
 	//db config load
 	dbConfig := &models.DbClientConfig{
 		Host:               applicationConfig.GetString(constant.PsqlHost),
 		Port:               applicationConfig.GetInt(constant.PsqlPort),
 		DbName:             applicationConfig.GetString(constant.PsqlDbName),
 		UserName:           applicationConfig.GetString(constant.PsqlUser),
-		Password:           applicationConfig.GetString(constant.PsqlPassword),
+		Password:           string(pswd),
 		MaxOpenConnections: applicationConfig.GetInt(constant.PsqlMaxOpenConn),
 		MaxIdleConnections: applicationConfig.GetInt(constant.PsqlMaxIdleConn),
 		MaxLifetime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxLifetime)) * time.Hour,
@@ -175,9 +181,14 @@ func initCache() {
 		logger.FileLogger.Fatal().Err(err).Msg("Cache: error loading application config file, env - " + flags.Env())
 	}
 
+	pswd, err := base64.StdEncoding.DecodeString(applicationConfig.GetString(constant.UserIncentiveRedisPassword))
+	if err != nil {
+		logger.FileLogger.Fatal().Err(err).Msg("Cache: error decoding password, env - " + flags.Env())
+	}
+
 	redisConfig := &models.RedisConfigStruct{
 		Address:                     applicationConfig.GetString(constant.UserIncentiveRedisAddress),
-		Password:                    applicationConfig.GetString(constant.UserIncentiveRedisPassword),
+		Password:                    string(pswd),
 		Db:                          applicationConfig.GetInt(constant.UserIncentiveRedisDb),
 		PoolSize:                    applicationConfig.GetInt(constant.UserIncentiveRedisPoolSize),
 		MinIdleConn:                 applicationConfig.GetInt(constant.UserIncentiveRedisMinIdleConn),
