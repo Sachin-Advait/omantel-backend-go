@@ -61,17 +61,23 @@ func main() {
 
 func handleSigTerm() {
 	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGHUP,
+	signal.Notify(done,
+		os.Interrupt,
+		syscall.SIGHUP,
 		syscall.SIGINT,
 		syscall.SIGTERM,
-		syscall.SIGQUIT)
+		syscall.SIGQUIT,
+	)
 
 	sig := <-done
+
 	switch sig {
 	case syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT:
+		closeDatabase()
+		closeCache()
+		closeFCM()
 		os.Exit(0)
 	}
-
 }
 
 func initEnvConfigs() {
