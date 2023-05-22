@@ -965,7 +965,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 			return
 		}
 
-		err = impl.CacheService.InsertUserReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
+		err = impl.CacheService.InsertUserReport(isQuarterReport, month, quarter, year, report, impl.Config.ReportCacheTTL)
 
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("AReport : force report update")
@@ -1340,7 +1340,7 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 
 	go func(user *models.UserReportDB) {
 
-		err = impl.CacheService.InsertUserReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
+		err = impl.CacheService.InsertUserReport(isQuarterReport, month, quarter, year, report, impl.Config.ReportCacheTTL)
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("OMReport : cache update failed")
 		} else {
@@ -1733,7 +1733,7 @@ func (impl *UserImpl) updateManagerReport(ctx *gin.Context, mngr *models.UserBas
 
 	go func(user *models.UserReportDB) {
 
-		err = impl.CacheService.InsertUserReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
+		err = impl.CacheService.InsertUserReport(isQuarterReport, month, quarter, year, report, impl.Config.ReportCacheTTL)
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).Msg("MngrReport : cache update failed")
 		} else {
@@ -1844,7 +1844,7 @@ func (impl *UserImpl) updateOutletReport(ctx *gin.Context, regionName, outletNam
 
 	go func(report *models.OutletReportDB) {
 
-		err = impl.CacheService.InsertOutletReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
+		err = impl.CacheService.InsertOutletReport(isQuarterReport, month, quarter, year, report, impl.Config.ReportCacheTTL)
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Str("outlet", outletName).Str("region", regionName).Err(errors.New(err.Details.(string))).Msg("OutletReport : force report update")
 		} else {
@@ -1926,7 +1926,7 @@ func (impl *UserImpl) updateRegionReport(ctx *gin.Context, regionName string, is
 
 	go func(report *models.RegionReportDB) {
 
-		err = impl.CacheService.InsertRegionReport(isQuarterReport, month, quarter, year, report, 12*time.Hour)
+		err = impl.CacheService.InsertRegionReport(isQuarterReport, month, quarter, year, report, impl.Config.ReportCacheTTL)
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Str("region", regionName).Err(errors.New(err.Details.(string))).Msg("RegionReport : force report update")
 		} else {

@@ -13,6 +13,7 @@ type UserConfig struct {
 	FCMOfferTopic          string
 	FCMTrainingTopic       string
 	FCMNotificationTopic   string
+	ReportCacheTTL         time.Duration
 	SessionExpiryTime      time.Duration
 	RefreshTokenExpiryTime time.Duration
 }

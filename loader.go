@@ -67,6 +67,7 @@ func LoadApplicationComponents() Components {
 		FCMOfferTopic:          applicationConfig.GetString(constant.FCMOfferTopicKey),
 		FCMTrainingTopic:       applicationConfig.GetString(constant.FCMTrainingTopicKey),
 		FCMNotificationTopic:   applicationConfig.GetString(constant.FCMNotificationTopicKey),
+		ReportCacheTTL:         time.Duration(applicationConfig.GetInt(constant.ReportCacheTTLInHours)) * time.Hour,
 		SessionExpiryTime:      time.Duration(applicationConfig.GetInt(constant.SessionExpiryTimeMinutes)) * time.Minute,
 		RefreshTokenExpiryTime: time.Duration(applicationConfig.GetInt(constant.RefreshTokenExpiryHours)) * time.Hour,
 	}

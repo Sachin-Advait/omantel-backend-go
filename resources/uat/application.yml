@@ -4,6 +4,7 @@ adminSecretKey: gis-admin-jwt-token
 corsOrigin: https://omantelsip.omantel.om/, http://93.115.22.132:8090/
 expectedHostName: [omantelsip.omantel.om, 93.115.22.132:8090]
 expectedReferer: [https://omantelsip.online, http://93.115.22.132:8090]
+reportCacheTTLInHours: 48
 sessionExpiryTimeMinutes: 3600
 refreshTokenExpiryHours: 12
 fcmConfigFileName: fcmConfig.json

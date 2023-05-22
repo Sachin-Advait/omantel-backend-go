@@ -19,6 +19,7 @@ const (
 	CorsOriginEnabled        = "corsOrigin"
 	ExpectedHostName         = "expectedHostName"
 	ExpectedReferer          = "expectedReferer"
+	ReportCacheTTLInHours    = "reportCacheTTLInHours"
 	SessionExpiryTimeMinutes = "sessionExpiryTimeMinutes"
 	RefreshTokenExpiryHours  = "refreshTokenExpiryHours"
 	CaptchaSitesEnableKey    = "captchaSitesEnableKey"
