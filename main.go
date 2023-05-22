@@ -75,7 +75,6 @@ func handleSigTerm() {
 	case syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT:
 		closeDatabase()
 		closeCache()
-		closeFCM()
 		os.Exit(0)
 	}
 }
@@ -176,8 +175,10 @@ func initDbLogger() {
 func closeDatabase() {
 	err := database.Close()
 	if err != nil {
-		logger.FileLogger.Fatal().Err(err).Stack().Err(err).Msg("error closing database")
+		logger.FileLogger.Fatal().Stack().Err(err).Msg("error closing database")
 	}
+
+	logger.FileLogger.Info().Msg("database graceful shut down")
 }
 
 func initCache() {
@@ -213,8 +214,10 @@ func initCache() {
 func closeCache() {
 	err := cache.Close()
 	if err != nil {
-		logger.FileLogger.Fatal().Err(err).Stack().Err(err).Msg("error closing cache")
+		logger.FileLogger.Fatal().Stack().Err(err).Msg("error closing cache")
 	}
+
+	logger.FileLogger.Info().Msg("cache graceful shut down")
 }
 
 func initFCM() {
