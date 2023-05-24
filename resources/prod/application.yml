@@ -38,7 +38,6 @@ userIncentiveRedis:
   readTimeoutInMilliSecond: 3000
   writeTimeoutInMilliSecond: 3000
   contextTimeoutInMilliSecond: 5000
-  keyTTLInHour: 12
   mode: "CLUSTER"
 http:
   tlsCertificate: ./cert/omantel.om.cer

@@ -77,7 +77,6 @@ const (
 	UserIncentiveRedisReadTimeoutInMilliSecond    = "userIncentiveRedis.readTimeoutInMilliSecond"
 	UserIncentiveRedisWriteTimeoutInMilliSecond   = "userIncentiveRedis.writeTimeoutInMilliSecond"
 	UserIncentiveRedisContextTimeoutInMilliSecond = "userIncentiveRedis.contextTimeoutInMilliSecond"
-	UserIncentiveRedisKeyTTLInHour                = "userIncentiveRedis.keyTTLInHour"
 	UserIncentiveRedisMode                        = "userIncentiveRedis.mode"
 )
 

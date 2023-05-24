@@ -204,7 +204,6 @@ func initCache() {
 		ReadTimeoutInMilliSecond:    applicationConfig.GetDuration(constant.UserIncentiveRedisReadTimeoutInMilliSecond) * time.Millisecond,
 		WriteTimeoutInMilliSecond:   applicationConfig.GetDuration(constant.UserIncentiveRedisWriteTimeoutInMilliSecond) * time.Millisecond,
 		ContextTimeoutInMilliSecond: applicationConfig.GetDuration(constant.UserIncentiveRedisContextTimeoutInMilliSecond) * time.Millisecond,
-		KeyTTLInHour:                applicationConfig.GetDuration(constant.UserIncentiveRedisKeyTTLInHour) * time.Hour,
 		Mode:                        applicationConfig.GetString(constant.UserIncentiveRedisMode),
 	}
 

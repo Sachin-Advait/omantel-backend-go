@@ -112,6 +112,5 @@ type RedisConfigStruct struct {
 	ReadTimeoutInMilliSecond    time.Duration
 	WriteTimeoutInMilliSecond   time.Duration
 	ContextTimeoutInMilliSecond time.Duration
-	KeyTTLInHour                time.Duration
 	Mode                        string
 }
