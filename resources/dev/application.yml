@@ -22,7 +22,7 @@ psqlDB:
   port: 5432
   dbName: postgres
   user: gpadmin
-  password: omantel123
+  password: b21hbnRlbDEyMw==
   maxOpenConnections: 20
   maxIdleConnections: 10
   connMaxLifetimeInHour: 2

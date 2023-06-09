@@ -352,7 +352,7 @@ Insync@12345
 https://bitbucket.org/gismohe/bitool-backend-scheduler/src/master/
 https://bitbucket.org/gismohe/bitool_backend/src/master/
 
-./incentive_calculator --port 8090 --env uat
+./incentive_calculator --port 8090 --env dev
 
 scp ./incentive_calculator root@93.115.22.132:/root/go/src/gitlab.com/rendezvousPoint/incentive_calculator
 
