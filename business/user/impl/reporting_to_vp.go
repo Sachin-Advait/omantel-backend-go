@@ -28,6 +28,14 @@ func (impl *UserImpl) GetUsersReportingToVicePresident(ctx *gin.Context, vicePre
 		quarter = getQuarterFromMonth(month)
 	}
 
+	if ctxHeader.IsAdmin {
+		vps, err := impl.DbService.FetchVP(quarter, year)
+		if err != nil {
+			return nil, err
+		}
+		vicePresidentID = vps[0]
+	}
+
 	response, err := impl.DbService.FetchAllEmpReportingToGivenManagerRole(constant.VicePresidentAbb, vicePresidentID, quarter, year)
 	if err != nil {
 		return nil, err
