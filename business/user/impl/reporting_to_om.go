@@ -28,13 +28,13 @@ func (impl *UserImpl) GetUsersReportingToOutletManager(ctx *gin.Context, outletM
 		quarter = getQuarterFromMonth(month)
 	}
 
-	if ctxHeader.IsAdmin {
-		vps, err := impl.DbService.FetchVP(quarter, year)
-		if err != nil {
-			return nil, err
-		}
-		outletManagerID = vps[0]
-	}
+	// if ctxHeader.IsAdmin {
+	// 	vps, err := impl.DbService.FetchVP(quarter, year)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	outletManagerID = vps[0]
+	// }
 
 	response, err := impl.DbService.FetchAllEmpReportingToGivenManagerRole(constant.OutletManagerAbb, outletManagerID, quarter, year)
 	if err != nil {

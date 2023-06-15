@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -83,10 +82,10 @@ func ValidateUserIncentiveRequest(req *UserIncentiveRequest, ctxHeader context.C
 		return
 	}
 
-	if !ctxHeader.IsAdmin && ctxHeader.XUserId != req.ClientId {
-		err = fmt.Errorf("cannot query for other user, authUser:%v, queryUser:%+v", ctxHeader.XUserId, req.ClientId)
-		return
-	}
+	// if !ctxHeader.IsAdmin && ctxHeader.XUserId != req.ClientId {
+	// 	err = fmt.Errorf("cannot query for other user, authUser:%v, queryUser:%+v", ctxHeader.XUserId, req.ClientId)
+	// 	return
+	// }
 
 	var date time.Time
 
@@ -148,10 +147,10 @@ func ValidateUserSalesRequest(req *UserSalesRequest, ctxHeader context.ContextHe
 		return
 	}
 
-	if !ctxHeader.IsAdmin && ctxHeader.XUserId != req.ClientId {
-		err = fmt.Errorf("cannot query for other user, authUser:%v, queryUser:%+v", ctxHeader.XUserId, req.ClientId)
-		return
-	}
+	// if !ctxHeader.IsAdmin && ctxHeader.XUserId != req.ClientId {
+	// 	err = fmt.Errorf("cannot query for other user, authUser:%v, queryUser:%+v", ctxHeader.XUserId, req.ClientId)
+	// 	return
+	// }
 
 	product := strings.ToUpper(req.Product)
 

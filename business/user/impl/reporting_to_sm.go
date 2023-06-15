@@ -28,13 +28,13 @@ func (impl *UserImpl) GetUsersReportingToSeniorManager(ctx *gin.Context, seniorM
 		quarter = getQuarterFromMonth(month)
 	}
 
-	if ctxHeader.IsAdmin {
-		vps, err := impl.DbService.FetchVP(quarter, year)
-		if err != nil {
-			return nil, err
-		}
-		seniorManagerID = vps[0]
-	}
+	// if ctxHeader.IsAdmin {
+	// 	vps, err := impl.DbService.FetchVP(quarter, year)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	seniorManagerID = vps[0]
+	// }
 
 	response, err := impl.DbService.FetchAllEmpReportingToGivenManagerRole(constant.SeniorManagerAbb, seniorManagerID, quarter, year)
 	if err != nil {
