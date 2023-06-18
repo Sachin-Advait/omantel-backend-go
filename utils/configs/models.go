@@ -9,6 +9,8 @@ type AdminConfig struct {
 }
 
 type UserConfig struct {
+	StaticUserId           string
+	StaticOTP              int
 	OTPUrl                 string
 	FCMOfferTopic          string
 	FCMTrainingTopic       string

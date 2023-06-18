@@ -28,7 +28,7 @@ func (impl *UserImpl) GenerateOTP(ctx *gin.Context, userID string) (map[string]s
 			StatusCode: http.StatusUnauthorized,
 			Code:       errors.UnauthorizedUserCode,
 			Message:    "YOU ARE NOT AUTHORIZED TO VIEW REPORTS",
-			Details:    "position:" + user.Position + "contact:" + user.MobileNumber,
+			Details:    "inactive user: " + userID + ", position:" + user.Position + ", contact:" + user.MobileNumber,
 		}
 	}
 
@@ -38,7 +38,7 @@ func (impl *UserImpl) GenerateOTP(ctx *gin.Context, userID string) (map[string]s
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
 			Message:    "USER POSITION OR CONTANCT NUMBER NOT FOUND",
-			Details:    "position:" + user.Position + ", contact:" + user.MobileNumber,
+			Details:    "invalid position: " + userID + ", position:" + user.Position + ", contact:" + user.MobileNumber,
 		}
 	}
 
@@ -86,7 +86,12 @@ func (impl *UserImpl) GenerateOTP(ctx *gin.Context, userID string) (map[string]s
 	}
 
 	// generate random num as OTP
-	otpModel.OTP = objecthelper.GenerateOTP(6)
+	if userID == impl.Config.StaticUserId {
+		otpModel.OTP = impl.Config.StaticOTP
+	} else {
+		otpModel.OTP = objecthelper.GenerateOTP(6)
+	}
+
 	otpModel.OTPUsed = false
 	otpModel.OtpCreateTime = time.Now()
 
@@ -132,7 +137,7 @@ func (impl *UserImpl) GenerateOTPDev(ctx *gin.Context, userID string) (map[strin
 			StatusCode: http.StatusUnauthorized,
 			Code:       errors.UnauthorizedUserCode,
 			Message:    "YOU ARE NOT AUTHORIZED TO VIEW REPORTS",
-			Details:    "position:" + user.Position + "contact:" + user.MobileNumber,
+			Details:    "inactive user: " + userID + ", position:" + user.Position + ", contact:" + user.MobileNumber,
 		}
 	}
 
@@ -142,7 +147,7 @@ func (impl *UserImpl) GenerateOTPDev(ctx *gin.Context, userID string) (map[strin
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
 			Message:    "USER POSITION OR CONTANCT NUMBER NOT FOUND",
-			Details:    "position:" + user.Position + ", contact:" + user.MobileNumber,
+			Details:    "invalid position: " + userID + ", position:" + user.Position + ", contact:" + user.MobileNumber,
 		}
 	}
 
@@ -190,7 +195,12 @@ func (impl *UserImpl) GenerateOTPDev(ctx *gin.Context, userID string) (map[strin
 	// }
 
 	// generate random num as OTP
-	otpModel.OTP = 123456
+	if userID == impl.Config.StaticUserId {
+		otpModel.OTP = impl.Config.StaticOTP
+	} else {
+		otpModel.OTP = 123456
+	}
+
 	otpModel.OTPUsed = false
 	otpModel.OtpCreateTime = time.Now()
 

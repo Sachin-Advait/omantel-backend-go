@@ -15,6 +15,8 @@ const (
 const (
 	JwtKey                   = "secretKey"
 	AdminJwtKey              = "adminSecretKey"
+	StaticUserKey            = "staticUser.usrId"
+	StaticUserOTP            = "staticUser.otp"
 	OTPEndpoint              = "otpUrl"
 	CorsOriginEnabled        = "corsOrigin"
 	ExpectedHostName         = "expectedHostName"

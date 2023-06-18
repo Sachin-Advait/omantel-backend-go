@@ -63,6 +63,8 @@ func LoadApplicationComponents() Components {
 	}
 
 	userConfig := &configs.UserConfig{
+		StaticUserId:           applicationConfig.GetString(constant.StaticUserKey),
+		StaticOTP:              applicationConfig.GetInt(constant.StaticUserOTP),
 		OTPUrl:                 applicationConfig.GetString(constant.OTPEndpoint),
 		FCMOfferTopic:          applicationConfig.GetString(constant.FCMOfferTopicKey),
 		FCMTrainingTopic:       applicationConfig.GetString(constant.FCMTrainingTopicKey),
