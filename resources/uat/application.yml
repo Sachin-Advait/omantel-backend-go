@@ -17,6 +17,9 @@ verifyCaptchaGoogleApi: https://www.google.com/recaptcha/api/siteverify
 otpUrl: https://10.64.163.150:17862/services/SendNotification
 shortCode: "OMSIP"
 requestorChannelId: "ZONE"
+staticUser: 
+  usrId: '99999'
+  otp: 123456
 psqlDB:
   host: 86.105.252.94
   port: 5432
