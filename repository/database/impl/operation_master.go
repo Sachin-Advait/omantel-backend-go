@@ -263,14 +263,15 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, 
 			continue
 		}
 
-		if terminateDate.Before(salesDate) {
+		if !terminateDate.IsZero() && terminateDate.Before(salesDate) {
 			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
 				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: saleDate-terminateDate incorrect")
+			continue
 		}
 
 		expiryDate := salesDate.Add(90 * 24 * time.Hour)
 
-		if terminateDate.Sub(expiryDate) <= 0 { //Months<3
+		if !terminateDate.IsZero() && terminateDate.Sub(expiryDate) <= 0 { //Months<3
 			if !strings.Contains(subCategory.(string), "INVOLUNTARY DEACTIVATION") {
 				logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
 					Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
