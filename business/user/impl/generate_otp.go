@@ -163,36 +163,36 @@ func (impl *UserImpl) GenerateOTPDev(ctx *gin.Context, userID string) (map[strin
 		otpModel.StaffPosition = user.Position
 	}
 
-	// //otpLastUpdateTime updated only while generating OTP more than block time
-	// if time.Since(otpModel.OtpLastUpdateTime).Minutes() <= constant.OtpGenerateBlockTimeInMin {
+	//otpLastUpdateTime updated only while generating OTP more than block time
+	if time.Since(otpModel.OtpLastUpdateTime).Minutes() <= constant.OtpGenerateBlockTimeInMin {
 
-	// 	//too many times sent within 15 mins
-	// 	if otpModel.OTPResendCount > constant.OtpRegenerateAllowedCount {
-	// 		return nil, &errors.Error{
-	// 			StatusCode: http.StatusForbidden,
-	// 			Code:       errors.UserBlockedCode,
-	// 			Message:    errors.OTPLimitError,
-	// 			Details:    "max otp resend reached",
-	// 		}
-	// 	}
+		//too many times sent within 15 mins
+		if otpModel.OTPResendCount > constant.OtpRegenerateAllowedCount {
+			return nil, &errors.Error{
+				StatusCode: http.StatusForbidden,
+				Code:       errors.UserBlockedCode,
+				Message:    errors.OTPLimitError,
+				Details:    "max otp resend reached",
+			}
+		}
 
-	// 	//too many failure attempts within 15 mins
-	// 	if otpModel.OTPVerifyFailedCount >= constant.MaxAllowedLoginAttempt {
-	// 		return nil, &errors.Error{
-	// 			StatusCode: http.StatusForbidden,
-	// 			Code:       errors.UserBlockedCode,
-	// 			Message:    errors.RetryLoginLimitReached,
-	// 			Details:    "incorrect otp attempt reached",
-	// 		}
-	// 	}
+		//too many failure attempts within 15 mins
+		if otpModel.OTPVerifyFailedCount >= constant.MaxAllowedLoginAttempt {
+			return nil, &errors.Error{
+				StatusCode: http.StatusForbidden,
+				Code:       errors.UserBlockedCode,
+				Message:    errors.RetryLoginLimitReached,
+				Details:    "incorrect otp attempt reached",
+			}
+		}
 
-	// 	otpModel.OTPResendCount++
-	// } else {
-	// 	//more than 15 mins hence restart counter
-	// 	otpModel.OTPResendCount = 0
-	// 	otpModel.OTPVerifyFailedCount = 0
-	// 	otpModel.OtpLastUpdateTime = time.Now()
-	// }
+		otpModel.OTPResendCount++
+	} else {
+		//more than 15 mins hence restart counter
+		otpModel.OTPResendCount = 0
+		otpModel.OTPVerifyFailedCount = 0
+		otpModel.OtpLastUpdateTime = time.Now()
+	}
 
 	// generate random num as OTP
 	if userID == impl.Config.StaticUserId {
@@ -207,23 +207,14 @@ func (impl *UserImpl) GenerateOTPDev(ctx *gin.Context, userID string) (map[strin
 	otpModel.UpdateReason = "otp generated"
 	otpModel.UpdatedTime = time.Now()
 
-	// if otpModel.OTPResendCount > 0 {
-	// 	otpModel.UpdateReason = "otp re-generated"
-	// }
+	if otpModel.OTPResendCount > 0 {
+		otpModel.UpdateReason = "otp re-generated"
+	}
 
 	//store OTP in db
 	if err := impl.DbService.InsertStaffOTP(isUpdate, otpModel); err != nil {
 		return nil, err
 	}
-
-	// if err := impl.SOAPService.CallSOAPClientSteps(userID, user.Name, user.MobileNumber, impl.Config.OTPUrl, otpModel.OTP); err != nil {
-	// 	return nil, &errors.Error{
-	// 		StatusCode: http.StatusInternalServerError,
-	// 		Code:       errors.InternalServerError,
-	// 		Message:    "SOAP CALL FAILED",
-	// 		Details:    "sms call failed: " + err.Error(),
-	// 	}
-	// }
 
 	return map[string]string{"error": "nil", "position": userPosition}, nil
 }
