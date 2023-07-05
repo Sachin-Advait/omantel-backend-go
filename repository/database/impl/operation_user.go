@@ -28,7 +28,7 @@ func (dbConn *DbServiceImpl) FetchUserBasicDetails(userID string, quarter, year 
 	)
 
 	if args != nil {
-		err = dbConn.DBClient.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1",
+		err = dbConn.DBClient.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and isActive=true",
 			userID).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive)
 	} else {
 		err = dbConn.DBClient.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
@@ -260,7 +260,7 @@ func (dbConn *DbServiceImpl) InsertStaffOTP(update bool, otpModel *models.OtpMod
 	var err error
 
 	if update {
-		_, err = dbConn.DBClient.QueryContext(ctx, "UPDATE user_authentication_table SET user_active=$1, otp=$2, otp_resend_count=$3, otp_verify_failed_count=$4, otp_used=$5, otp_create_time=$6, otp_update_time=$7, last_login_time=$8, modified=$9, comment=$10",
+		_, err = dbConn.DBClient.QueryContext(ctx, "UPDATE user_authentication_table SET user_active=$1, otp=$2, otp_resend_count=$3, otp_verify_failed_count=$4, otp_used=$5, otp_create_time=$6, otp_update_time=$7, last_login_time=$8, modified=$9, comment=$10 where emp_id=$11",
 			otpModel.IsActiveUser,
 			otpModel.OTP,
 			otpModel.OTPResendCount,
@@ -271,6 +271,7 @@ func (dbConn *DbServiceImpl) InsertStaffOTP(update bool, otpModel *models.OtpMod
 			otpModel.LastLoginTime,
 			otpModel.UpdatedTime,
 			otpModel.UpdateReason,
+			otpModel.StaffID,
 		)
 
 		if err != nil {
