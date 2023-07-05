@@ -21,11 +21,11 @@ staticUser:
   usrId: '99999'
   otp: 123456
 psqlDB:
-  host: 86.105.252.94
+  host: 194.163.191.101
   port: 5432
   dbName: postgres
   user: gpadmin
-  password: b21hbnRlbDEyMw==
+  password: b21hbnRlbDEyMw== #omantel123
   maxOpenConnections: 20
   maxIdleConnections: 10
   connMaxLifetimeInHour: 2
