@@ -57,3 +57,8 @@ select distinct general_manager from user_hierarchy_table where deleted IS NULL 
 select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter 
 AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL 
 AND b.senior_manager='36177' AND a.quarter=3 AND a.year=2022
+
+
+
+-- Query to fetch all users who logged in today --
+select emp_id from user_authentication_table WHERE DATE(last_login_time) >= CURRENT_DATE AND DATE(last_login_time) < CURRENT_DATE + INTERVAL '1 DAY'

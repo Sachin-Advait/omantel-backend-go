@@ -259,6 +259,11 @@ func (dbConn *DbServiceImpl) InsertStaffOTP(update bool, otpModel *models.OtpMod
 
 	var err error
 
+	/*
+		Query to fetch all users who logged in today
+		select emp_id from user_authentication_table WHERE DATE(last_login_time) >= CURRENT_DATE AND DATE(last_login_time) < CURRENT_DATE + INTERVAL '1 DAY'
+	*/
+
 	if update {
 		_, err = dbConn.DBClient.QueryContext(ctx, "UPDATE user_authentication_table SET user_active=$1, otp=$2, otp_resend_count=$3, otp_verify_failed_count=$4, otp_used=$5, otp_create_time=$6, otp_update_time=$7, last_login_time=$8, modified=$9, comment=$10 where emp_id=$11",
 			otpModel.IsActiveUser,
