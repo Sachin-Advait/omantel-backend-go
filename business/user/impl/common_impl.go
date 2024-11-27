@@ -1088,7 +1088,8 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 			ind, resp, err := impl.updateAgentUserReport(ctx, eachAgent, isQuarterReport, quarter, month, year)
 			if err != nil {
 				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMReport : agent report failed")
-				return nil, err
+				// return nil, err
+				continue
 			}
 			rawIncentiveReport, _ := json.Marshal(ind)
 			rawUserReport, _ := json.Marshal(resp)
@@ -1454,7 +1455,8 @@ func (impl *UserImpl) updateManagerReport(ctx *gin.Context, mngr *models.UserBas
 			resp, err := impl.updateOutletManagerReport(ctx, om, isQuarterReport, quarter, month, year)
 			if err != nil {
 				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("om", om.UserId).Err(err).Msg("MngrReport : om report failed")
-				return nil, err
+				continue
+				//return nil, err
 			}
 			rawUserReport, _ := json.Marshal(resp)
 			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", om.UserId).Str("record", string(rawUserReport)).Msg("OMReport : agent log")
@@ -1905,7 +1907,10 @@ func (impl *UserImpl) updateRegionReport(ctx *gin.Context, regionName string, is
 		if !(err == nil && outletReport != nil && objecthelper.IsCurrentDay(outletReport.ModifiedAt)) {
 			outletResp, err := impl.updateOutletReport(ctx, regionName, eachOutlet, isQuarterReport, quarter, month, year)
 			if err != nil {
-				return nil, err
+				logger.FileLogger.CtxError(ctx).Str("region", regionName).Str("outlet", eachOutlet).Bool("isQuarter", isQuarterReport).
+					Int("quarter", quarter).Int("month", month).Int("year", year).Err(err).Msg("RegionReport : outlet report failed")
+				//return nil, err
+				continue
 			}
 
 			logger.FileLogger.CtxInfo(ctx).Interface("outletReport", outletResp).Msg("updateRegionReport : trace")
