@@ -103,6 +103,8 @@ func incentiveRoutes(group *gin.RouterGroup) {
 
 	group.GET(constant.FetchNotificationPath, user.FetchNotification)
 
+	group.POST(constant.LoginInfoPath, user.GetUserLoginDetails)
+
 	group.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 

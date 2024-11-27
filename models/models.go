@@ -344,6 +344,11 @@ type CaptchRequest struct {
 	Token   string `json:"token"`
 }
 
+type UserLoginDetails struct {
+	Count     int         `json:"count"`
+	LoginTime []time.Time `json:"loginTime"`
+}
+
 var SalesTrgt SaleTarget
 var PlanRates PlanRate
 var ValOfPoint ValueOfPoint

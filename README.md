@@ -96,8 +96,6 @@ CREATE TABLE IF NOT EXISTS public.user_master_table
 
 
 
-
-
 CREATE TABLE IF NOT EXISTS public.user_authentication_table
 (
 emp_id bigint PRIMARY KEY,
@@ -113,6 +111,18 @@ last_login_time timestamp with time zone,
 created timestamp with time zone NOT NULL,
 modified timestamp with time zone NOT NULL,
 modified_reason character varying(32) NOT NULL
+)
+
+
+
+CREATE TABLE IF NOT EXISTS public.user_login_table
+(
+id SERIAL,
+emp_id INTEGER NOT NULL,
+month integer NOT NULL,
+quarter integer NOT NULL,
+year integer NOT NULL,
+login timestamp with time zone NOT NULL,
 )
 
 

@@ -9,6 +9,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	jwthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/jwtHelper"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 func (impl *UserImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*models.VerifyOTPResponse, *errors.Error) {
@@ -186,6 +187,21 @@ func (impl *UserImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*model
 		AccessToken:   accessToken,
 		RefreshToken:  refreshToken,
 		LastLoginTime: time.Now(),
+	}
+
+	year, month, _ := resp.LastLoginTime.Date()
+
+	login := &models.UserLoginDetailsDB{
+		UserId:    req.ClientId,
+		Month:     int(month),
+		Quarter:   objecthelper.GetQuarterFromMonth(int(month)),
+		Year:      year,
+		LoginTime: resp.LastLoginTime,
+	}
+
+	//store Login Details in db
+	if err := impl.DbService.InsertLoginDetails(login); err != nil {
+		return nil, err
 	}
 
 	return resp, nil
