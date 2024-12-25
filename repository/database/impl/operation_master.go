@@ -84,9 +84,9 @@ func (dbConn *DbServiceImpl) FetchAllOutletNames(regionName string, quarter, yea
 		}
 	}
 
-	var outlentName string
-
 	defer rows.Close()
+
+	var outlentName string
 
 	for rows.Next() {
 		if err := rows.Scan(&outlentName); err != nil {
@@ -138,6 +138,8 @@ func (dbConn *DbServiceImpl) FetchOutletSalesCount(region, outlet string, isQuar
 		}
 		return
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 
@@ -202,6 +204,8 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, 
 			Details:    "FetchUserSales: userID-" + userID + ", query failed - " + err.Error(),
 		}
 	}
+
+	defer rows.Close()
 
 	trx := &models.SaleTransaction{
 		EmpID:  userID,
@@ -318,6 +322,8 @@ func (dbConn *DbServiceImpl) FetchAllAgentsUserOfOM(outletManagerID string, quar
 		}
 	}
 
+	defer rows.Close()
+
 	var userIds = make(map[string]string, 0)
 
 	for rows.Next() {
@@ -415,6 +421,8 @@ func (dbConn *DbServiceImpl) FetchAllOMReportingToGivenManager(managerPosition s
 		}
 	}
 
+	defer rows.Close()
+
 	var outletManagerIDs = make(map[string]string, 0)
 
 	for rows.Next() {
@@ -510,6 +518,8 @@ func (dbConn *DbServiceImpl) FetchAllMngrReportingToManagerRole(managerID, manag
 		}
 	}
 
+	defer rows.Close()
+
 	var managerIDs = make(map[string]string, 0)
 
 	for rows.Next() {
@@ -592,6 +602,8 @@ func (dbConn *DbServiceImpl) FetchAllEmpReportingToGivenManagerRole(managerPosit
 		}
 	}
 
+	defer rows.Close()
+
 	var (
 		array = make([]*models.ReportingStaffIDAndName, 0)
 	)
@@ -649,6 +661,8 @@ func (dbConn *DbServiceImpl) FetchVP(quarter, year int) ([]string, *errors.Error
 		}
 	}
 
+	defer rows.Close()
+
 	var (
 		vp      string
 		vpArray = make([]string, 0)
@@ -671,4 +685,109 @@ func (dbConn *DbServiceImpl) FetchVP(quarter, year int) ([]string, *errors.Error
 	}
 
 	return vpArray, nil
+}
+
+func (dbConn *DbServiceImpl) FetchUserSaleCount(userID string, isQuarterReport bool, quarter, month, year int) (interface{}, error) {
+
+	// logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSaleCount start")
+	// defer logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("end", time.Now()).Msg("FetchUserSaleCount done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	var (
+		rows *sql.Rows
+		err  error
+	)
+
+	if isQuarterReport {
+		rows, err = dbConn.DBClient.QueryContext(ctx, "SELECT category, business_unit, subcategory, curr_plan, final_srvc_cat, quantity FROM user_sale_count_table WHERE emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
+			userID, quarter, year)
+	} else {
+		rows, err = dbConn.DBClient.QueryContext(ctx, "SELECT category, business_unit, subcategory, curr_plan, final_srvc_cat, quantity FROM user_sale_count_table WHERE emp_id=$1 and EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3",
+			userID, month, year)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "FetchUserSaleCount: userID-" + userID + ", query failed - " + err.Error(),
+		}
+	}
+
+	defer rows.Close()
+
+	saleCount := make(map[string]map[string]map[string]map[string]int)
+
+	count := 0
+	for rows.Next() {
+		count++
+		var (
+			category     string
+			businessUnit string
+			subCategory  string
+			currentPlan  string
+			finalSrvcCat string
+			quantity     int
+		)
+
+		if err := rows.Scan(&category, &businessUnit, &subCategory, &currentPlan, &finalSrvcCat, &quantity); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    errors.InternalServerError,
+				Details:    "FetchUserSaleCount: " + userID + ", scan failed - " + err.Error(),
+			}
+		}
+
+		if saleCount[category] == nil {
+			saleCount[category] = make(map[string]map[string]map[string]int)
+		}
+		if saleCount[category][businessUnit] == nil {
+			saleCount[category][businessUnit] = make(map[string]map[string]int)
+		}
+		if saleCount[category][businessUnit][subCategory] == nil {
+			saleCount[category][businessUnit][subCategory] = make(map[string]int)
+		}
+		saleCount[category][businessUnit][subCategory][currentPlan] += quantity
+	}
+
+	// resonse := &models.UserSaleCount{}
+
+	// for group, grpRecord := range saleCount {
+	// 	for businessUnit, busRecord := range grpRecord {
+	// 		for subcategory, subcatRecord := range busRecord {
+	// 			for plan, quantity := range subcatRecord {
+	// 				sale := &models.UserSaleCount{
+	// 					EmpID:        userId,
+	// 					Quantity:     quantity,
+	// 					Category:     group,
+	// 					BusinessUnit: businessUnit,
+	// 					SubCategory:  subcategory,
+	// 					PlanName:     plan,
+	// 					FinalSrvcCat: "",
+	// 					Isquarterly:  isQuarterReport,
+	// 					Month:        month,
+	// 					Quarter:      quarter,
+	// 					Year:         year,
+	// 					Created:      time.Now(),
+	// 					Modified:     time.Now(),
+	// 				}
+	// 				total++
+	// 				if sale.Isquarterly {
+	// 					sale.Month = 0
+	// 				}
+	// 				_, err := impl.PsqlDb.InsertUserSaleCount(sale)
+	// 				if err != nil {
+	// 					failed++
+	// 					opsErr = err
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	return saleCount, nil
 }

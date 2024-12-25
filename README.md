@@ -372,3 +372,17 @@ npXpsWCG7a82tW4j#
 NEW
 ssh root@86.105.252.94
 8UgvyyBR62ZhzKBz#
+
+
+HBB
+    -businessUnit
+        -subcategory
+            -planName
+Hayyak
+    -businessUnit
+        -subcategory
+            -planName
+Baqati
+    -businessUnit
+        -subcategory
+            -planName
