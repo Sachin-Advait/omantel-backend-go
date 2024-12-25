@@ -169,6 +169,18 @@ type ChartDataResponse struct {
 	Upgrade *TargetAchievementData `json:"Upgrade"`
 }
 
+type UserSaleCount struct {
+	Product []struct {
+		BusinessUnit []struct {
+			SubCategory []struct {
+				PlanName []struct {
+					Quantity int `json:"qty"`
+				} `json:"current_plan"`
+			} `json:"sub_category"`
+		} `json:"business_unit"`
+	} `json:"product"`
+}
+
 type SaleCountPerPlan struct {
 	CurrentPlan string `json:"current_plan"`
 	//PreviousPlan string `json:"previous_plan"`

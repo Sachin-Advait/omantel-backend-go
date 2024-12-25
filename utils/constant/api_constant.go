@@ -58,6 +58,7 @@ const (
 	ReportToVicePresidentPath  = "/report_to_vice_president"
 	UserPayoutPath             = "/usr_payout"
 	UserTargetPath             = "/usr_target"
+	UserSalesCountPath         = "/usr_sales_count"
 	UserSalesPerPlanPath       = "/usr_sales_per_plan"
 	OutletSalesCountPath       = "/outlet_sales_count"
 	OutletSalesTargetPath      = "/outlet_sales_target"

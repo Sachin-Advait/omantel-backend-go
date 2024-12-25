@@ -65,4 +65,5 @@ type DbService interface {
 	FetchTotalNonManagerialEmployees(region, outlet string, quarter, year int) (int, *errors.Error)
 	InsertLoginDetails(login *models.UserLoginDetailsDB) *errors.Error
 	FetchLoginDetails(userID string, isQuarterReport bool, quarter, month, year int) ([]time.Time, *errors.Error)
+	FetchUserSaleCount(userID string, isQuarterReport bool, quarter, month, year int) (interface{}, error)
 }
