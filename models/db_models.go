@@ -75,6 +75,14 @@ type RegionReportDB struct {
 	ModifiedAt         time.Time
 }
 
+type UserLoginDetailsDB struct {
+	UserId    string
+	Month     int
+	Quarter   int
+	Year      int
+	LoginTime time.Time
+}
+
 type UserBasicDetailsDB struct {
 	UserId          string
 	Name            string

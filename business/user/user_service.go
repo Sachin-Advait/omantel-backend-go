@@ -34,4 +34,6 @@ type UserProvider interface {
 	GetRegionSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (map[string]*models.ProductWiseSalesTargetPerOutlet, *errors.Error)
 	GetTopTenEmpProductSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerStaff, *errors.Error)
 	GetTopTenEmpSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error)
+
+	GetUserLoginTime(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.UserLoginDetails, *errors.Error)
 }

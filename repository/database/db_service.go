@@ -1,6 +1,8 @@
 package database
 
 import (
+	"time"
+
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
@@ -61,4 +63,6 @@ type DbService interface {
 	FetchOTPValidity(userID string) (*models.OtpModel, *errors.Error)
 	InsertStaffOTP(update bool, otpModel *models.OtpModel) *errors.Error
 	FetchTotalNonManagerialEmployees(region, outlet string, quarter, year int) (int, *errors.Error)
+	InsertLoginDetails(login *models.UserLoginDetailsDB) *errors.Error
+	FetchLoginDetails(userID string, isQuarterReport bool, quarter, month, year int) ([]time.Time, *errors.Error)
 }
