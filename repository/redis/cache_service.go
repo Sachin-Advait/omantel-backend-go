@@ -26,4 +26,9 @@ type CacheService interface {
 	InsertUserSaleCountPerPlanReport(userId string, product string, isQuarterReport bool, month, quarter, year int, userReport interface{},
 		keyTTL time.Duration) *errors.Error
 	GetUserSaleCountPerPlanReport(userId string, product string, isQuarterReport bool, month, quarter, year int) (interface{}, *errors.Error)
+
+	InsertUserPlanCategoryReport(userId string, product string, isQuarterReport bool, month, quarter, year int, userReport interface{},
+		keyTTL time.Duration) *errors.Error
+	GetUserPlanCategoryReport(userId string, product string, isQuarterReport bool, month, quarter,
+		year int) (interface{}, *errors.Error)
 }

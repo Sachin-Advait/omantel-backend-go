@@ -129,6 +129,9 @@ type HbbUserSalesCountPerPlanDB struct {
 	ModifiedAt time.Time
 }
 
+type UserPlanPerCategory struct {
+}
+
 type SaleCalculation struct {
 	Count      int     `json:"count"`
 	Percentage float64 `json:"percent"`

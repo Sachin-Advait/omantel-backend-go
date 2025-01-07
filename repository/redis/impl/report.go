@@ -402,7 +402,7 @@ func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, pr
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
-			Details:    "InsertUserSaleCountPerPlanReport: cache missing details",
+			Details:    "insertUserSaleCountPerPlanReport: cache missing details",
 		}
 	}
 
@@ -412,7 +412,7 @@ func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, pr
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
-			Details:    "InsertUserSaleCountPerPlanReport: cache marshal failed - " + err.Error(),
+			Details:    "insertUserSaleCountPerPlanReport: cache marshal failed - " + err.Error(),
 		}
 	}
 
@@ -430,7 +430,7 @@ func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, pr
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
-			Details:    "insertUserReport: cache operation failed - " + err.Error(),
+			Details:    "insertUserSaleCountPerPlanReport: cache operation failed - " + err.Error(),
 		}
 	}
 
@@ -495,5 +495,101 @@ func (impl *CacheServiceImpl) GetUserSaleCountPerPlanReport(userId string, produ
 		Code:       errors.InternalServerErrorCode,
 		Message:    errors.InternalServerError,
 		Details:    "getUserSaleCountPerPlanReport: cache unmarshal failed - " + err.Error(),
+	}
+}
+
+func (impl *CacheServiceImpl) InsertUserPlanCategoryReport(userId string, product string, isQuarterReport bool, month, quarter, year int, userReport interface{},
+	keyTTL time.Duration) *errors.Error {
+
+	if userReport == nil || userId == "" {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "insertUserPlanCategoryReport: cache missing details",
+		}
+	}
+
+	bytes, err := objecthelper.MarshalJSON(userReport)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "insertUserPlanCategoryReport: cache marshal failed - " + err.Error(),
+		}
+	}
+
+	var key string
+
+	if isQuarterReport {
+		key = fmt.Sprintf(constant.RedisUserPlanPerCategoryReportKey, userId, product, 0, quarter, year)
+	} else {
+		key = fmt.Sprintf(constant.RedisUserPlanPerCategoryReportKey, userId, product, month, 0, year)
+	}
+
+	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "insertUserPlanCategoryReport: cache operation failed - " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (impl *CacheServiceImpl) GetUserPlanCategoryReport(userId string, product string, isQuarterReport bool, month, quarter,
+	year int) (interface{}, *errors.Error) {
+
+	if userId == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "getUserPlanCategoryReport: cache missing details",
+		}
+	}
+
+	var key string
+
+	if isQuarterReport {
+		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, 0, quarter, year)
+	} else {
+		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, month, 0, year)
+	}
+
+	data, err := impl.RedisClient.Get(context.Background(), key).Result()
+	if err != nil && err != redis.Nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "getUserPlanCategoryReport: cache operation failed - " + err.Error(),
+		}
+	}
+
+	if err == redis.Nil || data == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusNotFound,
+			Code:       errors.UserNotFoundCode,
+			Message:    errors.UserNotFound,
+			Details:    "getUserPlanCategoryReport: cache no record found",
+		}
+	}
+
+	var report interface{}
+	err = objecthelper.UnmarshalJSON([]byte(data), &report)
+	if err == nil {
+		return report, nil
+	}
+
+	return nil, &errors.Error{
+		StatusCode: http.StatusInternalServerError,
+		Code:       errors.InternalServerErrorCode,
+		Message:    errors.InternalServerError,
+		Details:    "getUserPlanCategoryReport: cache unmarshal failed - " + err.Error(),
 	}
 }
