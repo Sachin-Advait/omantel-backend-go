@@ -5,6 +5,11 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/repository/fcm"
 	"gitlab.com/rendezvousPoint/incentive_calculator/repository/redis"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/configs"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
+)
+
+var (
+	getQuarterFromMonth = objecthelper.GetQuarterFromMonth
 )
 
 type AdminImpl struct {

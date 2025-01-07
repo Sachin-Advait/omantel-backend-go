@@ -1,4 +1,4 @@
-package user
+package admin
 
 import (
 	"encoding/json"
@@ -15,26 +15,14 @@ import (
 	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 )
 
-func GetUserLoginTime(ctx *gin.Context, req *models.UserIncentiveRequest) (int, interface{}) {
+func GetUserLoginDetails(ctx *gin.Context, req *models.UserLoginDetailsRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	isQuarterReport, quarter, month, year, err := models.ValidateUserIncentiveRequest(req, ctxHeader)
-	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetUserLoginTime : validation failed")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
-			Text: err.Error(), CreateTime: time.Now().Local()})
-
-		return http.StatusBadRequest, &models.APIFailureResponse{
-			Error:   errors.InvalidReqParameters,
-			Message: err.Error(),
-		}
-	}
-
-	response, errs := userAPIProvider.GetUserLoginTime(ctx, req.ClientId, isQuarterReport, quarter, month, year)
+	response, errs := adminAPIProvider.GetUserLoginDetails(ctx, req)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUserLoginTime : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUserLoginDetails : provider failed")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
 			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
@@ -44,7 +32,7 @@ func GetUserLoginTime(ctx *gin.Context, req *models.UserIncentiveRequest) (int, 
 	}
 
 	responseBytes, _ := json.Marshal(response)
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserLoginTime : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserLoginDetails : success")
 	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
 		Text: string(responseBytes), CreateTime: time.Now().Local()})
 

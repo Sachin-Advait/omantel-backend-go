@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS public.outlets_table
     outlet_name character varying(64) NOT NULL,
     region_code character varying(64) NOT NULL,
     region_name character varying(64) NOT NULL,
+    subregion_name character varying(64) NOT NULL,
     latitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
     longitude NUMERIC (10, 3) NOT NULL DEFAULT 0,
     created timestamp with time zone NOT NULL,
@@ -148,7 +149,10 @@ CREATE TABLE IF NOT EXISTS public.sale_transaction_table
     curr_product character varying(128) NOT NULL DEFAULT '',
     quantity smallint NOT NULL,
     category character varying(32) NOT NULL DEFAULT '',
+    line_type character varying(32) NOT NULL DEFAULT '',
+    business_unit character varying(32) NOT NULL DEFAULT '',
     subcategory character varying(32) NOT NULL DEFAULT '',
+    final_srvc_cat character varying(32) NOT NULL DEFAULT '',
     sales_date date NOT NULL DEFAULT CURRENT_DATE,
     inactive_date date NOT NULL DEFAULT CURRENT_DATE,
     quarter integer NOT NULL DEFAULT 1,
@@ -305,4 +309,30 @@ CREATE TABLE IF NOT EXISTS public.outlet_reports_table
     created timestamp with time zone NOT NULL,
     modified timestamp with time zone NOT NULL,
     PRIMARY KEY (outlet, month, quarter, year)
+);
+
+CREATE TABLE IF NOT EXISTS public.user_sale_count_table
+(
+    emp_id character varying(32),
+    quantity smallint NOT NULL,
+    category character varying(32) NOT NULL DEFAULT '',
+    business_unit character varying(32) NOT NULL DEFAULT '',
+    subcategory character varying(32) NOT NULL DEFAULT '',
+    curr_plan character varying(128) NOT NULL DEFAULT '',
+    final_srvc_cat character varying(32) NOT NULL DEFAULT '',
+    isquarterly bool NOT NULL DEFAULT false,
+    month integer NOT NULL DEFAULT 0,
+    quarter integer NOT NULL DEFAULT 0,
+    year integer NOT NULL,
+    created timestamp with time zone NOT NULL,
+    modified timestamp with time zone NOT NULL,
+    PRIMARY KEY (emp_id, month, quarter, year)
+);
+
+CREATE TABLE IF NOT EXISTS public.user_login_table
+(
+    emp_id character varying(32),
+    region character varying(32) NOT NULL DEFAULT '',
+    login timestamp with time zone NOT NULL,
+    PRIMARY KEY (emp_id, login)
 );

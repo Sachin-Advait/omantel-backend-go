@@ -69,7 +69,6 @@ const (
 	RenewTokenPath             = "/renew_token"
 	GetUserPath                = "/get_user"
 	UserLogoutPath             = "/logout"
-	LoginInfoPath              = "/login_info"
 
 	CaptchaVerificationPath = "/captcha_verify"
 
@@ -108,4 +107,7 @@ const (
 	UpsertNotificationPath = "/upsert_notification"
 	FetchNotificationPath  = "/fetch_notification"
 	DeleteNotificationPath = "/delete_notification"
+
+	LoginChartPath   = "/login_chart"
+	LoginDetailsPath = "/login_details"
 )

@@ -1,8 +1,8 @@
 package impl
 
 import (
-	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
@@ -12,7 +12,7 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) ([]*models.SaleCountPerPlan, *errors.Error) {
+func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
@@ -36,24 +36,25 @@ func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product stri
 		}
 	}
 
-	report, err := impl.CacheService.GetUserReport(userID, isQuarterReport, month, quarter, year)
-	if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {
-		if resp, err := impl.userPerPlanSale(ctx, product, report); err == nil {
-			return resp, nil
+	report, err := impl.CacheService.GetUserSaleCountPerPlanReport(userID, product, isQuarterReport, month, quarter, year)
+	if err == nil && report != nil {
+		var modifiedDate time.Time
+		if product == constant.HBBCategory {
+			modifiedDate = report.(*models.HbbUserSalesCountPerPlanDB).ModifiedAt
+		} else {
+			modifiedDate = report.(*models.UserSalesCountPerPlanDB).ModifiedAt
+		}
+
+		if objecthelper.IsCurrentDay(modifiedDate) {
+			return report, nil
 		}
 	}
+
+	// Compute real time
 
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
 	}
-
-	// if ctxHeader.IsAdmin {
-	// 	vps, err := impl.DbService.FetchVP(quarter, year)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	userID = vps[0]
-	// }
 
 	user, err := impl.DbService.FetchUserDetails(userID, quarter, year)
 	if err != nil {
@@ -76,61 +77,20 @@ func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product stri
 
 	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb {
 
-		_, report, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+		report, err := impl.updateAgentUserSaleCountPerPlanReport(ctx, user, product, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
-
-		// val, _ := json.Marshal(resp)
-		// logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Str("report", string(val)).Msg("GetSaleCountPerPlan : updated")
-
-		return impl.userPerPlanSale(ctx, product, report)
+		return report, nil
 	}
 
 	/*
 		For All Managers
 	*/
 
-	mngrReport, err := impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
+	mngrReport, err := impl.updateManagerUserSaleCountPerPlanReport(ctx, user, product, isQuarterReport, quarter, month, year)
 	if err != nil {
 		return nil, err
 	}
-
-	// val, _ := json.Marshal(mngrReport)
-	// logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Str("report", string(val)).Msg("GetSingleUserIncentive : updated")
-
-	return impl.userPerPlanSale(ctx, product, mngrReport)
-}
-
-func (impl *UserImpl) userPerPlanSale(ctx *gin.Context, product string, userReport *models.UserReportDB) ([]*models.SaleCountPerPlan, *errors.Error) {
-
-	response := make([]*models.SaleCountPerPlan, 0)
-
-	var saleCountString string
-
-	switch product {
-	case constant.HBBCategory:
-		saleCountString = userReport.HBBSaleCountPerPlanArray
-	case constant.HayyakCategory:
-		saleCountString = userReport.HayyakSaleCountPerPlanArray
-	case constant.BaqatiCategory:
-		saleCountString = userReport.BaqatiSaleCountPerPlanArray
-	case constant.UpgradeCategory:
-		saleCountString = userReport.UpgradeSaleCountPerPlanArray
-	}
-
-	if saleCountString == "" {
-		return response, nil
-	}
-
-	if err := json.Unmarshal([]byte(saleCountString), &response); err != nil {
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "GetSaleCountPerPlan: resp marshal error - " + err.Error(),
-		}
-	}
-
-	return response, nil
+	return mngrReport, nil
 }

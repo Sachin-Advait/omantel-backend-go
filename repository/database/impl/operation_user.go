@@ -93,6 +93,9 @@ func (dbConn *DbServiceImpl) FetchUserIdFromOutletAndRegion(region, outlet strin
 	case outlet != "":
 		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and outlet=$1 and quarter=$2 and year=$3",
 			outlet, quarter, year)
+	default:
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and quarter=$1 and year=$2",
+			quarter, year)
 	}
 
 	if dbErr != nil {
@@ -148,6 +151,55 @@ func (dbConn *DbServiceImpl) FetchUserIdFromOutletAndRegion(region, outlet strin
 	}
 
 	return response, nil
+}
+
+// FetchDistinctUserCountFromOutletAndRegion - fetch count with duplicacy state not handled
+func (dbConn *DbServiceImpl) FetchDistinctUserCountFromOutletAndRegion(region, outlet string, quarter, year int) (int, *errors.Error) {
+
+	err := &errors.Error{
+		StatusCode: http.StatusInternalServerError,
+		Code:       errors.InternalServerErrorCode,
+		Message:    errors.InternalServerError,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	var (
+		count int
+		dbErr error
+	)
+
+	switch {
+	case region != "" && outlet != "":
+		dbErr = dbConn.DBClient.QueryRowContext(ctx, "select COUNT(*) from user_master_table where deleted IS NULL and region=$1 and outlet=$2 and quarter=$3 and year=$4 and isActive=true",
+			region, outlet, quarter, year).Scan(&count)
+	case region != "":
+		dbErr = dbConn.DBClient.QueryRowContext(ctx, "select COUNT(*) from user_master_table where deleted IS NULL and region=$1 and quarter=$2 and year=$3 and isActive=true",
+			region, quarter, year).Scan(&count)
+	case outlet != "":
+		dbErr = dbConn.DBClient.QueryRowContext(ctx, "select COUNT(*) from user_master_table where deleted IS NULL and outlet=$1 and quarter=$2 and year=$3 and isActive=true",
+			outlet, quarter, year).Scan(&count)
+	default:
+		dbErr = dbConn.DBClient.QueryRowContext(ctx, "select COUNT(*) from user_master_table where deleted IS NULL and quarter=$1 and year=$2 and isActive=true",
+			quarter, year).Scan(&count)
+	}
+
+	if dbErr != nil {
+		if dbErr == sql.ErrNoRows {
+			return 0, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidDetailsCode,
+				Err:        errors.InvalidDetails,
+				Message:    "NO RECORDS FOUND",
+				Details:    "FetchDistinctUserCountFromOutletAndRegion: query failed-" + dbErr.Error(),
+			}
+		}
+
+		err.Details = "FetchDistinctUserCountFromOutletAndRegion: query failed-" + dbErr.Error()
+		return count, err
+	}
+	return count, nil
 }
 
 // TODO: FetchUserDetails - for basic user info and manger of that user

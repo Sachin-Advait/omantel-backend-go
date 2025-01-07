@@ -38,13 +38,55 @@ func (dbConn *DbServiceImpl) InsertLoginDetails(login *models.UserLoginDetailsDB
 	return nil
 }
 
-func (dbConn *DbServiceImpl) FetchLoginDetails(userID string, isQuarterReport bool, quarter, month, year int) ([]time.Time, *errors.Error) {
+func (dbConn *DbServiceImpl) FetchLoginCount(region string, start, end time.Time) (int, *errors.Error) {
+
+	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchLoginCount start")
+	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchLoginCount done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	startDate := start.Format("2006-01-02")
+	endDate := start.Format("2006-01-02")
+
+	var (
+		err   error
+		count int
+	)
+
+	if region != "" {
+		err = dbConn.DBClient.QueryRowContext(ctx, "SELECT COUNT(*) FROM (SELECT DISTINCT emp_id FROM user_login_table where "+
+			"region=$1 AND login >= '$2 00:00:00'::timestamp AND login < '$3 23:59:59'::timestamp) AS total;", region, startDate, endDate).Scan(&count)
+	} else {
+		err = dbConn.DBClient.QueryRowContext(ctx, "SELECT COUNT(*) FROM (SELECT DISTINCT emp_id FROM user_login_table where "+
+			"login >= '$1 00:00:00'::timestamp AND login < '$2 23:59:59'::timestamp) AS total;", startDate, endDate).Scan(&count)
+	}
+
+	if err != nil {
+		return count, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+		}
+	}
+
+	return count, nil
+}
+
+func (dbConn *DbServiceImpl) FetchLoginDetails(page int, size int, region string, start, end time.Time) ([]*models.LoginUsers, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchLoginDetails start")
 	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchLoginDetails done")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
+
+	offset := (page - 1) * size
+	if offset < 0 {
+		offset = 0
+	}
+	startDate := start.Format("2006-01-02")
+	endDate := start.Format("2006-01-02")
 
 	var (
 		rows  *sql.Rows
@@ -56,11 +98,12 @@ func (dbConn *DbServiceImpl) FetchLoginDetails(userID string, isQuarterReport bo
 		}
 	)
 
-	switch {
-	case isQuarterReport:
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select login from user_login_table where emp_id=$1 and quarter=$2 and year=$3", userID, quarter, year)
-	default:
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select login from user_login_table where emp_id=$1 and month=$2 and year=$3", userID, month, year)
+	if region != "" {
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, login FROM user_login_table where region=$1 AND login >= '$2 00:00:00'::timestamp AND "+
+			"login < '$3 23:59:59'::timestamp) order by login desc LIMIT $4 OFFSET $5 ;", region, startDate, endDate, size, offset)
+	} else {
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, login FROM user_login_table where login >= '$1 00:00:00'::timestamp AND "+
+			"login < '$2 23:59:59'::timestamp) order by login desc LIMIT $4 OFFSET $5 ;", startDate, endDate, size, offset)
 	}
 
 	if dbErr != nil {
@@ -73,20 +116,19 @@ func (dbConn *DbServiceImpl) FetchLoginDetails(userID string, isQuarterReport bo
 				Details:    "FetchLoginDetails: query failed-" + dbErr.Error(),
 			}
 		}
-
 		err.Details = "FetchLoginDetails: query failed-" + dbErr.Error()
 		return nil, err
 	}
 
-	response := make([]time.Time, 0)
+	response := make([]*models.LoginUsers, 0)
 
 	for rows.Next() {
-		var loginTime time.Time
-		if dbErr := rows.Scan(&loginTime); dbErr != nil {
+		var user models.LoginUsers
+		if dbErr := rows.Scan(&user.StaffId, &user.LoginTime); dbErr != nil {
 			err.Details = "FetchLoginDetails: scan failed-" + dbErr.Error()
 			return nil, err
 		}
-		response = append(response, loginTime)
+		response = append(response, &user)
 	}
 
 	return response, nil

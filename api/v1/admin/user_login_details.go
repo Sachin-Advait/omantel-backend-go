@@ -1,12 +1,13 @@
-package user
+package admin
 
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/adapters/user"
+	"gitlab.com/rendezvousPoint/incentive_calculator/adapters/admin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
@@ -33,23 +34,57 @@ func GetUserLoginDetails(ctx *gin.Context) {
 		return
 	}
 
-	userReq := &models.UserIncentiveRequest{}
+	if !ctxHeader.IsAdmin {
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("getUserLoginDetails : not an admin")
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "not admin", Code: http.StatusForbidden,
+			Text: "not an admin", CreateTime: time.Now().Local()})
 
-	if err := ctx.ShouldBindJSON(userReq); err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Msg("getUserLoginDetails : error binding request body")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "error binding request body",
-			Code: http.StatusBadRequest, Text: err.Error(), CreateTime: time.Now().Local()})
-
-		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
-			Error: errors.ErrorCodeMap[errors.RequestDecodeErrorCode],
+		ctx.JSON(http.StatusForbidden, models.APIFailureResponse{
+			Error:   errors.UnauthorizedUserCode,
+			Message: errors.UnauthorizedUser,
 		})
 		return
 	}
+
+	userReq := &models.UserLoginDetailsRequest{
+		Region: ctx.Query("region"),
+	}
+
+	page, _ := strconv.Atoi(ctx.Query("page"))
+	if page == 0 {
+		page = 1
+	}
+	size, _ := strconv.Atoi(ctx.Query("size"))
+	if size == 0 {
+		size = 30
+	}
+
+	var err error
+	from, fromErr := time.Parse("02-01-2006", ctx.Query("from"))
+	to, toErr := time.Parse("02-01-2006", ctx.Query("to"))
+	if fromErr != nil || toErr != nil {
+		if fromErr != nil {
+			err = fromErr
+		} else {
+			err = toErr
+		}
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("getUserLoginDetails : validation failed")
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "validation failed", Code: http.StatusBadRequest,
+			Text: err.Error(), CreateTime: time.Now().Local()})
+
+		ctx.JSON(http.StatusBadRequest, models.APIFailureResponse{
+			Error:   errors.InvalidReqParameters,
+			Message: err.Error(),
+		})
+		return
+	}
+	userReq.From = from
+	userReq.To = to
 
 	req, _ := objecthelper.MarshalJSON(userReq)
 	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUserLoginDetails : req body")
 	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
 		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
 
-	ctx.JSON(user.GetUserLoginTime(ctx, userReq))
+	ctx.JSON(admin.GetUserLoginDetails(ctx, userReq))
 }
