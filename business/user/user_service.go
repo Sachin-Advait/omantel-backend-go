@@ -21,6 +21,7 @@ type UserProvider interface {
 	GetUserPayout(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*models.TotalIncentive, *errors.Error)
 	GetUserSalesAndTargetChart(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error)
 
+	GetSaleCountPerPlan(ctx *gin.Context, userId, product string, isQuarterReport bool, quarter, month, year int) ([]*models.SaleCountPerPlan, *errors.Error)
 	GetUserReport(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) (*models.UserReportDB, *errors.Error)
 	GetUsersReportingToManager(ctx *gin.Context, managerID string, isQuarterReport bool, quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
 	GetUsersReportingToOutletManager(ctx *gin.Context, outletManagerID string, isQuarterReport bool, quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
@@ -34,7 +35,6 @@ type UserProvider interface {
 	GetTopTenEmpProductSalesCount(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesCountPerStaff, *errors.Error)
 	GetTopTenEmpSalesAndTarget(ctx *gin.Context, userId string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error)
 
-	GetUserSaleCount(ctx *gin.Context, userId, product string, isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error)
-	GetSaleCountPerPlan(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error)
+	GetUserSalesCount(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error)
 	GetUserPlanCategory(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error)
 }

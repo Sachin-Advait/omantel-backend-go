@@ -16,13 +16,13 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func GetUserSaleCount(ctx *gin.Context) {
+func GetUserSalesCount(ctx *gin.Context) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if ctxHeader.Authorization == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("getUserSaleCount : unauthorized request")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("getUserSalesCount : unauthorized request")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "unauthorized request", Code: http.StatusBadRequest,
 			Text: "auth token not found", CreateTime: time.Now().Local()})
 
@@ -36,7 +36,7 @@ func GetUserSaleCount(ctx *gin.Context) {
 	userReq := &models.UserSalesRequest{}
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Msg("getUserSaleCount : error binding request body")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("getUserSalesCount : error binding request body")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "error binding request body",
 			Code: http.StatusBadRequest, Text: err.Error(), CreateTime: time.Now().Local()})
 
@@ -47,9 +47,9 @@ func GetUserSaleCount(ctx *gin.Context) {
 	}
 
 	req, _ := objecthelper.MarshalJSON(userReq)
-	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUserSaleCount : req body")
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUserSalesCount : req body")
 	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
 		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
 
-	ctx.JSON(user.GetUserSaleCount(ctx, userReq))
+	ctx.JSON(user.GetUserSalesCount(ctx, userReq))
 }

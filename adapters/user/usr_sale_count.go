@@ -16,14 +16,14 @@ import (
 	dblogger "gitlab.com/rendezvousPoint/incentive_calculator/utils/logger/dbLogger"
 )
 
-func GetUserSaleCount(ctx *gin.Context, req *models.UserSalesRequest) (int, interface{}) {
+func GetUserSalesCount(ctx *gin.Context, req *models.UserSalesRequest) (int, interface{}) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	isQuarterReport, quarter, month, year, err := models.ValidateUserSaleCountRequest(req, ctxHeader)
+	isQuarterReport, quarter, month, year, err := models.ValidateUserSalesRequest(req, ctxHeader)
 	if err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetUserSaleCount : validation failed")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetUserSalesCount : validation failed")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
 			Text: err.Error(), CreateTime: time.Now().Local()})
 
@@ -35,9 +35,9 @@ func GetUserSaleCount(ctx *gin.Context, req *models.UserSalesRequest) (int, inte
 
 	product := strings.ToUpper(req.Product)
 
-	response, errs := userAPIProvider.GetUserSaleCount(ctx, req.ClientId, product, isQuarterReport, quarter, month, year)
+	response, errs := userAPIProvider.GetUserSalesCount(ctx, req.ClientId, product, isQuarterReport, quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUserSaleCount : provider failed")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUserSalesCount : provider failed")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
 			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
@@ -47,7 +47,7 @@ func GetUserSaleCount(ctx *gin.Context, req *models.UserSalesRequest) (int, inte
 	}
 
 	responseBytes, _ := json.Marshal(response)
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserSaleCount : success")
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserSalesCount : success")
 	dblogger.PrintDBLogs(&dblogger.Logging{UserID: req.ClientId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
 		Text: string(responseBytes), CreateTime: time.Now().Local()})
 
