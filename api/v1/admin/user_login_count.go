@@ -68,8 +68,8 @@ func GetUserLoginCount(ctx *gin.Context) {
 		})
 		return
 	}
-	userReq.From = from
-	userReq.To = to
+	userReq.From = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.Local)
+	userReq.To = time.Date(to.Year(), to.Month(), to.Day(), 23, 59, 59, 999999999, time.Local)
 
 	req, _ := objecthelper.MarshalJSON(userReq)
 	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUserLoginCount : req body")

@@ -46,10 +46,6 @@ func GetUserLoginDetails(ctx *gin.Context) {
 		return
 	}
 
-	userReq := &models.UserLoginDetailsRequest{
-		Region: ctx.Query("region"),
-	}
-
 	page, _ := strconv.Atoi(ctx.Query("page"))
 	if page == 0 {
 		page = 1
@@ -57,6 +53,12 @@ func GetUserLoginDetails(ctx *gin.Context) {
 	size, _ := strconv.Atoi(ctx.Query("size"))
 	if size == 0 {
 		size = 30
+	}
+
+	userReq := &models.UserLoginDetailsRequest{
+		Region: ctx.Query("region"),
+		Page:   page,
+		Size:   size,
 	}
 
 	var err error
@@ -78,8 +80,8 @@ func GetUserLoginDetails(ctx *gin.Context) {
 		})
 		return
 	}
-	userReq.From = from
-	userReq.To = to
+	userReq.From = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.Local)
+	userReq.To = time.Date(to.Year(), to.Month(), to.Day(), 23, 59, 59, 999999999, time.Local)
 
 	req, _ := objecthelper.MarshalJSON(userReq)
 	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUserLoginDetails : req body")

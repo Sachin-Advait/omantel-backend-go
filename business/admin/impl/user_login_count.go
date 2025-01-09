@@ -57,10 +57,14 @@ func (impl *AdminImpl) GetUserLoginCount(ctx *gin.Context, region string, start 
 		loginCount = count
 	}(&wg)
 
-	wg.Done()
+	wg.Wait()
 
 	if err != nil {
 		return nil, err
+	}
+
+	if userCount < loginCount {
+		return &models.UserLoginCountResponse{}, nil
 	}
 
 	response := &models.UserLoginCountResponse{
@@ -69,7 +73,10 @@ func (impl *AdminImpl) GetUserLoginCount(ctx *gin.Context, region string, start 
 		NonLoginCount: userCount - loginCount,
 	}
 
-	response.LoginPercentage = (float64(loginCount) * 100) / float64(userCount)
-	response.NonLoginPercentage = 100 - response.LoginPercentage
+	if userCount != 0 {
+		response.LoginPercentage = (float64(loginCount) * 100) / float64(userCount)
+		response.NonLoginPercentage = 100 - response.LoginPercentage
+	}
+
 	return response, nil
 }

@@ -24,9 +24,9 @@ func (impl *AdminImpl) GetUserLoginDetails(ctx *gin.Context, req *models.UserLog
 		}
 	}
 
-	loginUsers, loginUsersErr := impl.DbService.FetchLoginDetails(req.Page, req.Size, req.Region, req.From, req.To)
-	if loginUsersErr != nil {
-
+	loginUsers, userErr := impl.DbService.FetchLoginDetails(req.Page, req.Size, req.Region, req.From, req.To)
+	if userErr != nil {
+		return nil, &errors.Error{StatusCode: userErr.StatusCode, Code: userErr.Code, Err: userErr.Err, Message: userErr.Message, Details: userErr.Details}
 	}
 
 	quarter := getQuarterFromMonth(int(req.From.Month()))
@@ -47,9 +47,15 @@ func (impl *AdminImpl) GetUserLoginDetails(ctx *gin.Context, req *models.UserLog
 	}
 
 	response := &models.UserLoginDetailsResponse{
-		Page:  req.Page + 1,
-		Size:  req.Size,
 		Users: loginUsers,
+	}
+
+	if len(loginUsers) == req.Size {
+		response.NextPage = req.Page + 1
+		response.Size = req.Size
+	} else {
+		response.NextPage = -1
+		response.Size = len(loginUsers)
 	}
 
 	return response, nil

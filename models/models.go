@@ -390,9 +390,9 @@ type UserLoginDetailsRequest struct {
 }
 
 type UserLoginDetailsResponse struct {
-	Page  int           `json:"page"`
-	Size  int           `json:"size"`
-	Users []*LoginUsers `json:"users"`
+	NextPage int           `json:"nextPage"`
+	Size     int           `json:"size"`
+	Users    []*LoginUsers `json:"users"`
 }
 
 type LoginUsers struct {

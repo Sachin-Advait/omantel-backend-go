@@ -46,9 +46,6 @@ func (dbConn *DbServiceImpl) FetchLoginCount(region string, start, end time.Time
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	startDate := start.Format("2006-01-02")
-	endDate := start.Format("2006-01-02")
-
 	var (
 		err   error
 		count int
@@ -56,10 +53,10 @@ func (dbConn *DbServiceImpl) FetchLoginCount(region string, start, end time.Time
 
 	if region != "" {
 		err = dbConn.DBClient.QueryRowContext(ctx, "SELECT COUNT(*) FROM (SELECT DISTINCT emp_id FROM user_login_table where "+
-			"region=$1 AND login >= '$2 00:00:00'::timestamp AND login < '$3 23:59:59'::timestamp) AS total;", region, startDate, endDate).Scan(&count)
+			"region=$1 AND login >= $2 AND login <= $3) AS total;", region, start, end).Scan(&count)
 	} else {
 		err = dbConn.DBClient.QueryRowContext(ctx, "SELECT COUNT(*) FROM (SELECT DISTINCT emp_id FROM user_login_table where "+
-			"login >= '$1 00:00:00'::timestamp AND login < '$2 23:59:59'::timestamp) AS total;", startDate, endDate).Scan(&count)
+			"login >= $1 AND login <= $2) AS total;", start, end).Scan(&count)
 	}
 
 	if err != nil {
@@ -67,6 +64,7 @@ func (dbConn *DbServiceImpl) FetchLoginCount(region string, start, end time.Time
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
+			Details:    "FetchLoginCount: query failed-" + err.Error(),
 		}
 	}
 
@@ -85,8 +83,6 @@ func (dbConn *DbServiceImpl) FetchLoginDetails(page int, size int, region string
 	if offset < 0 {
 		offset = 0
 	}
-	startDate := start.Format("2006-01-02")
-	endDate := start.Format("2006-01-02")
 
 	var (
 		rows  *sql.Rows
@@ -99,11 +95,11 @@ func (dbConn *DbServiceImpl) FetchLoginDetails(page int, size int, region string
 	)
 
 	if region != "" {
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, login FROM user_login_table where region=$1 AND login >= '$2 00:00:00'::timestamp AND "+
-			"login < '$3 23:59:59'::timestamp) order by login desc LIMIT $4 OFFSET $5 ;", region, startDate, endDate, size, offset)
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, login FROM user_login_table where region=$1 AND login >= $2 AND login <= $3 "+
+			"order by login desc LIMIT $4 OFFSET $5 ;", region, start, end, size, offset)
 	} else {
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, login FROM user_login_table where login >= '$1 00:00:00'::timestamp AND "+
-			"login < '$2 23:59:59'::timestamp) order by login desc LIMIT $4 OFFSET $5 ;", startDate, endDate, size, offset)
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, login FROM user_login_table where login >= $1 AND login <= $2 "+
+			"order by login desc LIMIT $3 OFFSET $4 ;", start, end, size, offset)
 	}
 
 	if dbErr != nil {
