@@ -2017,8 +2017,8 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 			}
 			switch v.BusinessUnit {
 			case "GOVERNMENT":
-				if response.BusinessUnit.Consumer == nil {
-					response.BusinessUnit.Consumer = &models.SaleCalculation{}
+				if response.BusinessUnit.Government == nil {
+					response.BusinessUnit.Government = &models.SaleCalculation{}
 				}
 				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
 			case "CORPORATE":
@@ -2217,23 +2217,54 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 		}
 
 		//businesssUnit
-		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
+		if response.BusinessUnit.Government == nil {
+			response.BusinessUnit.Government = &models.SaleCalculation{}
+		}
+		if response.BusinessUnit.Corporate == nil {
+			response.BusinessUnit.Corporate = &models.SaleCalculation{}
+		}
+		if response.BusinessUnit.Consumer == nil {
+			response.BusinessUnit.Consumer = &models.SaleCalculation{}
+		}
+		sum := (float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+			float64(response.BusinessUnit.Consumer.Count))
+		if sum != 0 {
+			response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 / sum
+			response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 / sum
+			response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 / sum
+		}
 
 		//category
+		if response.Category.CBUWFBB == nil {
+			response.Category.CBUWFBB = &models.SaleCalculation{}
+		}
+		if response.Category.CBUHBB == nil {
+			response.Category.CBUHBB = &models.SaleCalculation{}
+		}
+		if response.Category.EBUWFBB == nil {
+			response.Category.EBUWFBB = &models.SaleCalculation{}
+		}
+		if response.Category.EBUHBB == nil {
+			response.Category.EBUHBB = &models.SaleCalculation{}
+		}
 		response.Category.CBUWFBB.Percentage = 100
 		response.Category.CBUHBB.Percentage = 100
 		response.Category.EBUWFBB.Percentage = 100
 		response.Category.EBUHBB.Percentage = 100
 
 		//subCategory
+		if response.SubCategory.CBUWFBB == nil {
+			response.SubCategory.CBUWFBB = make(map[string]interface{})
+		}
+		if response.SubCategory.CBUHBB == nil {
+			response.SubCategory.CBUHBB = make(map[string]interface{})
+		}
+		if response.SubCategory.EBUWFBB == nil {
+			response.SubCategory.EBUWFBB = make(map[string]interface{})
+		}
+		if response.SubCategory.EBUHBB == nil {
+			response.SubCategory.EBUHBB = make(map[string]interface{})
+		}
 		var subCategoryCBUWFBBTotal int
 		for subcategory, v := range response.SubCategory.CBUWFBB {
 			if subcategory == "total" {
@@ -2241,7 +2272,9 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUWFBBTotal)
+			if subCategoryCBUWFBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUWFBBTotal)
+			}
 			response.SubCategory.CBUWFBB[subcategory] = obj
 		}
 		var subCategoryCBUHBBTotal int
@@ -2251,7 +2284,9 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUHBBTotal)
+			if subCategoryCBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUHBBTotal)
+			}
 			response.SubCategory.CBUHBB[subcategory] = obj
 		}
 		var subCategoryEBUWFBBTotal int
@@ -2261,7 +2296,9 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUWFBBTotal)
+			if subCategoryEBUWFBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUWFBBTotal)
+			}
 			response.SubCategory.EBUWFBB[subcategory] = obj
 		}
 		var subCategoryEBUHBBTotal int
@@ -2271,11 +2308,25 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUHBBTotal)
+			if subCategoryEBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUHBBTotal)
+			}
 			response.SubCategory.EBUHBB[subcategory] = obj
 		}
 
 		//serviceCategory
+		if response.ServiceCategory.CBUWFBB == nil {
+			response.ServiceCategory.CBUWFBB = make(map[string]interface{})
+		}
+		if response.ServiceCategory.CBUHBB == nil {
+			response.ServiceCategory.CBUHBB = make(map[string]interface{})
+		}
+		if response.ServiceCategory.EBUWFBB == nil {
+			response.ServiceCategory.EBUWFBB = make(map[string]interface{})
+		}
+		if response.ServiceCategory.EBUHBB == nil {
+			response.ServiceCategory.EBUHBB = make(map[string]interface{})
+		}
 		var srvcCategoryCBUHBBTotal int
 		for srvccategory, v := range response.ServiceCategory.CBUHBB {
 			if srvccategory == "total" {
@@ -2283,7 +2334,9 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
+			if srvcCategoryCBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
+			}
 			response.SubCategory.CBUHBB[srvccategory] = obj
 		}
 		var srvcCategoryEBUHBBTotal int
@@ -2293,7 +2346,9 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
+			if srvcCategoryEBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
+			}
 			response.SubCategory.EBUHBB[srvccategory] = obj
 		}
 
@@ -2321,10 +2376,10 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 			}
 			switch v.BusinessUnit {
 			case "GOVERNMENT":
-				if response.BusinessUnit.Consumer == nil {
-					response.BusinessUnit.Consumer = &models.SaleCalculation{}
+				if response.BusinessUnit.Government == nil {
+					response.BusinessUnit.Government = &models.SaleCalculation{}
 				}
-				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
+				response.BusinessUnit.Government.Count = response.BusinessUnit.Government.Count + v.Quantity
 			case "CORPORATE":
 				if response.BusinessUnit.Corporate == nil {
 					response.BusinessUnit.Corporate = &models.SaleCalculation{}
@@ -2392,17 +2447,31 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 		}
 
 		//businesssUnit
-		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
+		if response.BusinessUnit.Government == nil {
+			response.BusinessUnit.Government = &models.SaleCalculation{}
+		}
+		if response.BusinessUnit.Corporate == nil {
+			response.BusinessUnit.Corporate = &models.SaleCalculation{}
+		}
+		if response.BusinessUnit.Consumer == nil {
+			response.BusinessUnit.Consumer = &models.SaleCalculation{}
+		}
+		sum := (float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+			float64(response.BusinessUnit.Consumer.Count))
+		if sum != 0 {
+			response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 / sum
+			response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 / sum
+			response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 / sum
+		}
 
 		//subCategory
+		if response.SubCategory.CBU == nil {
+			response.SubCategory.CBU = make(map[string]interface{})
+		}
+		if response.SubCategory.EBU == nil {
+			response.SubCategory.EBU = make(map[string]interface{})
+		}
+
 		var subCategoryCBUTotal int
 		for subcategory, v := range response.SubCategory.CBU {
 			if subcategory == "total" {
@@ -2410,7 +2479,9 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUTotal)
+			if subCategoryCBUTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUTotal)
+			}
 			response.SubCategory.CBU[subcategory] = obj
 		}
 		var subCategoryEBUTotal int
@@ -2420,7 +2491,9 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUTotal)
+			if subCategoryEBUTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUTotal)
+			}
 			response.SubCategory.EBU[subcategory] = obj
 		}
 
@@ -2705,15 +2778,13 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 		}
 
 		//businesssUnit
-		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
+		sum := (float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+			float64(response.BusinessUnit.Consumer.Count))
+		if sum != 0 {
+			response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 / sum
+			response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 / sum
+			response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 / sum
+		}
 
 		//category
 		response.Category.CBUWFBB.Percentage = 100
@@ -2729,7 +2800,9 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUWFBBTotal)
+			if subCategoryCBUWFBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUWFBBTotal)
+			}
 			response.SubCategory.CBUWFBB[subcategory] = obj
 		}
 		var subCategoryCBUHBBTotal int
@@ -2739,7 +2812,9 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUHBBTotal)
+			if subCategoryCBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUHBBTotal)
+			}
 			response.SubCategory.CBUHBB[subcategory] = obj
 		}
 		var subCategoryEBUWFBBTotal int
@@ -2749,7 +2824,9 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUWFBBTotal)
+			if subCategoryEBUWFBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUWFBBTotal)
+			}
 			response.SubCategory.EBUWFBB[subcategory] = obj
 		}
 		var subCategoryEBUHBBTotal int
@@ -2759,7 +2836,9 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUHBBTotal)
+			if subCategoryEBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUHBBTotal)
+			}
 			response.SubCategory.EBUHBB[subcategory] = obj
 		}
 
@@ -2771,7 +2850,9 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
+			if srvcCategoryCBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
+			}
 			response.ServiceCategory.CBUHBB[srvccategory] = obj
 		}
 		var srvcCategoryEBUHBBTotal int
@@ -2781,7 +2862,9 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
+			if srvcCategoryEBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
+			}
 			response.ServiceCategory.EBUHBB[srvccategory] = obj
 		}
 
@@ -2896,15 +2979,13 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 		}
 
 		//businesssUnit
-		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
+		sum := (float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+			float64(response.BusinessUnit.Consumer.Count))
+		if sum != 0 {
+			response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 / sum
+			response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 / sum
+			response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 / sum
+		}
 
 		//subCategory
 		var subCategoryCBUTotal int
@@ -2914,7 +2995,9 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUTotal)
+			if subCategoryCBUTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUTotal)
+			}
 			response.SubCategory.CBU[subcategory] = obj
 		}
 		var subCategoryEBUTotal int
@@ -2924,7 +3007,9 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUTotal)
+			if subCategoryEBUTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUTotal)
+			}
 			response.SubCategory.EBU[subcategory] = obj
 		}
 
@@ -3207,15 +3292,13 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 		}
 
 		//businesssUnit
-		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
+		sum := (float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+			float64(response.BusinessUnit.Consumer.Count))
+		if sum != 0 {
+			response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 / sum
+			response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 / sum
+			response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 / sum
+		}
 
 		//category
 		response.Category.CBUWFBB.Percentage = 100
@@ -3231,7 +3314,9 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUWFBBTotal)
+			if subCategoryCBUWFBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUWFBBTotal)
+			}
 			response.SubCategory.CBUWFBB[subcategory] = obj
 		}
 		var subCategoryCBUHBBTotal int
@@ -3241,7 +3326,9 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUHBBTotal)
+			if subCategoryCBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUHBBTotal)
+			}
 			response.SubCategory.CBUHBB[subcategory] = obj
 		}
 		var subCategoryEBUWFBBTotal int
@@ -3251,7 +3338,9 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUWFBBTotal)
+			if subCategoryEBUWFBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUWFBBTotal)
+			}
 			response.SubCategory.EBUWFBB[subcategory] = obj
 		}
 		var subCategoryEBUHBBTotal int
@@ -3261,7 +3350,9 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUHBBTotal)
+			if subCategoryEBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUHBBTotal)
+			}
 			response.SubCategory.EBUHBB[subcategory] = obj
 		}
 
@@ -3273,7 +3364,9 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
+			if srvcCategoryCBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
+			}
 			response.ServiceCategory.CBUHBB[srvccategory] = obj
 		}
 		var srvcCategoryEBUHBBTotal int
@@ -3283,7 +3376,9 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
+			if srvcCategoryEBUHBBTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
+			}
 			response.SubCategory.EBUHBB[srvccategory] = obj
 		}
 
@@ -3392,15 +3487,13 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 		}
 
 		//businesssUnit
-		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
-		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
-			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
-				float64(response.BusinessUnit.Consumer.Count))
+		sum := (float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+			float64(response.BusinessUnit.Consumer.Count))
+		if sum != 0 {
+			response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 / sum
+			response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 / sum
+			response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 / sum
+		}
 
 		//subCategory
 		var subCategoryCBUTotal int
@@ -3410,7 +3503,9 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUTotal)
+			if subCategoryCBUTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUTotal)
+			}
 			response.SubCategory.CBU[subcategory] = obj
 		}
 		var subCategoryEBUTotal int
@@ -3420,7 +3515,9 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				continue
 			}
 			obj := v.(*models.SaleCalculation)
-			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUTotal)
+			if subCategoryEBUTotal != 0 {
+				obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUTotal)
+			}
 			response.SubCategory.EBU[subcategory] = obj
 		}
 
