@@ -687,6 +687,118 @@ func (dbConn *DbServiceImpl) FetchVP(quarter, year int) ([]string, *errors.Error
 	return vpArray, nil
 }
 
+// FetchUserSalesCountPerPlan - all active sale transaction of a given user and time period
+func (dbConn *DbServiceImpl) FetchUserSalesCountPerPlan(userID string, isQuarterReport bool, quarter, month, year int) ([]*models.SaleCountRecord, *errors.Error) {
+
+	// logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchActiveUserSalesCountPerPlan start")
+	// defer logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("end", time.Now()).Msg("FetchUFetchActiveUserSalesCountPerPlanserSales done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	var (
+		rows *sql.Rows
+		err  error
+	)
+
+	if isQuarterReport {
+		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, product_group, curr_plan, category, business_unit, subcategory, final_srvc_cat, quantity, line_type, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
+			userID, quarter, year)
+	} else {
+		rows, err = dbConn.DBClient.QueryContext(ctx, "select product_group, curr_plan, category, business_unit, subcategory, final_srvc_cat, quantity, line_type, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3",
+			userID, month, year)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "FetchUserSalesCountPerPlan: userID-" + userID + ", query failed - " + err.Error(),
+		}
+	}
+
+	defer rows.Close()
+
+	var response []*models.SaleCountRecord
+
+	count := 0
+
+	for rows.Next() {
+
+		var (
+			id            int
+			productGroup  string
+			currPlan      string
+			category      string
+			businessUnit  string
+			subCategory   string
+			finalSrvcCat  string
+			quantity      int
+			lineType      string
+			salesDate     time.Time
+			terminateDate time.Time
+		)
+
+		count++
+
+		if err := rows.Scan(&id, &productGroup, &currPlan, &category, &businessUnit, &subCategory, &finalSrvcCat, &quantity, &lineType, &salesDate, &terminateDate); err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    errors.InternalServerError,
+				Details:    "FetchUserSalesCountPerPlan: " + userID + ", scan failed - " + err.Error(),
+			}
+		}
+
+		switch {
+		case strings.Contains(productGroup, "FIXED") || productGroup == constant.HBBCategory:
+			productGroup = constant.HBBCategory
+
+		case strings.Contains(productGroup, "PREPAID") || productGroup == constant.HayyakCategory:
+			productGroup = constant.HayyakCategory
+
+		case strings.Contains(productGroup, "POSTPAID") || productGroup == constant.BaqatiCategory:
+			productGroup = constant.BaqatiCategory
+
+		default:
+			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchUserSalesCountPerPlan: incorrect productGroup")
+		}
+
+		if !terminateDate.IsZero() && terminateDate.Before(salesDate) {
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchUserSalesCountPerPlan: saleDate-terminateDate incorrect")
+			continue
+		}
+
+		expiryDate := salesDate.Add(90 * 24 * time.Hour)
+
+		if !terminateDate.IsZero() && terminateDate.Sub(expiryDate) <= 0 { //Months<3
+			if !strings.Contains(subCategory, "INVOLUNTARY DEACTIVATION") {
+				logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+					Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
+				continue
+			}
+		}
+
+		rcrd := &models.SaleCountRecord{
+			ProductGroup:         productGroup,
+			CurrentPlan:          currPlan,
+			Category:             category,
+			BusinessUnit:         businessUnit,
+			SubCategory:          subCategory,
+			LineType:             lineType,
+			FinalServiceCategory: finalSrvcCat,
+			Quantity:             quantity,
+		}
+
+		response = append(response, rcrd)
+	}
+
+	return response, nil
+}
+
 func (dbConn *DbServiceImpl) FetchUserSaleCount(userID string, isQuarterReport bool, quarter, month, year int) (interface{}, error) {
 
 	// logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSaleCount start")

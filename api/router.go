@@ -101,10 +101,9 @@ func incentiveRoutes(group *gin.RouterGroup) {
 
 	group.POST(constant.UserReportPath, user.GetUserReport)
 	group.POST(constant.UserSalesCountPath, user.GetUserSaleCount)
+	group.POST(constant.UserPlanPerCategoryPath, user.GetUserPlanCategory)
 
 	group.GET(constant.FetchNotificationPath, user.FetchNotification)
-
-	group.POST(constant.LoginInfoPath, user.GetUserLoginDetails)
 
 	group.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
@@ -177,6 +176,9 @@ func incentiveAdminRoutes(group *gin.RouterGroup) {
 	group.POST(constant.UpsertNotificationPath, admin.UpsertNotification)
 	group.GET(constant.FetchNotificationPath, admin.FetchNotification)
 	group.GET(constant.DeleteNotificationPath, admin.DeleteNotification)
+
+	group.GET(constant.LoginChartPath, admin.GetUserLoginCount)
+	group.GET(constant.LoginDetailsPath, admin.GetUserLoginDetails)
 
 	group.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

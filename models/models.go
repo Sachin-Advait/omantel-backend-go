@@ -140,6 +140,17 @@ type SaleTransaction struct {
 	SaleRecords map[string][]*SaleRecord
 }
 
+type SaleCountRecord struct {
+	ProductGroup         string
+	CurrentPlan          string
+	Category             string
+	BusinessUnit         string
+	SubCategory          string
+	LineType             string
+	FinalServiceCategory string
+	Quantity             int
+}
+
 type IndividualIncentive struct {
 	Payout      float64 `json:"payout"`
 	ExtraPayout float64 `json:"extra_payout"`
@@ -356,9 +367,45 @@ type CaptchRequest struct {
 	Token   string `json:"token"`
 }
 
-type UserLoginDetails struct {
-	Count     int         `json:"count"`
-	LoginTime []time.Time `json:"loginTime"`
+type UserLoginCountRequest struct {
+	Region string    `json:"region"`
+	From   time.Time `json:"from"`
+	To     time.Time `json:"to"`
+}
+
+type UserLoginCountResponse struct {
+	TotalUsers         int     `json:"totalUser"`
+	LoginCount         int     `json:"loginCount"`
+	NonLoginCount      int     `json:"nonLoginCount"`
+	LoginPercentage    float64 `json:"loginPercentage"`
+	NonLoginPercentage float64 `json:"nonLoginPercentage"`
+}
+
+type UserLoginDetailsRequest struct {
+	Page   int       `json:"page"`
+	Size   int       `json:"size"`
+	Region string    `json:"region"`
+	From   time.Time `json:"from"`
+	To     time.Time `json:"to"`
+}
+
+type UserLoginDetailsResponse struct {
+	NextPage int           `json:"nextPage"`
+	Size     int           `json:"size"`
+	Users    []*LoginUsers `json:"users"`
+}
+
+type LoginUsers struct {
+	StaffId            string    `json:"userId"`
+	StaffName          string    `json:"staff_name"`
+	StaffMobileNo      string    `json:"staff_mobile_no"`
+	StaffPosition      string    `json:"staff_position"`
+	StaffOutlet        string    `json:"staff_outlet"`
+	StaffRegion        string    `json:"staff_region"`
+	SuperVisorId       string    `json:"supervisor_id"`
+	SuperVisorName     string    `json:"supervisor_name"`
+	SuperVisorPosition string    `json:"supervisor_position"`
+	LoginTime          time.Time `json:"loginTime"`
 }
 
 var SalesTrgt SaleTarget

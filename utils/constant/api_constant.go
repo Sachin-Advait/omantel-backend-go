@@ -60,6 +60,7 @@ const (
 	UserTargetPath             = "/usr_target"
 	UserSalesCountPath         = "/usr_sales_count"
 	UserSalesPerPlanPath       = "/usr_sales_per_plan"
+	UserPlanPerCategoryPath    = "/user_plan_category"
 	OutletSalesCountPath       = "/outlet_sales_count"
 	OutletSalesTargetPath      = "/outlet_sales_target"
 	RegionSalesCountPath       = "/region_sales_count"
@@ -69,7 +70,6 @@ const (
 	RenewTokenPath             = "/renew_token"
 	GetUserPath                = "/get_user"
 	UserLogoutPath             = "/logout"
-	LoginInfoPath              = "/login_info"
 
 	CaptchaVerificationPath = "/captcha_verify"
 
@@ -108,4 +108,7 @@ const (
 	UpsertNotificationPath = "/upsert_notification"
 	FetchNotificationPath  = "/fetch_notification"
 	DeleteNotificationPath = "/delete_notification"
+
+	LoginChartPath   = "/login_chart"
+	LoginDetailsPath = "/login_details"
 )

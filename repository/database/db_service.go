@@ -59,11 +59,15 @@ type DbService interface {
 
 	FetchUserBasicDetails(userID string, quarter, year int, args ...bool) (*models.UserBasicDetailsDB, *errors.Error)
 	FetchUserIdFromOutletAndRegion(region, outlet string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error)
+	FetchDistinctUserCountFromOutletAndRegion(region, outlet string, quarter, year int) (int, *errors.Error)
 	FetchUserDetails(userID string, quarter, year int) (*models.UserBasicDetailsDB, *errors.Error)
 	FetchOTPValidity(userID string) (*models.OtpModel, *errors.Error)
 	InsertStaffOTP(update bool, otpModel *models.OtpModel) *errors.Error
 	FetchTotalNonManagerialEmployees(region, outlet string, quarter, year int) (int, *errors.Error)
+
 	InsertLoginDetails(login *models.UserLoginDetailsDB) *errors.Error
-	FetchLoginDetails(userID string, isQuarterReport bool, quarter, month, year int) ([]time.Time, *errors.Error)
+	FetchLoginCount(region string, start, end time.Time) (int, *errors.Error)
+	FetchLoginDetails(page int, size int, region string, start, end time.Time) ([]*models.LoginUsers, *errors.Error)
+	FetchUserSalesCountPerPlan(userID string, isQuarterReport bool, quarter, month, year int) ([]*models.SaleCountRecord, *errors.Error)
 	FetchUserSaleCount(userID string, isQuarterReport bool, quarter, month, year int) (interface{}, error)
 }

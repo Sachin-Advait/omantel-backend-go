@@ -1084,7 +1084,7 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 
 		agentReport, err := impl.CacheService.GetUserReport(eachAgent.UserId, isQuarterReport, month, quarter, year)
 
-		if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(report.ModifiedAt)) {
+		if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(agentReport.ModifiedAt)) {
 			ind, resp, err := impl.updateAgentUserReport(ctx, eachAgent, isQuarterReport, quarter, month, year)
 			if err != nil {
 				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMReport : agent report failed")
@@ -1451,7 +1451,7 @@ func (impl *UserImpl) updateManagerReport(ctx *gin.Context, mngr *models.UserBas
 
 		omReport, err := impl.CacheService.GetUserReport(om.UserId, isQuarterReport, month, quarter, year)
 
-		if !(err == nil && omReport != nil && objecthelper.IsCurrentDay(report.ModifiedAt)) {
+		if !(err == nil && omReport != nil && objecthelper.IsCurrentDay(omReport.ModifiedAt)) {
 			resp, err := impl.updateOutletManagerReport(ctx, om, isQuarterReport, quarter, month, year)
 			if err != nil {
 				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("om", om.UserId).Err(err).Msg("MngrReport : om report failed")
@@ -1941,4 +1941,1880 @@ func (impl *UserImpl) updateRegionReport(ctx *gin.Context, regionName string, is
 	}(regionReport)
 
 	return regionReport, nil
+}
+
+func (impl *UserImpl) updateAgentUserSaleCountPerPlanReport(ctx *gin.Context, user *models.UserBasicDetailsDB, product string, isQuarterReport bool,
+	quarter, month, year int) (interface{}, *errors.Error) {
+
+	if !isQuarterReport {
+		quarter = getQuarterFromMonth(month)
+	}
+
+	if user == nil || user.UserId == "" || user.ManagerId == "" || user.ManagerPosition == "" {
+		if user == nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", "").Str("region", "").Str("outlet", "").Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Msg("ASaleCountPerPlanReport : nil info")
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    "INVALID AGENT DETAILS",
+				Details:    "updateAgentUserSaleCountPerPlanReport: invalid agent details",
+			}
+		}
+
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("ASaleCountPerPlanReport : invalid info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    user.UserId + ": INVALID AGENT DETAILS",
+			Details:    "updateAgentUserSaleCountPerPlanReport: invalid agent details - userId:" + user.UserId,
+		}
+	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
+		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("ASaleCountPerPlanReport : info")
+
+	if !(user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb) {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("position", user.Position).Msg("ASaleCountPerPlanReport : invalid position")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    user.UserId + ": INCORRECT AGENT POSITION - " + user.Position,
+			Details:    "ASaleCountPerPlanReport: incorrect agent position - userId:" + user.UserId + " position:" + user.Position,
+		}
+	}
+
+	if user.Region == "" || user.Outlet == "" {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).
+			Msg("ASaleCountPerPlanReport : invalid outlet info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    user.UserId + ": AGENT BLANK REGION OR OUTLET - region:" + user.Region + " outlet:" + user.Outlet,
+			Details:    "ASaleCountPerPlanReport: agent blank region or outlet - userId: " + user.UserId + " region:" + user.Region + " outlet:" + user.Outlet,
+		}
+	}
+
+	allUserSales, err := impl.DbService.FetchUserSalesCountPerPlan(user.UserId, isQuarterReport, quarter, month, year)
+	if err != nil {
+		err.Details = fmt.Sprintf("updateAgentUserSaleCountPerPlanReport: %v", err.Details)
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(err).Msg("ASaleCountPerPlanReport : fetch sales failed")
+		return nil, err
+	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("saleGroupCount", len(allUserSales)).
+		Msg("ASaleCountPerPlanReport : total agents and salesGroup")
+
+	if product == constant.HBBCategory {
+		response := models.HbbUserSalesCountPerPlanDB{
+			Product:    constant.HBBCategory,
+			CreatedAt:  time.Now(),
+			ModifiedAt: time.Now(),
+		}
+		for _, v := range allUserSales {
+			if v.ProductGroup != constant.HBBCategory {
+				continue
+			}
+			switch v.BusinessUnit {
+			case "GOVERNMENT":
+				if response.BusinessUnit.Consumer == nil {
+					response.BusinessUnit.Consumer = &models.SaleCalculation{}
+				}
+				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
+			case "CORPORATE":
+				if response.BusinessUnit.Corporate == nil {
+					response.BusinessUnit.Corporate = &models.SaleCalculation{}
+				}
+				response.BusinessUnit.Corporate.Count = response.BusinessUnit.Corporate.Count + v.Quantity
+
+				if v.LineType == "FIXED WFBB SERVICE" {
+					//category
+					if response.Category.CBUWFBB == nil {
+						response.Category.CBUWFBB = &models.SaleCalculation{}
+					}
+					response.Category.CBUWFBB.Count = response.Category.CBUWFBB.Count + v.Quantity
+
+					//subcategory
+					if response.SubCategory.CBUWFBB == nil {
+						response.SubCategory.CBUWFBB = make(map[string]interface{})
+					}
+					if response.SubCategory.CBUWFBB["total"] == nil {
+						response.SubCategory.CBUWFBB["total"] = 0
+					}
+					total := response.SubCategory.CBUWFBB["total"].(int)
+					response.SubCategory.CBUWFBB["total"] = total + v.Quantity
+					if response.SubCategory.CBUWFBB[v.SubCategory] == nil {
+						response.SubCategory.CBUWFBB[v.SubCategory] = &models.SaleCalculation{}
+					}
+					subcategory := response.SubCategory.CBUWFBB[v.SubCategory].(*models.SaleCalculation)
+					subcategory.Count = subcategory.Count + v.Quantity
+					response.SubCategory.CBUWFBB[v.SubCategory] = subcategory
+
+					//serviceCategory
+					if response.ServiceCategory.CBUWFBB == nil {
+						response.ServiceCategory.CBUWFBB = make(map[string]interface{})
+					}
+					if response.ServiceCategory.CBUWFBB["total"] == nil {
+						response.ServiceCategory.CBUWFBB["total"] = 0
+					}
+					total = response.ServiceCategory.CBUWFBB["total"].(int)
+					response.ServiceCategory.CBUWFBB["total"] = total + v.Quantity
+
+					//plans
+					if response.Plans.CBUWFBB == nil {
+						response.Plans.CBUWFBB = make(map[string]int)
+					}
+					total = response.Plans.CBUWFBB["total"]
+					response.Plans.CBUWFBB["total"] = total + v.Quantity
+					total = response.Plans.CBUWFBB[v.CurrentPlan]
+					response.Plans.CBUWFBB[v.CurrentPlan] = total + v.Quantity
+				}
+				if v.LineType == "ILL SERVICE" || v.LineType == "MPLS SERVICE" || v.LineType == "P2P LEASED LINE SERVICE" || v.LineType == "PSTN VOICE SERVICE" {
+					//category
+					if response.Category.CBUHBB == nil {
+						response.Category.CBUHBB = &models.SaleCalculation{}
+					}
+					response.Category.CBUHBB.Count = response.Category.CBUHBB.Count + v.Quantity
+
+					//subcategory
+					if response.SubCategory.CBUHBB == nil {
+						response.SubCategory.CBUHBB = make(map[string]interface{})
+					}
+					if response.SubCategory.CBUHBB["total"] == nil {
+						response.SubCategory.CBUHBB["total"] = 0
+					}
+					total := response.SubCategory.CBUHBB["total"].(int)
+					response.SubCategory.CBUHBB["total"] = total + v.Quantity
+					if response.SubCategory.CBUHBB[v.SubCategory] == nil {
+						response.SubCategory.CBUHBB[v.SubCategory] = &models.SaleCalculation{}
+					}
+					subcategory := response.SubCategory.CBUHBB[v.SubCategory].(*models.SaleCalculation)
+					response.SubCategory.CBUHBB[v.SubCategory] = subcategory.Count + v.Quantity
+
+					//serviceCategory
+					if response.ServiceCategory.CBUHBB == nil {
+						response.ServiceCategory.CBUHBB = make(map[string]interface{})
+					}
+					if response.ServiceCategory.CBUHBB["total"] == nil {
+						response.ServiceCategory.CBUHBB["total"] = 0
+					}
+					total = response.ServiceCategory.CBUHBB["total"].(int)
+					response.ServiceCategory.CBUHBB["total"] = total + v.Quantity
+					if response.ServiceCategory.CBUHBB[v.FinalServiceCategory] == nil {
+						response.ServiceCategory.CBUHBB[v.FinalServiceCategory] = &models.SaleCalculation{}
+					}
+					srvcCat := response.ServiceCategory.CBUHBB[v.FinalServiceCategory].(*models.SaleCalculation)
+					srvcCat.Count = srvcCat.Count + v.Quantity
+					response.ServiceCategory.CBUHBB[v.FinalServiceCategory] = srvcCat
+
+					//plans
+					if response.Plans.CBUHBB == nil {
+						response.Plans.CBUHBB = make(map[string]int)
+					}
+					count := response.Plans.CBUHBB["total"]
+					response.Plans.CBUHBB["total"] = count + v.Quantity
+					count = response.Plans.CBUHBB[v.CurrentPlan]
+					response.Plans.CBUHBB[v.CurrentPlan] = count + v.Quantity
+				}
+			case "CONSUMER":
+				if response.BusinessUnit.Consumer == nil {
+					response.BusinessUnit.Consumer = &models.SaleCalculation{}
+				}
+				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
+
+				if v.LineType == "FIXED WFBB SERVICE" {
+					//category
+					if response.Category.EBUWFBB == nil {
+						response.Category.EBUWFBB = &models.SaleCalculation{}
+					}
+					response.Category.EBUWFBB.Count = response.Category.EBUWFBB.Count + v.Quantity
+
+					//subcategory
+					if response.SubCategory.EBUWFBB == nil {
+						response.SubCategory.EBUWFBB = make(map[string]interface{})
+					}
+					if response.SubCategory.EBUWFBB["total"] == nil {
+						response.SubCategory.EBUWFBB["total"] = 0
+					}
+					total := response.SubCategory.EBUWFBB["total"].(int)
+					response.SubCategory.EBUWFBB["total"] = total + v.Quantity
+					if response.SubCategory.EBUWFBB[v.SubCategory] == nil {
+						response.SubCategory.EBUWFBB[v.SubCategory] = &models.SaleCalculation{}
+					}
+					subcategory := response.SubCategory.EBUWFBB[v.SubCategory].(*models.SaleCalculation)
+					subcategory.Count = subcategory.Count + v.Quantity
+					response.SubCategory.EBUWFBB[v.SubCategory] = subcategory
+
+					//serviceCategory
+					if response.ServiceCategory.EBUWFBB == nil {
+						response.ServiceCategory.EBUWFBB = make(map[string]interface{})
+					}
+					if response.ServiceCategory.EBUWFBB["total"] == nil {
+						response.ServiceCategory.EBUWFBB["total"] = 0
+					}
+					total = response.ServiceCategory.EBUWFBB["total"].(int)
+					response.ServiceCategory.EBUWFBB["total"] = total + v.Quantity
+
+					//plans
+					if response.Plans.EBUWFBB == nil {
+						response.Plans.EBUWFBB = make(map[string]int)
+					}
+					total = response.Plans.EBUWFBB["total"]
+					response.Plans.EBUWFBB["total"] = total + v.Quantity
+					total = response.Plans.EBUWFBB[v.CurrentPlan]
+					response.Plans.EBUWFBB[v.CurrentPlan] = total + v.Quantity
+				}
+				if v.LineType == "ILL SERVICE" || v.LineType == "MPLS SERVICE" || v.LineType == "P2P LEASED LINE SERVICE" || v.LineType == "PSTN VOICE SERVICE" {
+					//category
+					if response.Category.EBUHBB == nil {
+						response.Category.EBUHBB = &models.SaleCalculation{}
+					}
+					response.Category.EBUHBB.Count = response.Category.EBUHBB.Count + v.Quantity
+
+					//subcategory
+					if response.SubCategory.EBUHBB == nil {
+						response.SubCategory.EBUHBB = make(map[string]interface{})
+					}
+					if response.SubCategory.EBUHBB["total"] == nil {
+						response.SubCategory.EBUHBB["total"] = 0
+					}
+					total := response.SubCategory.EBUHBB["total"].(int)
+					response.SubCategory.EBUHBB["total"] = total + v.Quantity
+					if response.SubCategory.EBUHBB[v.SubCategory] == nil {
+						response.SubCategory.EBUHBB[v.SubCategory] = &models.SaleCalculation{}
+					}
+					subcategory := response.SubCategory.EBUHBB[v.SubCategory].(*models.SaleCalculation)
+					subcategory.Count = subcategory.Count + v.Quantity
+					response.SubCategory.EBUHBB[v.SubCategory] = subcategory
+
+					//serviceCategory
+					if response.ServiceCategory.EBUHBB == nil {
+						response.ServiceCategory.EBUHBB = make(map[string]interface{})
+					}
+					if response.ServiceCategory.EBUHBB["total"] == nil {
+						response.ServiceCategory.EBUHBB["total"] = 0
+					}
+					total = response.ServiceCategory.EBUHBB["total"].(int)
+					response.ServiceCategory.EBUHBB["total"] = total + v.Quantity
+					if response.ServiceCategory.EBUHBB[v.FinalServiceCategory] == nil {
+						response.ServiceCategory.EBUHBB[v.FinalServiceCategory] = &models.SaleCalculation{}
+					}
+					srvcCat := response.ServiceCategory.EBUHBB[v.FinalServiceCategory].(*models.SaleCalculation)
+					srvcCat.Count = srvcCat.Count + v.Quantity
+					response.ServiceCategory.EBUHBB[v.FinalServiceCategory] = srvcCat
+
+					//plans
+					if response.Plans.EBUHBB == nil {
+						response.Plans.EBUHBB = make(map[string]int)
+					}
+					count := response.Plans.EBUHBB["total"]
+					response.Plans.EBUHBB["total"] = count + v.Quantity
+					count = response.Plans.EBUHBB[v.CurrentPlan]
+					response.Plans.EBUHBB[v.CurrentPlan] = count + v.Quantity
+				}
+			default:
+			}
+		}
+
+		//businesssUnit
+		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+
+		//category
+		response.Category.CBUWFBB.Percentage = 100
+		response.Category.CBUHBB.Percentage = 100
+		response.Category.EBUWFBB.Percentage = 100
+		response.Category.EBUHBB.Percentage = 100
+
+		//subCategory
+		var subCategoryCBUWFBBTotal int
+		for subcategory, v := range response.SubCategory.CBUWFBB {
+			if subcategory == "total" {
+				subCategoryCBUWFBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUWFBBTotal)
+			response.SubCategory.CBUWFBB[subcategory] = obj
+		}
+		var subCategoryCBUHBBTotal int
+		for subcategory, v := range response.SubCategory.CBUHBB {
+			if subcategory == "total" {
+				subCategoryCBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUHBBTotal)
+			response.SubCategory.CBUHBB[subcategory] = obj
+		}
+		var subCategoryEBUWFBBTotal int
+		for subcategory, v := range response.SubCategory.EBUWFBB {
+			if subcategory == "total" {
+				subCategoryEBUWFBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUWFBBTotal)
+			response.SubCategory.EBUWFBB[subcategory] = obj
+		}
+		var subCategoryEBUHBBTotal int
+		for subcategory, v := range response.SubCategory.EBUHBB {
+			if subcategory == "total" {
+				subCategoryEBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUHBBTotal)
+			response.SubCategory.EBUHBB[subcategory] = obj
+		}
+
+		//serviceCategory
+		var srvcCategoryCBUHBBTotal int
+		for srvccategory, v := range response.ServiceCategory.CBUHBB {
+			if srvccategory == "total" {
+				srvcCategoryCBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
+			response.SubCategory.CBUHBB[srvccategory] = obj
+		}
+		var srvcCategoryEBUHBBTotal int
+		for srvccategory, v := range response.ServiceCategory.EBUHBB {
+			if srvccategory == "total" {
+				srvcCategoryEBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
+			response.SubCategory.EBUHBB[srvccategory] = obj
+		}
+
+		go func(report *models.HbbUserSalesCountPerPlanDB) {
+			err = impl.CacheService.InsertUserSaleCountPerPlanReport(user.UserId, report.Product, isQuarterReport, month, quarter, year, report,
+				impl.Config.ReportCacheTTL)
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
+					Msg("ASaleCountPerPlanReport : force report update")
+			} else {
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("product", product).Msg("ASaleCountPerPlanReport : cache update success")
+			}
+		}(&response)
+
+		return response, nil
+	} else {
+		response := models.UserSalesCountPerPlanDB{
+			Product:    product,
+			CreatedAt:  time.Now(),
+			ModifiedAt: time.Now(),
+		}
+		for _, v := range allUserSales {
+			if v.ProductGroup != product {
+				continue
+			}
+			switch v.BusinessUnit {
+			case "GOVERNMENT":
+				if response.BusinessUnit.Consumer == nil {
+					response.BusinessUnit.Consumer = &models.SaleCalculation{}
+				}
+				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
+			case "CORPORATE":
+				if response.BusinessUnit.Corporate == nil {
+					response.BusinessUnit.Corporate = &models.SaleCalculation{}
+				}
+				response.BusinessUnit.Corporate.Count = response.BusinessUnit.Corporate.Count + v.Quantity
+
+				//subcategory
+				if response.SubCategory.CBU == nil {
+					response.SubCategory.CBU = make(map[string]interface{})
+				}
+				if response.SubCategory.CBU["total"] == nil {
+					response.SubCategory.CBU["total"] = 0
+				}
+				total := response.SubCategory.CBU["total"].(int)
+				total = total + v.Quantity
+				response.SubCategory.CBU["total"] = total
+				if response.SubCategory.CBU[v.SubCategory] == nil {
+					response.SubCategory.CBU[v.SubCategory] = &models.SaleCalculation{}
+				}
+				subcategory := response.SubCategory.CBU[v.SubCategory].(*models.SaleCalculation)
+				subcategory.Count = subcategory.Count + v.Quantity
+				response.SubCategory.CBU[v.SubCategory] = subcategory
+
+				//plans
+				if response.Plans.CBU == nil {
+					response.Plans.CBU = make(map[string]int)
+				}
+				total = response.Plans.CBU["total"]
+				response.Plans.CBU["total"] = total + v.Quantity
+				total = response.Plans.CBU[v.CurrentPlan]
+				response.Plans.CBU[v.CurrentPlan] = total + v.Quantity
+			case "CONSUMER":
+				if response.BusinessUnit.Consumer == nil {
+					response.BusinessUnit.Consumer = &models.SaleCalculation{}
+				}
+				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
+
+				//subcategory
+				if response.SubCategory.EBU == nil {
+					response.SubCategory.EBU = make(map[string]interface{})
+				}
+				if response.SubCategory.EBU["total"] == nil {
+					response.SubCategory.EBU["total"] = 0
+				}
+				total := response.SubCategory.EBU["total"].(int)
+				total = total + v.Quantity
+				response.SubCategory.EBU["total"] = total
+				if response.SubCategory.EBU[v.SubCategory] == nil {
+					response.SubCategory.EBU[v.SubCategory] = &models.SaleCalculation{}
+				}
+				subcategory := response.SubCategory.EBU[v.SubCategory].(*models.SaleCalculation)
+				subcategory.Count = subcategory.Count + v.Quantity
+				response.SubCategory.EBU[v.SubCategory] = subcategory
+
+				//plans
+				if response.Plans.EBU == nil {
+					response.Plans.EBU = make(map[string]int)
+				}
+				total = response.Plans.EBU["total"]
+				response.Plans.EBU["total"] = total + v.Quantity
+				total = response.Plans.EBU[v.CurrentPlan]
+				response.Plans.EBU[v.CurrentPlan] = total + v.Quantity
+			default:
+			}
+		}
+
+		//businesssUnit
+		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+
+		//subCategory
+		var subCategoryCBUTotal int
+		for subcategory, v := range response.SubCategory.CBU {
+			if subcategory == "total" {
+				subCategoryCBUTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUTotal)
+			response.SubCategory.CBU[subcategory] = obj
+		}
+		var subCategoryEBUTotal int
+		for subcategory, v := range response.SubCategory.EBU {
+			if subcategory == "total" {
+				subCategoryEBUTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUTotal)
+			response.SubCategory.EBU[subcategory] = obj
+		}
+
+		go func(report *models.UserSalesCountPerPlanDB) {
+			err = impl.CacheService.InsertUserSaleCountPerPlanReport(user.UserId, report.Product, isQuarterReport, month, quarter, year, report,
+				impl.Config.ReportCacheTTL)
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
+					Msg("ASaleCountPerPlanReport : force report update")
+			} else {
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("product", product).Msg("ASaleCountPerPlanReport : cache update success")
+			}
+		}(&response)
+
+		return response, nil
+	}
+}
+
+func (impl *UserImpl) updateOutletManagerUserSaleCountPerPlanReport(ctx *gin.Context, omngr *models.UserBasicDetailsDB, product string, isQuarterReport bool,
+	quarter, month, year int) (interface{}, *errors.Error) {
+
+	if !isQuarterReport {
+		quarter = getQuarterFromMonth(month)
+	}
+
+	if omngr == nil || omngr.UserId == "" || omngr.ManagerId == "" || omngr.ManagerPosition == "" {
+
+		if omngr == nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", "").Str("region", "").Str("outlet", "").Bool("isQuarter", isQuarterReport).Int("quarter", quarter).
+				Int("month", month).Int("year", year).Msg("OMSaleCountPerPlanReport : nil info")
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    "INVALID OUTLET MANAGER DETAILS",
+				Details:    "updateOMUserSaleCountPerPlanReport: invalid omngr details",
+			}
+		}
+
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("OMSaleCountPerPlanReport : invalid info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    omngr.UserId + ": INVALID OUTLET MANAGER DETAILS",
+			Details:    "updateOMUserSaleCountPerPlanReport: invalid omngr details - userId:" + omngr.UserId,
+		}
+	}
+
+	if omngr.Position != constant.OutletManagerAbb { //!(omngr.Position == constant.OutletManager || omngr.Position == constant.TeamLeader)
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("position", omngr.Position).Msg("OMSaleCountPerPlanReport : invalid position")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    omngr.UserId + ": INCORRECT OUTLET MANAGER POSITION - " + omngr.Position,
+			Details:    "updateOMUserSaleCountPerPlanReport: incorrect omngr position - userId:" + omngr.UserId + " position:" + omngr.Position,
+		}
+	}
+
+	if omngr.Region == "" || omngr.Outlet == "" {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Msg("OMSaleCountPerPlanReport : invalid outlet info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    omngr.UserId + ": AGENT BLANK REGION OR OUTLET - region:" + omngr.Region + " outlet:" + omngr.Outlet,
+			Details:    "updateOMUserSaleCountPerPlanReport: agent blank region or outlet - userId: " + omngr.UserId + " region:" + omngr.Region + " outlet:" + omngr.Outlet,
+		}
+	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
+		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("OMSaleCountPerPlanReport : info")
+
+	userAgents, err := impl.DbService.FetchAllAgentsUserOfOM(omngr.UserId, quarter, year)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Err(errors.New(err.Details.(string))).Msg("OMSaleCountPerPlanReport : fetch agents failed")
+		return nil, err
+	}
+
+	if product == constant.HBBCategory {
+		response := &models.HbbUserSalesCountPerPlanDB{
+			Product:    product,
+			CreatedAt:  time.Now(),
+			ModifiedAt: time.Now(),
+		}
+		if len(userAgents) == 0 {
+			logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Msg("OMSaleCountPerPlanReport : zero agents")
+			return response, nil
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("agentCount", len(userAgents)).Msg("OMSaleCountPerPlanReport : total agents")
+		}
+		for _, eachAgent := range userAgents {
+			agentReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
+			if !(err == nil && agentReport != nil) {
+				userSaleCount, _ := agentReport.(*models.HbbUserSalesCountPerPlanDB)
+				if !objecthelper.IsCurrentDay(userSaleCount.ModifiedAt) {
+					resp, err := impl.updateAgentUserSaleCountPerPlanReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+					if err != nil {
+						logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMSaleCountPerPlanReport : agent report failed")
+						continue
+					}
+					rawReport, _ := json.Marshal(resp)
+					logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("OMSaleCountPerPlanReport : agent log")
+					agentReport = resp
+				}
+			}
+			if agentReport == nil {
+				continue
+			}
+			userSaleCount := agentReport.(*models.HbbUserSalesCountPerPlanDB)
+
+			//businessUnit
+			if response.BusinessUnit.Government == nil {
+				response.BusinessUnit.Government = &models.SaleCalculation{}
+			}
+			if response.BusinessUnit.Corporate == nil {
+				response.BusinessUnit.Corporate = &models.SaleCalculation{}
+			}
+			if response.BusinessUnit.Consumer == nil {
+				response.BusinessUnit.Consumer = &models.SaleCalculation{}
+			}
+			response.BusinessUnit.Government.Count += userSaleCount.BusinessUnit.Government.Count
+			response.BusinessUnit.Corporate.Count += userSaleCount.BusinessUnit.Corporate.Count
+			response.BusinessUnit.Consumer.Count += userSaleCount.BusinessUnit.Consumer.Count
+
+			//category
+			if response.Category.CBUWFBB == nil {
+				response.Category.CBUWFBB = &models.SaleCalculation{}
+			}
+			if response.Category.CBUHBB == nil {
+				response.Category.CBUHBB = &models.SaleCalculation{}
+			}
+			if response.Category.EBUWFBB == nil {
+				response.Category.EBUWFBB = &models.SaleCalculation{}
+			}
+			if response.Category.EBUHBB == nil {
+				response.Category.EBUHBB = &models.SaleCalculation{}
+			}
+			response.Category.CBUWFBB.Count += userSaleCount.Category.CBUWFBB.Count
+			response.Category.CBUHBB.Count += userSaleCount.Category.CBUHBB.Count
+			response.Category.EBUWFBB.Count += userSaleCount.Category.EBUWFBB.Count
+			response.Category.EBUHBB.Count += userSaleCount.Category.EBUHBB.Count
+
+			//subCategory
+			for subcategory, val := range userSaleCount.SubCategory.CBUWFBB {
+				if subcategory == "total" {
+					if response.SubCategory.CBUWFBB["total"] == nil {
+						response.SubCategory.CBUWFBB["total"] = 0
+					}
+					response.SubCategory.CBUWFBB["total"] = val.(int) + userSaleCount.SubCategory.CBUWFBB["total"].(int)
+					continue
+				}
+				if response.SubCategory.CBUWFBB[subcategory] == nil {
+					response.SubCategory.CBUWFBB[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.CBUWFBB[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.CBUWFBB[subcategory] = reportSubCat
+			}
+			for subcategory, val := range userSaleCount.SubCategory.CBUHBB {
+				if subcategory == "total" {
+					if response.SubCategory.CBUHBB["total"] == nil {
+						response.SubCategory.CBUHBB["total"] = 0
+					}
+					response.SubCategory.CBUHBB["total"] = val.(int) + userSaleCount.SubCategory.CBUHBB["total"].(int)
+					continue
+				}
+				if response.SubCategory.CBUHBB[subcategory] == nil {
+					response.SubCategory.CBUHBB[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.CBUHBB[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.CBUHBB[subcategory] = reportSubCat
+			}
+			for subcategory, val := range userSaleCount.SubCategory.EBUWFBB {
+				if subcategory == "total" {
+					if response.SubCategory.EBUWFBB["total"] == nil {
+						response.SubCategory.EBUWFBB["total"] = 0
+					}
+					response.SubCategory.EBUWFBB["total"] = val.(int) + userSaleCount.SubCategory.EBUWFBB["total"].(int)
+					continue
+				}
+				if response.SubCategory.EBUWFBB[subcategory] == nil {
+					response.SubCategory.EBUWFBB[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.EBUWFBB[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.EBUWFBB[subcategory] = reportSubCat
+			}
+			for subcategory, val := range userSaleCount.SubCategory.EBUHBB {
+				if subcategory == "total" {
+					if response.SubCategory.EBUHBB["total"] == nil {
+						response.SubCategory.EBUHBB["total"] = 0
+					}
+					response.SubCategory.EBUHBB["total"] = val.(int) + userSaleCount.SubCategory.EBUHBB["total"].(int)
+					continue
+				}
+				if response.SubCategory.EBUHBB[subcategory] == nil {
+					response.SubCategory.EBUHBB[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.EBUHBB[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.EBUHBB[subcategory] = reportSubCat
+			}
+
+			//serviceCategory
+			for srvccategory, val := range userSaleCount.ServiceCategory.CBUWFBB {
+				if srvccategory == "total" {
+					if response.ServiceCategory.CBUWFBB["total"] == nil {
+						response.ServiceCategory.CBUWFBB["total"] = 0
+					}
+					response.ServiceCategory.CBUWFBB["total"] = val.(int) + userSaleCount.ServiceCategory.CBUWFBB["total"].(int)
+				}
+			}
+			for srvccategory, val := range userSaleCount.ServiceCategory.CBUHBB {
+				if srvccategory == "total" {
+					if response.ServiceCategory.CBUHBB["total"] == nil {
+						response.ServiceCategory.CBUHBB["total"] = 0
+					}
+					response.ServiceCategory.CBUHBB["total"] = val.(int) + userSaleCount.ServiceCategory.CBUHBB["total"].(int)
+					continue
+				}
+				if response.ServiceCategory.CBUHBB[srvccategory] == nil {
+					response.ServiceCategory.CBUHBB[srvccategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.ServiceCategory.CBUHBB[srvccategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.ServiceCategory.CBUHBB[srvccategory] = reportSubCat
+			}
+			for srvccategory, val := range userSaleCount.ServiceCategory.EBUWFBB {
+				if srvccategory == "total" {
+					if response.ServiceCategory.EBUWFBB["total"] == nil {
+						response.ServiceCategory.EBUWFBB["total"] = 0
+					}
+					response.ServiceCategory.EBUWFBB["total"] = val.(int) + userSaleCount.ServiceCategory.EBUWFBB["total"].(int)
+				}
+			}
+			for srvccategory, val := range userSaleCount.ServiceCategory.EBUHBB {
+				if srvccategory == "total" {
+					if response.ServiceCategory.EBUHBB["total"] == nil {
+						response.ServiceCategory.EBUHBB["total"] = 0
+					}
+					response.ServiceCategory.EBUHBB["total"] = val.(int) + userSaleCount.ServiceCategory.EBUHBB["total"].(int)
+					continue
+				}
+				if response.ServiceCategory.EBUHBB[srvccategory] == nil {
+					response.ServiceCategory.EBUHBB[srvccategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.ServiceCategory.EBUHBB[srvccategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.ServiceCategory.EBUHBB[srvccategory] = reportSubCat
+			}
+
+			//plans
+			if userSaleCount.Plans.CBUWFBB == nil {
+				userSaleCount.Plans.CBUWFBB = make(map[string]int)
+			}
+			if userSaleCount.Plans.CBUHBB == nil {
+				userSaleCount.Plans.CBUHBB = make(map[string]int)
+			}
+			if userSaleCount.Plans.EBUWFBB == nil {
+				userSaleCount.Plans.EBUWFBB = make(map[string]int)
+			}
+			if userSaleCount.Plans.EBUHBB == nil {
+				userSaleCount.Plans.EBUHBB = make(map[string]int)
+			}
+			for plan, count := range userSaleCount.Plans.CBUWFBB {
+				response.Plans.CBUWFBB[plan] += count
+			}
+			for plan, count := range userSaleCount.Plans.CBUHBB {
+				response.Plans.CBUHBB[plan] += count
+			}
+			for plan, count := range userSaleCount.Plans.EBUWFBB {
+				response.Plans.EBUWFBB[plan] += count
+			}
+			for plan, count := range userSaleCount.Plans.EBUHBB {
+				response.Plans.EBUHBB[plan] += count
+			}
+		}
+
+		//businesssUnit
+		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+
+		//category
+		response.Category.CBUWFBB.Percentage = 100
+		response.Category.CBUHBB.Percentage = 100
+		response.Category.EBUWFBB.Percentage = 100
+		response.Category.EBUHBB.Percentage = 100
+
+		//subCategory
+		var subCategoryCBUWFBBTotal int
+		for subcategory, v := range response.SubCategory.CBUWFBB {
+			if subcategory == "total" {
+				subCategoryCBUWFBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUWFBBTotal)
+			response.SubCategory.CBUWFBB[subcategory] = obj
+		}
+		var subCategoryCBUHBBTotal int
+		for subcategory, v := range response.SubCategory.CBUHBB {
+			if subcategory == "total" {
+				subCategoryCBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUHBBTotal)
+			response.SubCategory.CBUHBB[subcategory] = obj
+		}
+		var subCategoryEBUWFBBTotal int
+		for subcategory, v := range response.SubCategory.EBUWFBB {
+			if subcategory == "total" {
+				subCategoryEBUWFBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUWFBBTotal)
+			response.SubCategory.EBUWFBB[subcategory] = obj
+		}
+		var subCategoryEBUHBBTotal int
+		for subcategory, v := range response.SubCategory.EBUHBB {
+			if subcategory == "total" {
+				subCategoryEBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUHBBTotal)
+			response.SubCategory.EBUHBB[subcategory] = obj
+		}
+
+		//serviceCategory
+		var srvcCategoryCBUHBBTotal int
+		for srvccategory, v := range response.ServiceCategory.CBUHBB {
+			if srvccategory == "total" {
+				srvcCategoryCBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
+			response.ServiceCategory.CBUHBB[srvccategory] = obj
+		}
+		var srvcCategoryEBUHBBTotal int
+		for srvccategory, v := range response.ServiceCategory.EBUHBB {
+			if srvccategory == "total" {
+				srvcCategoryEBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
+			response.ServiceCategory.EBUHBB[srvccategory] = obj
+		}
+
+		go func(report *models.HbbUserSalesCountPerPlanDB) {
+			err = impl.CacheService.InsertUserSaleCountPerPlanReport(omngr.UserId, report.Product, isQuarterReport, month, quarter, year, report,
+				impl.Config.ReportCacheTTL)
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
+					Msg("OMSaleCountPerPlanReport : force report update")
+			} else {
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("product", product).Msg("OMSaleCountPerPlanReport : cache update success")
+			}
+		}(response)
+
+		return response, nil
+	} else {
+		response := &models.UserSalesCountPerPlanDB{
+			Product:    product,
+			CreatedAt:  time.Now(),
+			ModifiedAt: time.Now(),
+		}
+		if len(userAgents) == 0 {
+			logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Msg("OMSaleCountPerPlanReport : zero agents")
+			return response, nil
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("agentCount", len(userAgents)).Msg("OMSaleCountPerPlanReport : total agents")
+		}
+		for _, eachAgent := range userAgents {
+			agentReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
+			if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(response.ModifiedAt)) {
+				resp, err := impl.updateAgentUserSaleCountPerPlanReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+				if err != nil {
+					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMSaleCountPerPlanReport : agent report failed")
+					continue
+				}
+				rawReport, _ := json.Marshal(resp)
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("OMSaleCountPerPlanReport : agent log")
+				agentReport = resp
+			}
+			if agentReport == nil {
+				continue
+			}
+			userSaleCount := agentReport.(*models.UserSalesCountPerPlanDB)
+
+			//businessUnit
+			if response.BusinessUnit.Government == nil {
+				response.BusinessUnit.Government = &models.SaleCalculation{}
+			}
+			if response.BusinessUnit.Corporate == nil {
+				response.BusinessUnit.Corporate = &models.SaleCalculation{}
+			}
+			if response.BusinessUnit.Consumer == nil {
+				response.BusinessUnit.Consumer = &models.SaleCalculation{}
+			}
+			response.BusinessUnit.Government.Count += userSaleCount.BusinessUnit.Government.Count
+			response.BusinessUnit.Corporate.Count += userSaleCount.BusinessUnit.Corporate.Count
+			response.BusinessUnit.Consumer.Count += userSaleCount.BusinessUnit.Consumer.Count
+
+			//subcategory
+			if response.SubCategory.CBU == nil {
+				response.SubCategory.CBU = make(map[string]interface{})
+			}
+			if response.SubCategory.EBU == nil {
+				response.SubCategory.EBU = make(map[string]interface{})
+			}
+			for subcategory, val := range userSaleCount.SubCategory.CBU {
+				if subcategory == "total" {
+					if response.SubCategory.CBU["total"] == nil {
+						response.SubCategory.CBU["total"] = 0
+					}
+					response.SubCategory.CBU["total"] = val.(int) + userSaleCount.SubCategory.CBU["total"].(int)
+					continue
+				}
+				if response.SubCategory.CBU[subcategory] == nil {
+					response.SubCategory.CBU[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.CBU[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.CBU[subcategory] = reportSubCat
+			}
+			for subcategory, val := range userSaleCount.SubCategory.EBU {
+				if subcategory == "total" {
+					if response.SubCategory.EBU["total"] == nil {
+						response.SubCategory.EBU["total"] = 0
+					}
+					response.SubCategory.EBU["total"] = val.(int) + userSaleCount.SubCategory.EBU["total"].(int)
+					continue
+				}
+				if response.SubCategory.EBU[subcategory] == nil {
+					response.SubCategory.EBU[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.EBU[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.EBU[subcategory] = reportSubCat
+			}
+
+			//plan
+			if response.Plans.CBU == nil {
+				response.Plans.CBU = make(map[string]int)
+			}
+			if response.Plans.EBU == nil {
+				response.Plans.EBU = make(map[string]int)
+			}
+			for plan, count := range userSaleCount.Plans.CBU {
+				response.Plans.CBU[plan] += count
+			}
+			for plan, count := range userSaleCount.Plans.EBU {
+				response.Plans.EBU[plan] += count
+			}
+		}
+
+		//businesssUnit
+		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+
+		//subCategory
+		var subCategoryCBUTotal int
+		for subcategory, v := range response.SubCategory.CBU {
+			if subcategory == "total" {
+				subCategoryCBUTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUTotal)
+			response.SubCategory.CBU[subcategory] = obj
+		}
+		var subCategoryEBUTotal int
+		for subcategory, v := range response.SubCategory.EBU {
+			if subcategory == "total" {
+				subCategoryEBUTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUTotal)
+			response.SubCategory.EBU[subcategory] = obj
+		}
+
+		go func(report *models.UserSalesCountPerPlanDB) {
+			err = impl.CacheService.InsertUserSaleCountPerPlanReport(omngr.UserId, report.Product, isQuarterReport, month, quarter, year, report,
+				impl.Config.ReportCacheTTL)
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
+					Msg("OMSaleCountPerPlanReport : force report update")
+			} else {
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("product", product).Msg("OMSaleCountPerPlanReport : cache update success")
+			}
+		}(response)
+
+		return response, nil
+	}
+}
+
+func (impl *UserImpl) updateManagerUserSaleCountPerPlanReport(ctx *gin.Context, mngr *models.UserBasicDetailsDB, product string, isQuarterReport bool,
+	quarter, month, year int) (interface{}, *errors.Error) {
+
+	if !isQuarterReport {
+		quarter = getQuarterFromMonth(month)
+	}
+
+	if mngr == nil || mngr.UserId == "" {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("region", mngr.Region).Str("outlet", mngr.Outlet).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("MngrSaleCountPerPlanReport : invalid info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "INVALID MANAGER DETAILS",
+			Details:    "updateMngrUserSaleCountPerPlanReport: invalid mngr details",
+		}
+	}
+
+	position, ok := constant.ManagerMap[mngr.Position]
+	if !ok {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Msg("MngrSaleCountPerPlanReport : invalid position")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    mngr.UserId + ": INCORRECT MANAGER POSITION - " + mngr.Position,
+			Details:    "updateMngrUserSaleCountPerPlanReport: incorrect mngr position - userId:" + mngr.UserId + " position:" + mngr.Position,
+		}
+	}
+	mngr.Position = position
+
+	rawDetails, _ := json.Marshal(mngr)
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("user", string(rawDetails)).Bool("isQuarter", isQuarterReport).Int("quarter", quarter).
+		Int("month", month).Int("year", year).Msg("MngrSaleCountPerPlanReport : info")
+
+	//for outlet manager and team lead only
+	if mngr.Position == constant.OutletManagerAbb { // || mngr.Position == constant.TeamLeader
+		report, err := impl.updateOutletManagerUserSaleCountPerPlanReport(ctx, mngr, product, isQuarterReport, quarter, month, year)
+		if err != nil {
+			return nil, err
+		}
+
+		return report, nil
+	}
+
+	if mngr.Position != constant.VicePresidentAbb && (mngr.ManagerId == "" || mngr.ManagerPosition == "") {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Msg("MngrSaleCountPerPlanReport : user's manager info missing")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    mngr.UserId + ": INVALID MANAGER'S MANAGER DETAILS",
+			Details:    mngr.UserId + ": invalid manager's manager details",
+		}
+	}
+
+	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Err(errors.New(err.Details.(string))).Msg("MngrSaleCountPerPlanReport : fetch om list failed")
+		return nil, err
+	}
+
+	if len(allDistinctOM) == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Msg("MngrSaleCountPerPlanReport : zero om")
+	} else {
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Int("omCount", len(allDistinctOM)).Msg("MngrSaleCountPerPlanReport : total om")
+	}
+
+	if product == constant.HBBCategory {
+		response := &models.HbbUserSalesCountPerPlanDB{
+			Product:    product,
+			CreatedAt:  time.Now(),
+			ModifiedAt: time.Now(),
+		}
+		for _, eachAgent := range allDistinctOM {
+			agentReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
+			if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(response.ModifiedAt)) {
+				resp, err := impl.updateOutletManagerUserSaleCountPerPlanReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+				if err != nil {
+					logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrSaleCountPerPlanReport : agent report failed")
+					continue
+				}
+				rawReport, _ := json.Marshal(resp)
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("MngrSaleCountPerPlanReport : agent log")
+				agentReport = resp
+			}
+			if agentReport == nil {
+				continue
+			}
+			userSaleCount := agentReport.(*models.HbbUserSalesCountPerPlanDB)
+
+			//businessUnit
+			if response.BusinessUnit.Government == nil {
+				response.BusinessUnit.Government = &models.SaleCalculation{}
+			}
+			if response.BusinessUnit.Corporate == nil {
+				response.BusinessUnit.Corporate = &models.SaleCalculation{}
+			}
+			if response.BusinessUnit.Consumer == nil {
+				response.BusinessUnit.Consumer = &models.SaleCalculation{}
+			}
+			response.BusinessUnit.Government.Count += userSaleCount.BusinessUnit.Government.Count
+			response.BusinessUnit.Corporate.Count += userSaleCount.BusinessUnit.Corporate.Count
+			response.BusinessUnit.Consumer.Count += userSaleCount.BusinessUnit.Consumer.Count
+
+			//category
+			if response.Category.CBUWFBB == nil {
+				response.Category.CBUWFBB = &models.SaleCalculation{}
+			}
+			if response.Category.CBUHBB == nil {
+				response.Category.CBUHBB = &models.SaleCalculation{}
+			}
+			if response.Category.EBUWFBB == nil {
+				response.Category.EBUWFBB = &models.SaleCalculation{}
+			}
+			if response.Category.EBUHBB == nil {
+				response.Category.EBUHBB = &models.SaleCalculation{}
+			}
+			response.Category.CBUWFBB.Count += userSaleCount.Category.CBUWFBB.Count
+			response.Category.CBUHBB.Count += userSaleCount.Category.CBUHBB.Count
+			response.Category.EBUWFBB.Count += userSaleCount.Category.EBUWFBB.Count
+			response.Category.EBUHBB.Count += userSaleCount.Category.EBUHBB.Count
+
+			//subCategory
+			for subcategory, val := range userSaleCount.SubCategory.CBUWFBB {
+				if subcategory == "total" {
+					if response.SubCategory.CBUWFBB["total"] == nil {
+						response.SubCategory.CBUWFBB["total"] = 0
+					}
+					response.SubCategory.CBUWFBB["total"] = val.(int) + userSaleCount.SubCategory.CBUWFBB["total"].(int)
+					continue
+				}
+				if response.SubCategory.CBUWFBB[subcategory] == nil {
+					response.SubCategory.CBUWFBB[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.CBUWFBB[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.CBUWFBB[subcategory] = reportSubCat
+			}
+			for subcategory, val := range userSaleCount.SubCategory.CBUHBB {
+				if subcategory == "total" {
+					if response.SubCategory.CBUHBB["total"] == nil {
+						response.SubCategory.CBUHBB["total"] = 0
+					}
+					response.SubCategory.CBUHBB["total"] = val.(int) + userSaleCount.SubCategory.CBUHBB["total"].(int)
+					continue
+				}
+				if response.SubCategory.CBUHBB[subcategory] == nil {
+					response.SubCategory.CBUHBB[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.CBUHBB[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.CBUHBB[subcategory] = reportSubCat
+			}
+			for subcategory, val := range userSaleCount.SubCategory.EBUWFBB {
+				if subcategory == "total" {
+					if response.SubCategory.EBUWFBB["total"] == nil {
+						response.SubCategory.EBUWFBB["total"] = 0
+					}
+					response.SubCategory.EBUWFBB["total"] = val.(int) + userSaleCount.SubCategory.EBUWFBB["total"].(int)
+					continue
+				}
+				if response.SubCategory.EBUWFBB[subcategory] == nil {
+					response.SubCategory.EBUWFBB[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.EBUWFBB[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.EBUWFBB[subcategory] = reportSubCat
+			}
+			for subcategory, val := range userSaleCount.SubCategory.EBUHBB {
+				if subcategory == "total" {
+					if response.SubCategory.EBUHBB["total"] == nil {
+						response.SubCategory.EBUHBB["total"] = 0
+					}
+					response.SubCategory.EBUHBB["total"] = val.(int) + userSaleCount.SubCategory.EBUHBB["total"].(int)
+					continue
+				}
+				if response.SubCategory.EBUHBB[subcategory] == nil {
+					response.SubCategory.EBUHBB[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.EBUHBB[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.EBUHBB[subcategory] = reportSubCat
+			}
+
+			//serviceCategory
+			for srvccategory, val := range userSaleCount.ServiceCategory.CBUWFBB {
+				if srvccategory == "total" {
+					if response.ServiceCategory.CBUWFBB["total"] == nil {
+						response.ServiceCategory.CBUWFBB["total"] = 0
+					}
+					response.ServiceCategory.CBUWFBB["total"] = val.(int) + userSaleCount.ServiceCategory.CBUWFBB["total"].(int)
+				}
+			}
+			for srvccategory, val := range userSaleCount.ServiceCategory.CBUHBB {
+				if srvccategory == "total" {
+					if response.ServiceCategory.CBUHBB["total"] == nil {
+						response.ServiceCategory.CBUHBB["total"] = 0
+					}
+					response.ServiceCategory.CBUHBB["total"] = val.(int) + userSaleCount.ServiceCategory.CBUHBB["total"].(int)
+					continue
+				}
+				if response.ServiceCategory.CBUHBB[srvccategory] == nil {
+					response.ServiceCategory.CBUHBB[srvccategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.ServiceCategory.CBUHBB[srvccategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.ServiceCategory.CBUHBB[srvccategory] = reportSubCat
+			}
+			for srvccategory, val := range userSaleCount.ServiceCategory.EBUWFBB {
+				if srvccategory == "total" {
+					if response.ServiceCategory.EBUWFBB["total"] == nil {
+						response.ServiceCategory.EBUWFBB["total"] = 0
+					}
+					response.ServiceCategory.EBUWFBB["total"] = val.(int) + userSaleCount.ServiceCategory.EBUWFBB["total"].(int)
+				}
+			}
+			for srvccategory, val := range userSaleCount.ServiceCategory.EBUHBB {
+				if srvccategory == "total" {
+					if response.ServiceCategory.EBUHBB["total"] == nil {
+						response.ServiceCategory.EBUHBB["total"] = 0
+					}
+					response.ServiceCategory.EBUHBB["total"] = val.(int) + userSaleCount.ServiceCategory.EBUHBB["total"].(int)
+					continue
+				}
+				if response.ServiceCategory.EBUHBB[srvccategory] == nil {
+					response.ServiceCategory.EBUHBB[srvccategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.ServiceCategory.EBUHBB[srvccategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.ServiceCategory.EBUHBB[srvccategory] = reportSubCat
+			}
+
+			//plans
+			if userSaleCount.Plans.CBUWFBB == nil {
+				userSaleCount.Plans.CBUWFBB = make(map[string]int)
+			}
+			if userSaleCount.Plans.CBUHBB == nil {
+				userSaleCount.Plans.CBUHBB = make(map[string]int)
+			}
+			if userSaleCount.Plans.EBUWFBB == nil {
+				userSaleCount.Plans.EBUWFBB = make(map[string]int)
+			}
+			if userSaleCount.Plans.EBUHBB == nil {
+				userSaleCount.Plans.EBUHBB = make(map[string]int)
+			}
+			for plan, count := range userSaleCount.Plans.CBUWFBB {
+				response.Plans.CBUWFBB[plan] += count
+			}
+			for plan, count := range userSaleCount.Plans.CBUHBB {
+				response.Plans.CBUHBB[plan] += count
+			}
+			for plan, count := range userSaleCount.Plans.EBUWFBB {
+				response.Plans.EBUWFBB[plan] += count
+			}
+			for plan, count := range userSaleCount.Plans.EBUHBB {
+				response.Plans.EBUHBB[plan] += count
+			}
+		}
+
+		//businesssUnit
+		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+
+		//category
+		response.Category.CBUWFBB.Percentage = 100
+		response.Category.CBUHBB.Percentage = 100
+		response.Category.EBUWFBB.Percentage = 100
+		response.Category.EBUHBB.Percentage = 100
+
+		//subCategory
+		var subCategoryCBUWFBBTotal int
+		for subcategory, v := range response.SubCategory.CBUWFBB {
+			if subcategory == "total" {
+				subCategoryCBUWFBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUWFBBTotal)
+			response.SubCategory.CBUWFBB[subcategory] = obj
+		}
+		var subCategoryCBUHBBTotal int
+		for subcategory, v := range response.SubCategory.CBUHBB {
+			if subcategory == "total" {
+				subCategoryCBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUHBBTotal)
+			response.SubCategory.CBUHBB[subcategory] = obj
+		}
+		var subCategoryEBUWFBBTotal int
+		for subcategory, v := range response.SubCategory.EBUWFBB {
+			if subcategory == "total" {
+				subCategoryEBUWFBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUWFBBTotal)
+			response.SubCategory.EBUWFBB[subcategory] = obj
+		}
+		var subCategoryEBUHBBTotal int
+		for subcategory, v := range response.SubCategory.EBUHBB {
+			if subcategory == "total" {
+				subCategoryEBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUHBBTotal)
+			response.SubCategory.EBUHBB[subcategory] = obj
+		}
+
+		//serviceCategory
+		var srvcCategoryCBUHBBTotal int
+		for srvccategory, v := range response.ServiceCategory.CBUHBB {
+			if srvccategory == "total" {
+				srvcCategoryCBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
+			response.ServiceCategory.CBUHBB[srvccategory] = obj
+		}
+		var srvcCategoryEBUHBBTotal int
+		for srvccategory, v := range response.ServiceCategory.EBUHBB {
+			if srvccategory == "total" {
+				srvcCategoryEBUHBBTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
+			response.SubCategory.EBUHBB[srvccategory] = obj
+		}
+
+		go func(report *models.HbbUserSalesCountPerPlanDB) {
+			err = impl.CacheService.InsertUserSaleCountPerPlanReport(mngr.UserId, report.Product, isQuarterReport, month, quarter, year, report,
+				impl.Config.ReportCacheTTL)
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
+					Msg("MngrSaleCountPerPlanReport : force report update")
+			} else {
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("product", product).Msg("MngrSaleCountPerPlanReport : cache update success")
+			}
+		}(response)
+
+		return response, nil
+	} else {
+		response := &models.UserSalesCountPerPlanDB{
+			Product:    product,
+			CreatedAt:  time.Now(),
+			ModifiedAt: time.Now(),
+		}
+		for _, eachAgent := range allDistinctOM {
+			agentReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
+			if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(response.ModifiedAt)) {
+				resp, err := impl.updateAgentUserSaleCountPerPlanReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+				if err != nil {
+					logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrSaleCountPerPlanReport : agent report failed")
+					continue
+				}
+				rawReport, _ := json.Marshal(resp)
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("MngrSaleCountPerPlanReport : agent log")
+				agentReport = resp
+			}
+			if agentReport == nil {
+				continue
+			}
+			userSaleCount := agentReport.(*models.UserSalesCountPerPlanDB)
+
+			//businessUnit
+			if response.BusinessUnit.Government == nil {
+				response.BusinessUnit.Government = &models.SaleCalculation{}
+			}
+			if response.BusinessUnit.Corporate == nil {
+				response.BusinessUnit.Corporate = &models.SaleCalculation{}
+			}
+			if response.BusinessUnit.Consumer == nil {
+				response.BusinessUnit.Consumer = &models.SaleCalculation{}
+			}
+			response.BusinessUnit.Government.Count += userSaleCount.BusinessUnit.Government.Count
+			response.BusinessUnit.Corporate.Count += userSaleCount.BusinessUnit.Corporate.Count
+			response.BusinessUnit.Consumer.Count += userSaleCount.BusinessUnit.Consumer.Count
+
+			//category
+			if response.SubCategory.CBU == nil {
+				response.SubCategory.CBU = make(map[string]interface{})
+			}
+			if response.SubCategory.EBU == nil {
+				response.SubCategory.EBU = make(map[string]interface{})
+			}
+			for subcategory, val := range userSaleCount.SubCategory.CBU {
+				if subcategory == "total" {
+					if response.SubCategory.CBU["total"] == nil {
+						response.SubCategory.CBU["total"] = 0
+					}
+					response.SubCategory.CBU["total"] = val.(int) + userSaleCount.SubCategory.CBU["total"].(int)
+					continue
+				}
+				if response.SubCategory.CBU[subcategory] == nil {
+					response.SubCategory.CBU[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.CBU[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.CBU[subcategory] = reportSubCat
+			}
+			for subcategory, val := range userSaleCount.SubCategory.EBU {
+				if subcategory == "total" {
+					if response.SubCategory.EBU["total"] == nil {
+						response.SubCategory.EBU["total"] = 0
+					}
+					response.SubCategory.EBU["total"] = val.(int) + userSaleCount.SubCategory.EBU["total"].(int)
+					continue
+				}
+				if response.SubCategory.EBU[subcategory] == nil {
+					response.SubCategory.EBU[subcategory] = &models.SaleCalculation{}
+				}
+				userSubCat := val.(*models.SaleCalculation)
+				reportSubCat := response.SubCategory.EBU[subcategory].(*models.SaleCalculation)
+				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
+				response.SubCategory.EBU[subcategory] = reportSubCat
+			}
+
+			//plan
+			if response.Plans.CBU == nil {
+				response.Plans.CBU = make(map[string]int)
+			}
+			if response.Plans.EBU == nil {
+				response.Plans.EBU = make(map[string]int)
+			}
+			for plan, count := range userSaleCount.Plans.CBU {
+				response.Plans.CBU[plan] += count
+			}
+			for plan, count := range userSaleCount.Plans.EBU {
+				response.Plans.EBU[plan] += count
+			}
+		}
+
+		//businesssUnit
+		response.BusinessUnit.Government.Percentage = float64(response.BusinessUnit.Government.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Corporate.Percentage = float64(response.BusinessUnit.Corporate.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+		response.BusinessUnit.Consumer.Percentage = float64(response.BusinessUnit.Consumer.Count) * 100 /
+			(float64(response.BusinessUnit.Government.Count) + float64(response.BusinessUnit.Corporate.Count) +
+				float64(response.BusinessUnit.Consumer.Count))
+
+		//subCategory
+		var subCategoryCBUTotal int
+		for subcategory, v := range response.SubCategory.CBU {
+			if subcategory == "total" {
+				subCategoryCBUTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryCBUTotal)
+			response.SubCategory.CBU[subcategory] = obj
+		}
+		var subCategoryEBUTotal int
+		for subcategory, v := range response.SubCategory.EBU {
+			if subcategory == "total" {
+				subCategoryEBUTotal = v.(int)
+				continue
+			}
+			obj := v.(*models.SaleCalculation)
+			obj.Percentage = float64(obj.Count) * 100 / float64(subCategoryEBUTotal)
+			response.SubCategory.EBU[subcategory] = obj
+		}
+
+		go func(report *models.UserSalesCountPerPlanDB) {
+			err = impl.CacheService.InsertUserSaleCountPerPlanReport(mngr.UserId, report.Product, isQuarterReport, month, quarter, year, report,
+				impl.Config.ReportCacheTTL)
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
+					Msg("MngrSaleCountPerPlanReport : force report update")
+			} else {
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("product", product).Msg("MngrSaleCountPerPlanReport : cache update success")
+			}
+		}(response)
+
+		return response, nil
+	}
+}
+
+func (impl *UserImpl) updateAgentUserPlanPerCategoryReport(ctx *gin.Context, user *models.UserBasicDetailsDB, product string, isQuarterReport bool,
+	quarter, month, year int) (interface{}, *errors.Error) {
+
+	if !isQuarterReport {
+		quarter = getQuarterFromMonth(month)
+	}
+
+	if user == nil || user.UserId == "" || user.ManagerId == "" || user.ManagerPosition == "" {
+		if user == nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", "").Str("region", "").Str("outlet", "").Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Msg("APlanPerCategoryReport : nil info")
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    "INVALID AGENT DETAILS",
+				Details:    "updateAgentUserPlanPerCategoryReport: invalid agent details",
+			}
+		}
+
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("APlanPerCategoryReport : invalid info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    user.UserId + ": INVALID AGENT DETAILS",
+			Details:    "updateAgentUserPlanPerCategoryReport: invalid agent details - userId:" + user.UserId,
+		}
+	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
+		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("APlanPerCategoryReport : info")
+
+	if !(user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb) {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("position", user.Position).Msg("APlanPerCategoryReport : invalid position")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    user.UserId + ": INCORRECT AGENT POSITION - " + user.Position,
+			Details:    "APlanPerCategoryReport: incorrect agent position - userId:" + user.UserId + " position:" + user.Position,
+		}
+	}
+
+	if user.Region == "" || user.Outlet == "" {
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).
+			Msg("APlanPerCategoryReport : invalid outlet info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    user.UserId + ": AGENT BLANK REGION OR OUTLET - region:" + user.Region + " outlet:" + user.Outlet,
+			Details:    "APlanPerCategoryReport: agent blank region or outlet - userId: " + user.UserId + " region:" + user.Region + " outlet:" + user.Outlet,
+		}
+	}
+
+	allUserSales, err := impl.DbService.FetchUserSalesCountPerPlan(user.UserId, isQuarterReport, quarter, month, year)
+	if err != nil {
+		err.Details = fmt.Sprintf("updateAgentUserPlanPerCategoryReport: %v", err.Details)
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(err).Msg("APlanPerCategoryReport : fetch sales failed")
+		return nil, err
+	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Int("saleGroupCount", len(allUserSales)).
+		Msg("APlanPerCategoryReport : total agents and salesGroup")
+
+	response := make(map[string]interface{})
+	response[product] = constant.HBBCategory
+	response["CreatedAt"] = time.Now()
+	response["ModifiedAt"] = time.Now()
+	for _, v := range allUserSales {
+		if v.ProductGroup != constant.HBBCategory {
+			continue
+		}
+
+		if response[v.SubCategory] == nil {
+			response[v.SubCategory] = make(map[string]interface{})
+		}
+		plans := response[v.SubCategory].(map[string]interface{})
+
+		if plans[v.CurrentPlan] == nil {
+			plans[v.CurrentPlan] = make(map[string]interface{})
+		}
+		srvccategory := plans[v.CurrentPlan].(map[string]int)
+		srvccategory[v.FinalServiceCategory] = srvccategory[v.FinalServiceCategory] + v.Quantity
+
+		//total
+		srvccategory["total"] = srvccategory["total"] + v.Quantity
+
+		//grand total
+		if response["GRAND TOTAL"] == nil {
+			response["GRAND TOTAL"] = make(map[string]int)
+		}
+		totalSrvcCategory := response["GRAND TOTAL"].(map[string]int)
+		totalSrvcCategory[v.FinalServiceCategory] = totalSrvcCategory[v.FinalServiceCategory] + v.Quantity
+		totalSrvcCategory["total"] = totalSrvcCategory["total"] + v.Quantity
+	}
+
+	go func(product string, report map[string]interface{}) {
+		err = impl.CacheService.InsertUserPlanCategoryReport(user.UserId, product, isQuarterReport, month, quarter, year, report,
+			impl.Config.ReportCacheTTL)
+		if err != nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
+				Msg("APlanPerCategoryReport : force report update")
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("product", product).Msg("APlanPerCategoryReport : cache update success")
+		}
+	}(product, response)
+
+	return response, nil
+}
+
+func (impl *UserImpl) updateOutletManagerUserPlanPerCategoryReport(ctx *gin.Context, omngr *models.UserBasicDetailsDB, product string, isQuarterReport bool,
+	quarter, month, year int) (interface{}, *errors.Error) {
+
+	if !isQuarterReport {
+		quarter = getQuarterFromMonth(month)
+	}
+
+	if omngr == nil || omngr.UserId == "" || omngr.ManagerId == "" || omngr.ManagerPosition == "" {
+
+		if omngr == nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", "").Str("region", "").Str("outlet", "").Bool("isQuarter", isQuarterReport).Int("quarter", quarter).
+				Int("month", month).Int("year", year).Msg("OMUserPlanPerCategoryReport : nil info")
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    "INVALID OUTLET MANAGER DETAILS",
+				Details:    "updateOMUserPlanPerCategoryReport: invalid omngr details",
+			}
+		}
+
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("OMUserPlanPerCategoryReport : invalid info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    omngr.UserId + ": INVALID OUTLET MANAGER DETAILS",
+			Details:    "updateOMUserPlanPerCategoryReport: invalid omngr details - userId:" + omngr.UserId,
+		}
+	}
+
+	if omngr.Position != constant.OutletManagerAbb { //!(omngr.Position == constant.OutletManager || omngr.Position == constant.TeamLeader)
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("position", omngr.Position).Msg("OMUserPlanPerCategoryReport : invalid position")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    omngr.UserId + ": INCORRECT OUTLET MANAGER POSITION - " + omngr.Position,
+			Details:    "updateOMUserPlanPerCategoryReport: incorrect omngr position - userId:" + omngr.UserId + " position:" + omngr.Position,
+		}
+	}
+
+	if omngr.Region == "" || omngr.Outlet == "" {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Msg("OMUserPlanPerCategoryReport : invalid outlet info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    omngr.UserId + ": AGENT BLANK REGION OR OUTLET - region:" + omngr.Region + " outlet:" + omngr.Outlet,
+			Details:    "updateOMUserPlanPerCategoryReport: agent blank region or outlet - userId: " + omngr.UserId + " region:" + omngr.Region + " outlet:" + omngr.Outlet,
+		}
+	}
+
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
+		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("OMUserPlanPerCategoryReport : info")
+
+	userAgents, err := impl.DbService.FetchAllAgentsUserOfOM(omngr.UserId, quarter, year)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Err(errors.New(err.Details.(string))).Msg("OMUserPlanPerCategoryReport : fetch agents failed")
+		return nil, err
+	}
+
+	if len(userAgents) == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Msg("OMUserPlanPerCategoryReport : zero agents")
+	} else {
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Int("agentCount", len(userAgents)).Msg("OMUserPlanPerCategoryReport : total agents")
+	}
+
+	response := make(map[string]interface{})
+	response[product] = constant.HBBCategory
+	response["CreatedAt"] = time.Now()
+	response["ModifiedAt"] = time.Now()
+
+	for _, eachAgent := range userAgents {
+		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
+		if !(err == nil && agentReport != nil) {
+			report, _ := agentReport.(map[string]interface{})
+			modifiedAt, _ := report["ModifiedAt"].(time.Time)
+			if objecthelper.IsCurrentDay(modifiedAt) {
+				resp, err := impl.updateAgentUserSaleCountPerPlanReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+				if err != nil {
+					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMUserPlanPerCategoryReport : agent report failed")
+					continue
+				}
+				rawReport, _ := json.Marshal(resp)
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("OMUserPlanPerCategoryReport : agent log")
+				agentReport = resp
+			}
+		}
+		if agentReport == nil {
+			continue
+		}
+		userPlanCount := agentReport.(map[string]interface{})
+
+		for subcategoryName, subcategoryMap := range userPlanCount {
+
+			if response[subcategoryName] == nil {
+				response[subcategoryName] = make(map[string]interface{})
+			}
+
+			if subcategoryName == "GRAND TOTAL" {
+				continue
+
+			}
+
+			planMap, _ := subcategoryMap.(map[string]interface{})
+			responsePlanMap, _ := response[subcategoryName].(map[string]interface{})
+
+			for planName, plan := range planMap {
+				if responsePlanMap[planName] == nil {
+					responsePlanMap[planName] = make(map[string]interface{})
+				}
+
+				srvccategoryMap, _ := plan.(map[string]int)
+				responseSrvccategoryMap, _ := responsePlanMap[planName].(map[string]int)
+
+				for srvcCategoryName, qty := range srvccategoryMap {
+					responseSrvccategoryMap[srvcCategoryName] = responseSrvccategoryMap[srvcCategoryName] + qty
+				}
+
+				responseSrvccategoryMap["total"] = responseSrvccategoryMap["total"] + srvccategoryMap["total"]
+			}
+		}
+
+	}
+
+	go func(product string, report map[string]interface{}) {
+		err = impl.CacheService.InsertUserPlanCategoryReport(omngr.UserId, product, isQuarterReport, month, quarter, year, report,
+			impl.Config.ReportCacheTTL)
+		if err != nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
+				Msg("OMUserPlanPerCategoryReport : force report update")
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("product", product).Msg("OMUserPlanPerCategoryReport : cache update success")
+		}
+	}(product, response)
+
+	return response, nil
+}
+
+func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, mngr *models.UserBasicDetailsDB, product string, isQuarterReport bool,
+	quarter, month, year int) (interface{}, *errors.Error) {
+
+	if !isQuarterReport {
+		quarter = getQuarterFromMonth(month)
+	}
+
+	if mngr == nil || mngr.UserId == "" {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("region", mngr.Region).Str("outlet", mngr.Outlet).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("MngrUserPlanPerCategoryReport : invalid info")
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "INVALID MANAGER DETAILS",
+			Details:    "updateMngrUserPlanPerCategoryReport: invalid mngr details",
+		}
+	}
+
+	position, ok := constant.ManagerMap[mngr.Position]
+	if !ok {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Msg("MngrUserPlanPerCategoryReport : invalid position")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    mngr.UserId + ": INCORRECT MANAGER POSITION - " + mngr.Position,
+			Details:    "updateMngrUserPlanPerCategoryReport: incorrect mngr position - userId:" + mngr.UserId + " position:" + mngr.Position,
+		}
+	}
+	mngr.Position = position
+
+	rawDetails, _ := json.Marshal(mngr)
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("user", string(rawDetails)).Bool("isQuarter", isQuarterReport).Int("quarter", quarter).
+		Int("month", month).Int("year", year).Msg("MngrUserPlanPerCategoryReport : info")
+
+	//for outlet manager and team lead only
+	if mngr.Position == constant.OutletManagerAbb { // || mngr.Position == constant.TeamLeader
+		report, err := impl.updateOutletManagerUserSaleCountPerPlanReport(ctx, mngr, product, isQuarterReport, quarter, month, year)
+		if err != nil {
+			return nil, err
+		}
+
+		return report, nil
+	}
+
+	if mngr.Position != constant.VicePresidentAbb && (mngr.ManagerId == "" || mngr.ManagerPosition == "") {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Msg("MngrUserPlanPerCategoryReport : user's manager info missing")
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Code:       errors.InvalidDetailsCode,
+			Message:    mngr.UserId + ": INVALID MANAGER'S MANAGER DETAILS",
+			Details:    mngr.UserId + ": invalid manager's manager details",
+		}
+	}
+
+	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
+	if err != nil {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Err(errors.New(err.Details.(string))).Msg("MngrUserPlanPerCategoryReport : fetch om list failed")
+		return nil, err
+	}
+
+	if len(allDistinctOM) == 0 {
+		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Msg("MngrUserPlanPerCategoryReport : zero om")
+	} else {
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Int("omCount", len(allDistinctOM)).Msg("MngrUserPlanPerCategoryReport : total om")
+	}
+
+	response := make(map[string]interface{})
+	response[product] = constant.HBBCategory
+	response["CreatedAt"] = time.Now()
+	response["ModifiedAt"] = time.Now()
+
+	for _, eachAgent := range allDistinctOM {
+		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
+		if !(err == nil && agentReport != nil) {
+			report, _ := agentReport.(map[string]interface{})
+			modifiedAt, _ := report["ModifiedAt"].(time.Time)
+			if objecthelper.IsCurrentDay(modifiedAt) {
+				resp, err := impl.updateAgentUserSaleCountPerPlanReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+				if err != nil {
+					logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrUserPlanPerCategoryReport : agent report failed")
+					continue
+				}
+				rawReport, _ := json.Marshal(resp)
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("MngrUserPlanPerCategoryReport : agent log")
+				agentReport = resp
+			}
+		}
+		if agentReport == nil {
+			continue
+		}
+		userPlanCount := agentReport.(map[string]interface{})
+
+		for subcategoryName, subcategoryMap := range userPlanCount {
+
+			if response[subcategoryName] == nil {
+				response[subcategoryName] = make(map[string]interface{})
+			}
+
+			if subcategoryName == "GRAND TOTAL" {
+				continue
+
+			}
+
+			planMap, _ := subcategoryMap.(map[string]interface{})
+			responsePlanMap, _ := response[subcategoryName].(map[string]interface{})
+
+			for planName, plan := range planMap {
+				if responsePlanMap[planName] == nil {
+					responsePlanMap[planName] = make(map[string]interface{})
+				}
+
+				srvccategoryMap, _ := plan.(map[string]int)
+				responseSrvccategoryMap, _ := responsePlanMap[planName].(map[string]int)
+
+				for srvcCategoryName, qty := range srvccategoryMap {
+					responseSrvccategoryMap[srvcCategoryName] = responseSrvccategoryMap[srvcCategoryName] + qty
+				}
+
+				responseSrvccategoryMap["total"] = responseSrvccategoryMap["total"] + srvccategoryMap["total"]
+			}
+		}
+	}
+
+	go func(product string, report map[string]interface{}) {
+		err = impl.CacheService.InsertUserSaleCountPerPlanReport(mngr.UserId, product, isQuarterReport, month, quarter, year, report,
+			impl.Config.ReportCacheTTL)
+		if err != nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
+				Msg("MngrUserPlanPerCategoryReport : force report update")
+		} else {
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("product", product).Msg("MngrUserPlanPerCategoryReport : cache update success")
+		}
+	}(product, response)
+
+	return response, nil
 }

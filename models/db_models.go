@@ -75,6 +75,68 @@ type RegionReportDB struct {
 	ModifiedAt         time.Time
 }
 
+type UserSalesCountPerPlanDB struct {
+	Product      string `json:"product"`
+	BusinessUnit struct {
+		Consumer   *SaleCalculation `json:"consumer"`
+		Corporate  *SaleCalculation `json:"corporate"`
+		Government *SaleCalculation `json:"government"`
+	} `json:"businessUnit"`
+	SubCategory struct {
+		CBU map[string]interface{} `json:"CBU"`
+		EBU map[string]interface{} `json:"EBU"`
+	} `json:"subCategory"`
+	Plans struct {
+		CBU map[string]int `json:"CBU"`
+		EBU map[string]int `json:"EBU"`
+	} `json:"plans"`
+	CreatedAt  time.Time
+	ModifiedAt time.Time
+}
+
+type HbbUserSalesCountPerPlanDB struct {
+	Product      string `json:"product"`
+	BusinessUnit struct {
+		Consumer   *SaleCalculation `json:"consumer"`
+		Corporate  *SaleCalculation `json:"corporate"`
+		Government *SaleCalculation `json:"government"`
+	} `json:"businessUnit"`
+	Category struct {
+		CBUWFBB *SaleCalculation `json:"CBU WFBB"`
+		CBUHBB  *SaleCalculation `json:"CBU HBB"`
+		EBUWFBB *SaleCalculation `json:"EBU WFBB"`
+		EBUHBB  *SaleCalculation `json:"EBU HBB"`
+	} `json:"category"`
+	SubCategory struct {
+		CBUWFBB map[string]interface{} `json:"CBU WFBB"`
+		CBUHBB  map[string]interface{} `json:"CBU HBB"`
+		EBUWFBB map[string]interface{} `json:"EBU WFBB"`
+		EBUHBB  map[string]interface{} `json:"EBU HBB"`
+	} `json:"subCategory"`
+	ServiceCategory struct {
+		CBUWFBB map[string]interface{} `json:"CBU WFBB"`
+		CBUHBB  map[string]interface{} `json:"CBU HBB"`
+		EBUWFBB map[string]interface{} `json:"EBU WFBB"`
+		EBUHBB  map[string]interface{} `json:"EBU HBB"`
+	} `json:"serviceCategory"`
+	Plans struct {
+		CBUWFBB map[string]int `json:"CBU WFBB"`
+		CBUHBB  map[string]int `json:"CBU HBB"`
+		EBUWFBB map[string]int `json:"EBU WFBB"`
+		EBUHBB  map[string]int `json:"EBU HBB"`
+	} `json:"plans"`
+	CreatedAt  time.Time
+	ModifiedAt time.Time
+}
+
+type UserPlanPerCategory struct {
+}
+
+type SaleCalculation struct {
+	Count      int     `json:"count"`
+	Percentage float64 `json:"percent"`
+}
+
 type UserLoginDetailsDB struct {
 	UserId    string
 	Month     int

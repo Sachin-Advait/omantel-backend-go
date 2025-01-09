@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
@@ -42,4 +44,7 @@ type AdminProvider interface {
 	UpsertNotification(ctx *gin.Context, req *models.Notification) (*models.APISuccessResponse, *errors.Error)
 	FetchNotification(ctx *gin.Context, category, id string) (interface{}, *errors.Error)
 	DeleteNotification(ctx *gin.Context, id string) *errors.Error
+
+	GetUserLoginCount(ctx *gin.Context, region string, start time.Time, end time.Time) (*models.UserLoginCountResponse, *errors.Error)
+	GetUserLoginDetails(ctx *gin.Context, req *models.UserLoginDetailsRequest) (*models.UserLoginDetailsResponse, *errors.Error)
 }

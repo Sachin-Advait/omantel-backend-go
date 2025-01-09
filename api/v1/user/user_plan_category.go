@@ -16,13 +16,13 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func GetUserLoginDetails(ctx *gin.Context) {
+func GetUserPlanCategory(ctx *gin.Context) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	if ctxHeader.Authorization == "" {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("getUserLoginDetails : unauthorized request")
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errors.UnauthorizedUser)).Msg("getUserPlanCategory : unauthorized request")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "unauthorized request", Code: http.StatusBadRequest,
 			Text: "auth token not found", CreateTime: time.Now().Local()})
 
@@ -33,10 +33,10 @@ func GetUserLoginDetails(ctx *gin.Context) {
 		return
 	}
 
-	userReq := &models.UserIncentiveRequest{}
+	userReq := &models.UserSalesRequest{}
 
 	if err := ctx.ShouldBindJSON(userReq); err != nil {
-		logger.FileLogger.CtxError(ctx).Err(err).Msg("getUserLoginDetails : error binding request body")
+		logger.FileLogger.CtxError(ctx).Err(err).Msg("getUserPlanCategory : error binding request body")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "error binding request body",
 			Code: http.StatusBadRequest, Text: err.Error(), CreateTime: time.Now().Local()})
 
@@ -47,9 +47,9 @@ func GetUserLoginDetails(ctx *gin.Context) {
 	}
 
 	req, _ := objecthelper.MarshalJSON(userReq)
-	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUserLoginDetails : req body")
+	logger.FileLogger.CtxInfo(ctx).Interface(logger.BodyLogParam, fmt.Sprintf("%+v", string(req))).Msg("getUserPlanCategory : req body")
 	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "trace", Msg: "request body",
 		Text: fmt.Sprintf("%+v", string(req)), CreateTime: time.Now().Local()})
 
-	ctx.JSON(user.GetUserLoginTime(ctx, userReq))
+	ctx.JSON(user.GetUserPlanCategory(ctx, userReq))
 }
