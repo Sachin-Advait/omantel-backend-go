@@ -21,11 +21,11 @@ staticUser:
   usrId: '99999'
   otp: 123456
 psqlDB:
-  host: 185.177.116.176
+  host: localhost
   port: 5432
-  dbName: development
-  user: insync
-  password: "insync@18022021" #omantel123
+  dbName: postgres
+  user: postgres
+  password: 
   maxOpenConnections: 20
   maxIdleConnections: 10
   connMaxLifetimeInHour: 2

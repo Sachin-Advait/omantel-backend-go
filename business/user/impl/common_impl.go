@@ -2083,13 +2083,15 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 					if response.SubCategory.CBUHBB["total"] == nil {
 						response.SubCategory.CBUHBB["total"] = 0
 					}
+
 					total := response.SubCategory.CBUHBB["total"].(int)
 					response.SubCategory.CBUHBB["total"] = total + v.Quantity
 					if response.SubCategory.CBUHBB[v.SubCategory] == nil {
 						response.SubCategory.CBUHBB[v.SubCategory] = &models.SaleCalculation{}
 					}
 					subcategory := response.SubCategory.CBUHBB[v.SubCategory].(*models.SaleCalculation)
-					response.SubCategory.CBUHBB[v.SubCategory] = subcategory.Count + v.Quantity
+					subcategory.Count = subcategory.Count + v.Quantity
+					response.SubCategory.CBUHBB[v.SubCategory] = subcategory
 
 					//serviceCategory
 					if response.ServiceCategory.CBUHBB == nil {
