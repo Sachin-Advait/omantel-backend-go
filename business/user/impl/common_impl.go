@@ -2020,7 +2020,7 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				if response.BusinessUnit.Government == nil {
 					response.BusinessUnit.Government = &models.SaleCalculation{}
 				}
-				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
+				response.BusinessUnit.Government.Count = response.BusinessUnit.Government.Count + v.Quantity
 			case "CORPORATE":
 				if response.BusinessUnit.Corporate == nil {
 					response.BusinessUnit.Corporate = &models.SaleCalculation{}
