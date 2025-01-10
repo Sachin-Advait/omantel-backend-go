@@ -3604,6 +3604,7 @@ func (impl *UserImpl) updateAgentUserPlanPerCategoryReport(ctx *gin.Context, use
 	response[product] = constant.HBBCategory
 	response["CreatedAt"] = time.Now()
 	response["ModifiedAt"] = time.Now()
+	response["GRAND TOTAL"] = make(map[string]int)
 	for _, v := range allUserSales {
 		if v.ProductGroup != constant.HBBCategory {
 			continue
@@ -3615,7 +3616,7 @@ func (impl *UserImpl) updateAgentUserPlanPerCategoryReport(ctx *gin.Context, use
 		plans := response[v.SubCategory].(map[string]interface{})
 
 		if plans[v.CurrentPlan] == nil {
-			plans[v.CurrentPlan] = make(map[string]interface{})
+			plans[v.CurrentPlan] = make(map[string]int)
 		}
 		srvccategory := plans[v.CurrentPlan].(map[string]int)
 		srvccategory[v.FinalServiceCategory] = srvccategory[v.FinalServiceCategory] + v.Quantity
@@ -3623,10 +3624,6 @@ func (impl *UserImpl) updateAgentUserPlanPerCategoryReport(ctx *gin.Context, use
 		//total
 		srvccategory["total"] = srvccategory["total"] + v.Quantity
 
-		//grand total
-		if response["GRAND TOTAL"] == nil {
-			response["GRAND TOTAL"] = make(map[string]int)
-		}
 		totalSrvcCategory := response["GRAND TOTAL"].(map[string]int)
 		totalSrvcCategory[v.FinalServiceCategory] = totalSrvcCategory[v.FinalServiceCategory] + v.Quantity
 		totalSrvcCategory["total"] = totalSrvcCategory["total"] + v.Quantity
@@ -3714,6 +3711,7 @@ func (impl *UserImpl) updateOutletManagerUserPlanPerCategoryReport(ctx *gin.Cont
 	response[product] = constant.HBBCategory
 	response["CreatedAt"] = time.Now()
 	response["ModifiedAt"] = time.Now()
+	response["GRAND TOTAL"] = make(map[string]int)
 
 	for _, eachAgent := range userAgents {
 		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
@@ -3721,7 +3719,7 @@ func (impl *UserImpl) updateOutletManagerUserPlanPerCategoryReport(ctx *gin.Cont
 			report, _ := agentReport.(map[string]interface{})
 			modifiedAt, _ := report["ModifiedAt"].(time.Time)
 			if objecthelper.IsCurrentDay(modifiedAt) {
-				resp, err := impl.updateAgentUserSalesCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+				resp, err := impl.updateAgentUserPlanPerCategoryReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
 				if err != nil {
 					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMUserPlanPerCategoryReport : agent report failed")
 					continue
@@ -3738,13 +3736,21 @@ func (impl *UserImpl) updateOutletManagerUserPlanPerCategoryReport(ctx *gin.Cont
 
 		for subcategoryName, subcategoryMap := range userPlanCount {
 
-			if response[subcategoryName] == nil {
-				response[subcategoryName] = make(map[string]interface{})
+			if subcategoryName == "GRAND TOTAL" {
+				agentGrandTotal, ok := subcategoryMap.(map[string]int)
+				if !ok {
+					continue
+				}
+				for name, qty := range agentGrandTotal {
+					responseGrandTotalSrvcCategory := response["GRAND TOTAL"].(map[string]int)
+					responseGrandTotalSrvcCategory[name] = responseGrandTotalSrvcCategory[name] + qty
+					response["GRAND TOTAL"] = responseGrandTotalSrvcCategory
+				}
+				continue
 			}
 
-			if subcategoryName == "GRAND TOTAL" {
-				continue
-
+			if response[subcategoryName] == nil {
+				response[subcategoryName] = make(map[string]interface{})
 			}
 
 			planMap, _ := subcategoryMap.(map[string]interface{})
@@ -3752,7 +3758,7 @@ func (impl *UserImpl) updateOutletManagerUserPlanPerCategoryReport(ctx *gin.Cont
 
 			for planName, plan := range planMap {
 				if responsePlanMap[planName] == nil {
-					responsePlanMap[planName] = make(map[string]interface{})
+					responsePlanMap[planName] = make(map[string]int)
 				}
 
 				srvccategoryMap, _ := plan.(map[string]int)
@@ -3761,11 +3767,8 @@ func (impl *UserImpl) updateOutletManagerUserPlanPerCategoryReport(ctx *gin.Cont
 				for srvcCategoryName, qty := range srvccategoryMap {
 					responseSrvccategoryMap[srvcCategoryName] = responseSrvccategoryMap[srvcCategoryName] + qty
 				}
-
-				responseSrvccategoryMap["total"] = responseSrvccategoryMap["total"] + srvccategoryMap["total"]
 			}
 		}
-
 	}
 
 	go func(product string, report map[string]interface{}) {
@@ -3817,7 +3820,7 @@ func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, m
 
 	//for outlet manager and team lead only
 	if mngr.Position == constant.OutletManagerAbb { // || mngr.Position == constant.TeamLeader
-		report, err := impl.updateOutletManagerUserSaleCountReport(ctx, mngr, product, isQuarterReport, quarter, month, year)
+		report, err := impl.updateOutletManagerUserPlanPerCategoryReport(ctx, mngr, product, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
@@ -3851,6 +3854,7 @@ func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, m
 	response[product] = constant.HBBCategory
 	response["CreatedAt"] = time.Now()
 	response["ModifiedAt"] = time.Now()
+	response["GRAND TOTAL"] = make(map[string]int)
 
 	for _, eachAgent := range allDistinctOM {
 		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
@@ -3858,7 +3862,7 @@ func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, m
 			report, _ := agentReport.(map[string]interface{})
 			modifiedAt, _ := report["ModifiedAt"].(time.Time)
 			if objecthelper.IsCurrentDay(modifiedAt) {
-				resp, err := impl.updateAgentUserSalesCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+				resp, err := impl.updateOutletManagerUserPlanPerCategoryReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
 				if err != nil {
 					logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrUserPlanPerCategoryReport : agent report failed")
 					continue
@@ -3875,13 +3879,21 @@ func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, m
 
 		for subcategoryName, subcategoryMap := range userPlanCount {
 
-			if response[subcategoryName] == nil {
-				response[subcategoryName] = make(map[string]interface{})
+			if subcategoryName == "GRAND TOTAL" {
+				agentGrandTotal, ok := subcategoryMap.(map[string]int)
+				if !ok {
+					continue
+				}
+				for name, qty := range agentGrandTotal {
+					responseGrandTotalSrvcCategory := response["GRAND TOTAL"].(map[string]int)
+					responseGrandTotalSrvcCategory[name] = responseGrandTotalSrvcCategory[name] + qty
+					response["GRAND TOTAL"] = responseGrandTotalSrvcCategory
+				}
+				continue
 			}
 
-			if subcategoryName == "GRAND TOTAL" {
-				continue
-
+			if response[subcategoryName] == nil {
+				response[subcategoryName] = make(map[string]interface{})
 			}
 
 			planMap, _ := subcategoryMap.(map[string]interface{})
@@ -3889,7 +3901,7 @@ func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, m
 
 			for planName, plan := range planMap {
 				if responsePlanMap[planName] == nil {
-					responsePlanMap[planName] = make(map[string]interface{})
+					responsePlanMap[planName] = make(map[string]int)
 				}
 
 				srvccategoryMap, _ := plan.(map[string]int)
@@ -3898,14 +3910,12 @@ func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, m
 				for srvcCategoryName, qty := range srvccategoryMap {
 					responseSrvccategoryMap[srvcCategoryName] = responseSrvccategoryMap[srvcCategoryName] + qty
 				}
-
-				responseSrvccategoryMap["total"] = responseSrvccategoryMap["total"] + srvccategoryMap["total"]
 			}
 		}
 	}
 
 	go func(product string, report map[string]interface{}) {
-		err = impl.CacheService.InsertUserSaleCountPerPlanReport(mngr.UserId, product, isQuarterReport, month, quarter, year, report,
+		err = impl.CacheService.InsertUserPlanCategoryReport(mngr.UserId, product, isQuarterReport, month, quarter, year, report,
 			impl.Config.ReportCacheTTL)
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("product", product).Err(errors.New(err.Details.(string))).
