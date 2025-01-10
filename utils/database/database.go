@@ -30,7 +30,7 @@ var db *dbClient
 func InitDatabase(conf *models.DbClientConfig) {
 
 	psqlConf := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.UserName, conf.Password, conf.DbName)
+		"password=%s dbname=%s sslmode=require", conf.Host, conf.Port, conf.UserName, conf.Password, conf.DbName)
 
 	conn, err := sql.Open("postgres", psqlConf+" connect_timeout=1")
 	if err != nil {
