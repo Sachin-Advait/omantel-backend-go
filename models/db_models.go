@@ -137,13 +137,13 @@ type SaleCalculation struct {
 	Percentage float64 `json:"percent"`
 }
 
-type UserLoginDetailsDB struct {
-	UserId    string
-	Month     int
-	Quarter   int
-	Year      int
-	LoginTime time.Time
-}
+// type UserLoginDetailsDB struct {
+// 	UserId    string
+// 	Month     int
+// 	Quarter   int
+// 	Year      int
+// 	LoginTime time.Time
+// }
 
 type UserBasicDetailsDB struct {
 	UserId          string

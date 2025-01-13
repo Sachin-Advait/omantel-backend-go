@@ -10,7 +10,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (dbConn *DbServiceImpl) InsertLoginDetails(login *models.UserLoginDetailsDB) *errors.Error {
+func (dbConn *DbServiceImpl) InsertLoginDetails(login *models.LoginUsers) *errors.Error {
 
 	// logger.FileLogger.Info().Interface("clientID", staffId).Time("start", time.Now()).Msg("InsertLoginDetails start")
 	// defer logger.FileLogger.Info().Interface("clientID", staffId).Time("end", time.Now()).Msg("InsertLoginDetails done")
@@ -18,12 +18,10 @@ func (dbConn *DbServiceImpl) InsertLoginDetails(login *models.UserLoginDetailsDB
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	_, err := dbConn.DBClient.QueryContext(ctx, "INSERT INTO user_login_table(emp_id, month, quarter, year, login) VALUES ($1,$2,$3,$4,$5);",
-		login.UserId,
-		login.Month,
-		login.Quarter,
-		login.Year,
-		login.LoginTime,
+	_, err := dbConn.DBClient.QueryContext(ctx, "INSERT INTO user_login_table(emp_id, region, login) VALUES ($1,$2,$3);",
+		&login.StaffId,
+		&login.StaffRegion,
+		&login.LoginTime,
 	)
 
 	if err != nil {
@@ -95,10 +93,10 @@ func (dbConn *DbServiceImpl) FetchLoginDetails(page int, size int, region string
 	)
 
 	if region != "" {
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, login FROM user_login_table where region=$1 AND login >= $2 AND login <= $3 "+
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, region, login FROM user_login_table where region=$1 AND login >= $2 AND login <= $3 "+
 			"order by login desc LIMIT $4 OFFSET $5 ;", region, start, end, size, offset)
 	} else {
-		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, login FROM user_login_table where login >= $1 AND login <= $2 "+
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT emp_id, region, login FROM user_login_table where login >= $1 AND login <= $2 "+
 			"order by login desc LIMIT $3 OFFSET $4 ;", start, end, size, offset)
 	}
 
@@ -120,7 +118,7 @@ func (dbConn *DbServiceImpl) FetchLoginDetails(page int, size int, region string
 
 	for rows.Next() {
 		var user models.LoginUsers
-		if dbErr := rows.Scan(&user.StaffId, &user.LoginTime); dbErr != nil {
+		if dbErr := rows.Scan(&user.StaffId, &user.StaffRegion, &user.LoginTime); dbErr != nil {
 			err.Details = "FetchLoginDetails: scan failed-" + dbErr.Error()
 			return nil, err
 		}
