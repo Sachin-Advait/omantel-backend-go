@@ -30,21 +30,21 @@ func GetRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 	router.Use(gin.Recovery())
 
 	//configure swagger
-	router.GET(constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET(constant.ApiRoute+constant.SwaggerRoute, ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	//configure actuator
-	router.GET(constant.ActuatorRoute, actuator)
+	router.GET(constant.ApiRoute+constant.ActuatorRoute, actuator)
 
 	//version 1
-	incentiveV1Router := router.Group(constant.SalesIncentiveRoute, middleware.ApiVersionHandler("1"), middleware.OptionalAuthHandler())
+	incentiveV1Router := router.Group(constant.ApiRoute+constant.SalesIncentiveRoute, middleware.ApiVersionHandler("1"), middleware.OptionalAuthHandler())
 	incentiveRoutes(incentiveV1Router)
-	incentiveSwagV1Router := router.Group(constant.SalesIncentiveDocRoute)
+	incentiveSwagV1Router := router.Group(constant.ApiRoute + constant.SalesIncentiveDocRoute)
 	incentiveSwaggerRoutes(incentiveSwagV1Router)
 
 	//admin version 1
-	incentiveAdminV1Router := router.Group(constant.SalesIncentiveAdminRoute, middleware.ApiVersionHandler("1"), middleware.MandatoryAdminAuthHandler())
+	incentiveAdminV1Router := router.Group(constant.ApiRoute+constant.SalesIncentiveAdminRoute, middleware.ApiVersionHandler("1"), middleware.MandatoryAdminAuthHandler())
 	incentiveAdminRoutes(incentiveAdminV1Router)
-	incentiveSwagAdminV1Router := router.Group(constant.SalesIncentiveDocAdminRoute)
+	incentiveSwagAdminV1Router := router.Group(constant.ApiRoute + constant.SalesIncentiveDocAdminRoute)
 	incentiveSwaggerAdminRoutes(incentiveSwagAdminV1Router)
 
 	logger.FileLogger.Info().Str("env", flags.Env()).Int("port", flags.Port()).Msg("Router started...")
