@@ -702,21 +702,28 @@ func (dbConn *DbServiceImpl) FetchRegionRecord(regionCodes []string, quarter, ye
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	query := "SELECT region_code, region_name FROM regions_table where deleted IS NULL and quarter=$1 and year=$2"
+	var (
+		rows  *sql.Rows
+		dbErr error
+	)
 
-	if len(regionCodes) != 0 {
-
-		query = "SELECT region_code, region_name FROM regions_table WHERE region_code IN ("
-
+	switch {
+	case len(regionCodes) != 0 && quarter == 0 && year == 0:
+		query := "SELECT region_code, region_name FROM regions_table WHERE region_code IN ("
 		for _, v := range regionCodes {
 			query += "'" + v + "', "
 		}
-
 		query = strings.TrimSuffix(query, ", ")
 		query += ") and deleted IS NULL and quarter=$1 and year=$2"
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, query, quarter, year)
+	case quarter != 0 && year != 0:
+		query := "SELECT region_code, region_name FROM regions_table where deleted IS NULL and quarter=$1 and year=$2"
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, query, quarter, year)
+	default:
+		query := "SELECT DISTINCT region_code, region_name FROM regions_table where deleted IS NULL"
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, query)
 	}
 
-	rows, dbErr := dbConn.DBClient.QueryContext(ctx, query, quarter, year)
 	if dbErr != nil {
 		if dbErr == sql.ErrNoRows {
 			return nil, &errors.Error{

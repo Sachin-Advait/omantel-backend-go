@@ -13,6 +13,42 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 )
 
+/////////////////////// REGION TABLE ///////////////////////////
+
+func (dbConn *DbServiceImpl) FetchRegionName() ([]string, *errors.Error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	rows, err := dbConn.DBClient.QueryContext(ctx, "SELECT distinct region_name FROM regions_table where deleted IS NULL")
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerError,
+			Message:    "Internal Server Error",
+			Details:    "FetchRegionName: region query - " + err.Error(),
+		}
+	}
+
+	var regions []string
+
+	for rows.Next() {
+		var region string
+		err = rows.Scan(&region)
+		if err != nil {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerError,
+				Message:    "Internal Server Error",
+				Details:    "FetchRegionName: region scan - " + err.Error(),
+			}
+		}
+		regions = append(regions, region)
+	}
+
+	return regions, nil
+}
+
 /////////////////////// OUTLET TABLE ///////////////////////////
 
 func (dbConn *DbServiceImpl) FetchOutletDetailsViaName(regionName, outletName string, quarter, year int) (*models.OutletResponse, *errors.Error) {

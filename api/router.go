@@ -99,6 +99,7 @@ func incentiveRoutes(group *gin.RouterGroup) {
 	group.POST(constant.TopTenSalesCountPath, user.GetTopTenEmpProductSalesCount)
 	group.POST(constant.TopTenSalesTargetPath, user.GetTopTenEmpSalesAndTarget)
 
+	group.GET(constant.FetchRegionPath, user.GetUserRegions)
 	group.POST(constant.UserReportPath, user.GetUserReport)
 	group.POST(constant.UserSalesCountPath, user.GetUserSalesCount)
 	group.POST(constant.UserPlanPerCategoryPath, user.GetUserPlanCategory)
@@ -177,6 +178,7 @@ func incentiveAdminRoutes(group *gin.RouterGroup) {
 	group.GET(constant.FetchNotificationPath, admin.FetchNotification)
 	group.GET(constant.DeleteNotificationPath, admin.DeleteNotification)
 
+	group.GET(constant.FetchRegionPath, admin.GetUserRegions)
 	group.GET(constant.LoginChartPath, admin.GetUserLoginCount)
 	group.GET(constant.LoginDetailsPath, admin.GetUserLoginDetails)
 

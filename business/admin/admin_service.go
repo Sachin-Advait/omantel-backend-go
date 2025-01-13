@@ -45,6 +45,7 @@ type AdminProvider interface {
 	FetchNotification(ctx *gin.Context, category, id string) (interface{}, *errors.Error)
 	DeleteNotification(ctx *gin.Context, id string) *errors.Error
 
+	FetchUserRegions(ctx *gin.Context) ([]string, *errors.Error)
 	GetUserLoginCount(ctx *gin.Context, region string, start time.Time, end time.Time) (*models.UserLoginCountResponse, *errors.Error)
 	GetUserLoginDetails(ctx *gin.Context, req *models.UserLoginDetailsRequest) (*models.UserLoginDetailsResponse, *errors.Error)
 }

@@ -7,6 +7,8 @@ import (
 )
 
 type UserProvider interface {
+	FetchUserRegions(ctx *gin.Context) ([]string, *errors.Error)
+
 	GenerateOTP(ctx *gin.Context, id string) (map[string]string, *errors.Error)
 	VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*models.VerifyOTPResponse, *errors.Error)
 	GenerateToken(ctx *gin.Context) (string, *errors.Error)

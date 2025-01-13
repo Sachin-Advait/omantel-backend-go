@@ -42,6 +42,8 @@ type DbService interface {
 	FetchVOCCriteria(year int) error
 	FetchVOCMaxPay(year int) error
 
+	FetchRegionName() ([]string, *errors.Error)
+
 	UpsertNotificationRecord(userId string, dbReq *models.NotificationDB) (string, *errors.Error)
 	FetchSingleNotificationRecord(id string) (*models.NotificationDB, *errors.Error)
 	FetchNotificationRecord(category string) ([]*models.NotificationDB, *errors.Error)
