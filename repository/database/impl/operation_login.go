@@ -127,3 +127,56 @@ func (dbConn *DbServiceImpl) FetchLoginDetails(page int, size int, region string
 
 	return response, nil
 }
+
+func (dbConn *DbServiceImpl) FetchAllLoginDistinctUsers(region string, start, end time.Time) ([]string, *errors.Error) {
+
+	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchAllLoginUsers start")
+	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchAllLoginUsers done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	var (
+		rows  *sql.Rows
+		dbErr error
+		err   = &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+		}
+	)
+
+	if region != "" {
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT distinct emp_id FROM user_login_table where region=$1 AND login >= $2 AND login <= $3;",
+			region, start, end)
+	} else {
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "SELECT distinct emp_id FROM user_login_table where login >= $1 AND login <= $2;", start, end)
+	}
+
+	if dbErr != nil {
+		if dbErr == sql.ErrNoRows {
+			return nil, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidDetailsCode,
+				Err:        errors.InvalidDetails,
+				Message:    "NO RECORDS FOUND",
+				Details:    "FetchAllLoginDistinctUsers: query failed-" + dbErr.Error(),
+			}
+		}
+		err.Details = "FetchAllLoginDistinctUsers: query failed-" + dbErr.Error()
+		return nil, err
+	}
+
+	response := make([]string, 0)
+
+	for rows.Next() {
+		var staffId string
+		if dbErr := rows.Scan(&staffId); dbErr != nil {
+			err.Details = "FetchAllLoginDistinctUsers: scan failed-" + dbErr.Error()
+			return nil, err
+		}
+		response = append(response, staffId)
+	}
+
+	return response, nil
+}

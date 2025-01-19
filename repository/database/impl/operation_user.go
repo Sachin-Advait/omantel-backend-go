@@ -202,6 +202,67 @@ func (dbConn *DbServiceImpl) FetchDistinctUserCountFromOutletAndRegion(region, o
 	return count, nil
 }
 
+// FetchDistinctUserIdFromOutletAndRegion - fetch distinct userid with duplicacy state not handled
+func (dbConn *DbServiceImpl) FetchDistinctUserIdFromOutletAndRegion(region, outlet string, quarter, year int) ([]string, *errors.Error) {
+
+	err := &errors.Error{
+		StatusCode: http.StatusInternalServerError,
+		Code:       errors.InternalServerErrorCode,
+		Message:    errors.InternalServerError,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	var (
+		rows  *sql.Rows
+		dbErr error
+	)
+
+	switch {
+	case region != "" && outlet != "":
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id from user_master_table where deleted IS NULL and region=$1 and outlet=$2 and quarter=$3 and year=$4 and isActive=true",
+			region, outlet, quarter, year)
+	case region != "":
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id from user_master_table where deleted IS NULL and region=$1 and quarter=$2 and year=$3 and isActive=true",
+			region, quarter, year)
+	case outlet != "":
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id from user_master_table where deleted IS NULL and outlet=$1 and quarter=$2 and year=$3 and isActive=true",
+			outlet, quarter, year)
+	default:
+		rows, dbErr = dbConn.DBClient.QueryContext(ctx, "select emp_id from user_master_table where deleted IS NULL and quarter=$1 and year=$2 and isActive=true",
+			quarter, year)
+	}
+
+	if dbErr != nil {
+		if dbErr == sql.ErrNoRows {
+			return nil, &errors.Error{
+				StatusCode: http.StatusBadRequest,
+				Code:       errors.InvalidDetailsCode,
+				Err:        errors.InvalidDetails,
+				Message:    "NO RECORDS FOUND",
+				Details:    "FetchDistinctUserCountFromOutletAndRegion: query failed-" + dbErr.Error(),
+			}
+		}
+
+		err.Details = "FetchDistinctUserCountFromOutletAndRegion: query failed-" + dbErr.Error()
+		return nil, err
+	}
+
+	var response []string
+
+	for rows.Next() {
+		var userId string
+		if dbErr := rows.Scan(&userId); dbErr != nil {
+			err.Details = "FetchDistinctUserCountFromOutletAndRegion: scan failed-" + dbErr.Error()
+			return nil, err
+		}
+		response = append(response, userId)
+	}
+
+	return response, nil
+}
+
 // TODO: FetchUserDetails - for basic user info and manger of that user
 func (dbConn *DbServiceImpl) FetchUserDetails(userID string, quarter, year int) (*models.UserBasicDetailsDB, *errors.Error) {
 

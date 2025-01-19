@@ -47,16 +47,21 @@ func GetUserLoginDetails(ctx *gin.Context) {
 	}
 
 	page, _ := strconv.Atoi(ctx.Query("page"))
-	if page == 0 {
+	if page <= 0 {
 		page = 1
 	}
 	size, _ := strconv.Atoi(ctx.Query("size"))
-	if size == 0 {
+	if size <= 0 {
 		size = 30
+	}
+	login := true
+	if ctx.Query("login") == "false" {
+		login = false
 	}
 
 	userReq := &models.UserLoginDetailsRequest{
 		Region: ctx.Query("region"),
+		Login:  login,
 		Page:   page,
 		Size:   size,
 	}

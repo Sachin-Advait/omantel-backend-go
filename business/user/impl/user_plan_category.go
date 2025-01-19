@@ -25,14 +25,14 @@ func (impl *UserImpl) GetUserPlanCategory(ctx *gin.Context, userID, product stri
 		}
 	}
 
-	if product != constant.HBBCategory {
-		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidReqParameters,
-			Message:    "INVALID PRODUCT - " + product,
-			Details:    "invalid product - " + product,
-		}
-	}
+	// if product != constant.HBBCategory {
+	// 	return nil, &errors.Error{
+	// 		StatusCode: http.StatusBadRequest,
+	// 		Code:       errors.InvalidReqParameters,
+	// 		Message:    "INVALID PRODUCT - " + product,
+	// 		Details:    "invalid product - " + product,
+	// 	}
+	// }
 
 	report, err := impl.CacheService.GetUserPlanCategoryReport(userID, product, isQuarterReport, month, quarter, year)
 	if err == nil && report != nil {

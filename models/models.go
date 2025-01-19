@@ -387,6 +387,7 @@ type UserLoginDetailsRequest struct {
 	Region string    `json:"region"`
 	From   time.Time `json:"from"`
 	To     time.Time `json:"to"`
+	Login  bool      `json:"login"`
 }
 
 type UserLoginDetailsResponse struct {

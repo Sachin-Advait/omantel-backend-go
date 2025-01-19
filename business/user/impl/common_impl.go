@@ -3610,6 +3610,18 @@ func (impl *UserImpl) updateAgentUserPlanPerCategoryReport(ctx *gin.Context, use
 			continue
 		}
 
+		switch {
+		case product == "CBU" && v.BusinessUnit == "CORPORATE":
+		case product == "EBU" && v.BusinessUnit == "CONSUMER":
+		default:
+			continue
+		}
+
+		//only consider HBB (i.e CBU-HBB and EBU-HBB) and ignore WFBB (i.e CBU-WFBB and EBU-WFBB)
+		if !(v.LineType == "ILL SERVICE" || v.LineType == "MPLS SERVICE" || v.LineType == "P2P LEASED LINE SERVICE" || v.LineType == "PSTN VOICE SERVICE") {
+			continue
+		}
+
 		if response[v.SubCategory] == nil {
 			response[v.SubCategory] = make(map[string]interface{})
 		}

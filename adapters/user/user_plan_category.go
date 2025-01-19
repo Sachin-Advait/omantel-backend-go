@@ -21,7 +21,7 @@ func GetUserPlanCategory(ctx *gin.Context, req *models.UserSalesRequest) (int, i
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
 
-	isQuarterReport, quarter, month, year, err := models.ValidateUserSalesRequest(req, ctxHeader)
+	isQuarterReport, quarter, month, year, err := models.ValidateUserPlanRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetUserPlanCategory : validation failed")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
@@ -34,6 +34,16 @@ func GetUserPlanCategory(ctx *gin.Context, req *models.UserSalesRequest) (int, i
 	}
 
 	product := strings.ToUpper(req.Product)
+	// if !(product == "CBU" || product == "EBU") {
+	// 	logger.FileLogger.CtxError(ctx).Err(errors.New("invalid product")).Msg("GetUserPlanCategory : validation failed")
+	// 	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
+	// 		Text: "invalid product" + product, CreateTime: time.Now().Local()})
+
+	// 	return http.StatusBadRequest, &models.APIFailureResponse{
+	// 		Error:   errors.InvalidReqParameters,
+	// 		Message: "invalid product-" + product,
+	// 	}
+	// }
 
 	response, errs := userAPIProvider.GetUserPlanCategory(ctx, req.ClientId, product, isQuarterReport, quarter, month, year)
 	if errs != nil {
