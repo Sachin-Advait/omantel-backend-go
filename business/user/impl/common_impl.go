@@ -2339,7 +2339,7 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 			if srvcCategoryCBUHBBTotal != 0 {
 				obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryCBUHBBTotal)
 			}
-			response.SubCategory.CBUHBB[srvccategory] = obj
+			response.ServiceCategory.CBUHBB[srvccategory] = obj
 		}
 		var srvcCategoryEBUHBBTotal int
 		for srvccategory, v := range response.ServiceCategory.EBUHBB {
@@ -2351,7 +2351,7 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 			if srvcCategoryEBUHBBTotal != 0 {
 				obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
 			}
-			response.SubCategory.EBUHBB[srvccategory] = obj
+			response.ServiceCategory.EBUHBB[srvccategory] = obj
 		}
 
 		go func(report *models.HbbUserSalesCountPerPlanDB) {
@@ -3381,7 +3381,7 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 			if srvcCategoryEBUHBBTotal != 0 {
 				obj.Percentage = float64(obj.Count) * 100 / float64(srvcCategoryEBUHBBTotal)
 			}
-			response.SubCategory.EBUHBB[srvccategory] = obj
+			response.ServiceCategory.EBUHBB[srvccategory] = obj
 		}
 
 		go func(report *models.HbbUserSalesCountPerPlanDB) {
