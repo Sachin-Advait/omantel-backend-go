@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
 
@@ -73,9 +74,15 @@ func (impl *AdminImpl) GetUserLoginDetails(ctx *gin.Context, req *models.UserLog
 			if offset >= len(users) {
 				users = []*models.LoginUsers{}
 			} else {
-				users = users[offset:]
+				if len(users) > offset+req.Size {
+					users = users[offset : offset+req.Size]
+				} else {
+					users = users[offset:]
+				}
 			}
 		}
+
+		fmt.Println("debug", offset, len(users))
 	}
 
 	for _, user := range users {
