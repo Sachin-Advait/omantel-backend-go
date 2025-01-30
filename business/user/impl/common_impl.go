@@ -2021,7 +2021,7 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 					response.BusinessUnit.Government = &models.SaleCalculation{}
 				}
 				response.BusinessUnit.Government.Count = response.BusinessUnit.Government.Count + v.Quantity
-			case "CORPORATE":
+			case "CONSUMER":
 				if response.BusinessUnit.Corporate == nil {
 					response.BusinessUnit.Corporate = &models.SaleCalculation{}
 				}
@@ -2118,7 +2118,7 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 					count = response.Plans.CBUHBB[v.CurrentPlan]
 					response.Plans.CBUHBB[v.CurrentPlan] = count + v.Quantity
 				}
-			case "CONSUMER":
+			case "CORPORATE":
 				if response.BusinessUnit.Consumer == nil {
 					response.BusinessUnit.Consumer = &models.SaleCalculation{}
 				}
@@ -2382,7 +2382,7 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 					response.BusinessUnit.Government = &models.SaleCalculation{}
 				}
 				response.BusinessUnit.Government.Count = response.BusinessUnit.Government.Count + v.Quantity
-			case "CORPORATE":
+			case "CONSUMER":
 				if response.BusinessUnit.Corporate == nil {
 					response.BusinessUnit.Corporate = &models.SaleCalculation{}
 				}
@@ -2413,7 +2413,7 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				response.Plans.CBU["total"] = total + v.Quantity
 				total = response.Plans.CBU[v.CurrentPlan]
 				response.Plans.CBU[v.CurrentPlan] = total + v.Quantity
-			case "CONSUMER":
+			case "CORPORATE":
 				if response.BusinessUnit.Consumer == nil {
 					response.BusinessUnit.Consumer = &models.SaleCalculation{}
 				}
@@ -3611,8 +3611,8 @@ func (impl *UserImpl) updateAgentUserPlanPerCategoryReport(ctx *gin.Context, use
 		}
 
 		switch {
-		case product == "CBU" && v.BusinessUnit == "CORPORATE":
-		case product == "EBU" && v.BusinessUnit == "CONSUMER":
+		case product == "CBU" && v.BusinessUnit == "CONSUMER":
+		case product == "EBU" && v.BusinessUnit == "CORPORATE":
 		default:
 			continue
 		}
