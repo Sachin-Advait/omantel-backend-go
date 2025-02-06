@@ -2022,10 +2022,10 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				}
 				response.BusinessUnit.Government.Count = response.BusinessUnit.Government.Count + v.Quantity
 			case "CONSUMER":
-				if response.BusinessUnit.Corporate == nil {
-					response.BusinessUnit.Corporate = &models.SaleCalculation{}
+				if response.BusinessUnit.Consumer == nil {
+					response.BusinessUnit.Consumer = &models.SaleCalculation{}
 				}
-				response.BusinessUnit.Corporate.Count = response.BusinessUnit.Corporate.Count + v.Quantity
+				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
 
 				if v.LineType == "FIXED WFBB SERVICE" {
 					//category
@@ -2119,10 +2119,10 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 					response.Plans.CBUHBB[v.CurrentPlan] = count + v.Quantity
 				}
 			case "CORPORATE":
-				if response.BusinessUnit.Consumer == nil {
-					response.BusinessUnit.Consumer = &models.SaleCalculation{}
+				if response.BusinessUnit.Corporate == nil {
+					response.BusinessUnit.Corporate = &models.SaleCalculation{}
 				}
-				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
+				response.BusinessUnit.Corporate.Count = response.BusinessUnit.Corporate.Count + v.Quantity
 
 				if v.LineType == "FIXED WFBB SERVICE" {
 					//category
@@ -2383,10 +2383,10 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				}
 				response.BusinessUnit.Government.Count = response.BusinessUnit.Government.Count + v.Quantity
 			case "CONSUMER":
-				if response.BusinessUnit.Corporate == nil {
-					response.BusinessUnit.Corporate = &models.SaleCalculation{}
+				if response.BusinessUnit.Consumer == nil {
+					response.BusinessUnit.Consumer = &models.SaleCalculation{}
 				}
-				response.BusinessUnit.Corporate.Count = response.BusinessUnit.Corporate.Count + v.Quantity
+				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
 
 				//subcategory
 				if response.SubCategory.CBU == nil {
@@ -2414,10 +2414,10 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 				total = response.Plans.CBU[v.CurrentPlan]
 				response.Plans.CBU[v.CurrentPlan] = total + v.Quantity
 			case "CORPORATE":
-				if response.BusinessUnit.Consumer == nil {
-					response.BusinessUnit.Consumer = &models.SaleCalculation{}
+				if response.BusinessUnit.Corporate == nil {
+					response.BusinessUnit.Corporate = &models.SaleCalculation{}
 				}
-				response.BusinessUnit.Consumer.Count = response.BusinessUnit.Consumer.Count + v.Quantity
+				response.BusinessUnit.Corporate.Count = response.BusinessUnit.Corporate.Count + v.Quantity
 
 				//subcategory
 				if response.SubCategory.EBU == nil {
