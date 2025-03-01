@@ -2365,7 +2365,7 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 			}
 		}(&response)
 
-		return response, nil
+		return &response, nil
 	} else {
 		response := models.UserSalesCountPerPlanDB{
 			Product:    product,
@@ -2510,7 +2510,7 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 			}
 		}(&response)
 
-		return response, nil
+		return &response, nil
 	}
 }
 
@@ -2586,7 +2586,7 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 		}
 		for _, eachAgent := range userAgents {
 			agentReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
-			if !(err == nil && agentReport != nil) {
+			if err != nil {
 				userSaleCount, _ := agentReport.(*models.HbbUserSalesCountPerPlanDB)
 				if !objecthelper.IsCurrentDay(userSaleCount.ModifiedAt) {
 					resp, err := impl.updateAgentUserSalesCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
