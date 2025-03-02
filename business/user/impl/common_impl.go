@@ -2587,6 +2587,16 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 		for _, eachAgent := range userAgents {
 			agentReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
 			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMSalesCountReport : cache report failed")
+				resp, err := impl.updateAgentUserSalesCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+				if err != nil {
+					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMSalesCountReport : agent report failed")
+					continue
+				}
+				rawReport, _ := json.Marshal(resp)
+				logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("OMSalesCountReport : agent log")
+				agentReport = resp
+			} else if agentReport != nil {
 				userSaleCount, _ := agentReport.(*models.HbbUserSalesCountPerPlanDB)
 				if !objecthelper.IsCurrentDay(userSaleCount.ModifiedAt) {
 					resp, err := impl.updateAgentUserSalesCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
@@ -2599,9 +2609,11 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 					agentReport = resp
 				}
 			}
+
 			if agentReport == nil {
 				continue
 			}
+
 			userSaleCount := agentReport.(*models.HbbUserSalesCountPerPlanDB)
 
 			//businessUnit
@@ -2896,7 +2908,8 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 		}
 		for _, eachAgent := range userAgents {
 			agentReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
-			if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(response.ModifiedAt)) {
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMSalesCountReport : cache report failed")
 				resp, err := impl.updateAgentUserSalesCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
 				if err != nil {
 					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMSalesCountReport : agent report failed")
@@ -2905,10 +2918,24 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 				rawReport, _ := json.Marshal(resp)
 				logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("OMSalesCountReport : agent log")
 				agentReport = resp
+			} else if agentReport != nil {
+				userSaleCount, _ := agentReport.(*models.UserSalesCountPerPlanDB)
+				if !objecthelper.IsCurrentDay(userSaleCount.ModifiedAt) {
+					resp, err := impl.updateAgentUserSalesCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+					if err != nil {
+						logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMSalesCountReport : agent report failed")
+						continue
+					}
+					rawReport, _ := json.Marshal(resp)
+					logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("OMSalesCountReport : agent log")
+					agentReport = resp
+				}
 			}
+
 			if agentReport == nil {
 				continue
 			}
+
 			userSaleCount := agentReport.(*models.UserSalesCountPerPlanDB)
 
 			//businessUnit
@@ -3103,7 +3130,8 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 		}
 		for _, eachAgent := range allDistinctOM {
 			agentReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
-			if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(response.ModifiedAt)) {
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrSalesCountReport : cache report failed")
 				resp, err := impl.updateOutletManagerUserSaleCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
 				if err != nil {
 					logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrSalesCountReport : agent report failed")
@@ -3112,7 +3140,20 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				rawReport, _ := json.Marshal(resp)
 				logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("MngrSalesCountReport : agent log")
 				agentReport = resp
+			} else if agentReport != nil {
+				userSaleCount, _ := agentReport.(*models.HbbUserSalesCountPerPlanDB)
+				if !objecthelper.IsCurrentDay(userSaleCount.ModifiedAt) {
+					resp, err := impl.updateOutletManagerUserSaleCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+					if err != nil {
+						logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrSalesCountReport : agent report failed")
+						continue
+					}
+					rawReport, _ := json.Marshal(resp)
+					logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("MngrSalesCountReport : agent log")
+					agentReport = resp
+				}
 			}
+
 			if agentReport == nil {
 				continue
 			}
@@ -3404,7 +3445,8 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 		}
 		for _, eachAgent := range allDistinctOM {
 			agentReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
-			if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(response.ModifiedAt)) {
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrSalesCountReport : cache report failed")
 				resp, err := impl.updateAgentUserSalesCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
 				if err != nil {
 					logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrSalesCountReport : agent report failed")
@@ -3413,7 +3455,20 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 				rawReport, _ := json.Marshal(resp)
 				logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("MngrSalesCountReport : agent log")
 				agentReport = resp
+			} else if agentReport != nil {
+				userSaleCount, _ := agentReport.(*models.UserSalesCountPerPlanDB)
+				if !objecthelper.IsCurrentDay(userSaleCount.ModifiedAt) {
+					resp, err := impl.updateAgentUserSalesCountReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+					if err != nil {
+						logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrSalesCountReport : agent report failed")
+						continue
+					}
+					rawReport, _ := json.Marshal(resp)
+					logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("MngrSalesCountReport : agent log")
+					agentReport = resp
+				}
 			}
+
 			if agentReport == nil {
 				continue
 			}
@@ -3727,7 +3782,17 @@ func (impl *UserImpl) updateOutletManagerUserPlanPerCategoryReport(ctx *gin.Cont
 
 	for _, eachAgent := range userAgents {
 		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
-		if !(err == nil && agentReport != nil) {
+		if err != nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMUserPlanPerCategoryReport : cache report failed")
+			resp, err := impl.updateAgentUserPlanPerCategoryReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMUserPlanPerCategoryReport : agent report failed")
+				continue
+			}
+			rawReport, _ := json.Marshal(resp)
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("OMUserPlanPerCategoryReport : agent log")
+			agentReport = resp
+		} else if agentReport != nil {
 			report, _ := agentReport.(map[string]interface{})
 			modifiedAt, _ := report["ModifiedAt"].(time.Time)
 			if objecthelper.IsCurrentDay(modifiedAt) {
@@ -3870,7 +3935,17 @@ func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, m
 
 	for _, eachAgent := range allDistinctOM {
 		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, isQuarterReport, month, quarter, year)
-		if !(err == nil && agentReport != nil) {
+		if err != nil {
+			logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrUserPlanPerCategoryReport : cache report failed")
+			resp, err := impl.updateOutletManagerUserPlanPerCategoryReport(ctx, eachAgent, product, isQuarterReport, quarter, month, year)
+			if err != nil {
+				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrUserPlanPerCategoryReport : agent report failed")
+				continue
+			}
+			rawReport, _ := json.Marshal(resp)
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("MngrUserPlanPerCategoryReport : agent log")
+			agentReport = resp
+		} else if agentReport != nil {
 			report, _ := agentReport.(map[string]interface{})
 			modifiedAt, _ := report["ModifiedAt"].(time.Time)
 			if objecthelper.IsCurrentDay(modifiedAt) {
