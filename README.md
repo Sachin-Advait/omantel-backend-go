@@ -362,6 +362,8 @@ Insync@12345
 https://bitbucket.org/gismohe/bitool-backend-scheduler/src/master/
 https://bitbucket.org/gismohe/bitool_backend/src/master/
 
+env GOARCH=amd64 GOOS=linux go build
+
 ./incentive_calculator --port 8090 --env uat
 
 scp ./incentive_calculator root@93.115.22.132:/root/go/src/gitlab.com/rendezvousPoint/incentive_calculator
