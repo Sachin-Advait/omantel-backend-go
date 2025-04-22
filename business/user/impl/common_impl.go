@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"reflect"
 	"sort"
 	"time"
 
@@ -2959,34 +2960,48 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 			if response.SubCategory.EBU == nil {
 				response.SubCategory.EBU = make(map[string]interface{})
 			}
+			if response.SubCategory.CBU["total"] == nil {
+				response.SubCategory.CBU["total"] = 0
+			}
+			if response.SubCategory.EBU["total"] == nil {
+				response.SubCategory.EBU["total"] = 0
+			}
+
 			for subcategory, val := range userSaleCount.SubCategory.CBU {
+				if val == nil {
+					continue
+				}
 				if subcategory == "total" {
-					if response.SubCategory.CBU["total"] == nil {
-						response.SubCategory.CBU["total"] = 0
-					}
-					response.SubCategory.CBU["total"] = val.(int) + userSaleCount.SubCategory.CBU["total"].(int)
+					response.SubCategory.CBU["total"] = response.SubCategory.CBU["total"].(int) + val.(int)
 					continue
 				}
 				if response.SubCategory.CBU[subcategory] == nil {
 					response.SubCategory.CBU[subcategory] = &models.SaleCalculation{}
 				}
-				userSubCat := val.(*models.SaleCalculation)
+				userSubCat, ok := val.(*models.SaleCalculation)
+				if !ok {
+					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Interface("type", reflect.TypeOf(val)).
+						Msg("OMSalesCountReport : cbu invalid type conversion")
+					continue
+				}
 				reportSubCat := response.SubCategory.CBU[subcategory].(*models.SaleCalculation)
 				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
 				response.SubCategory.CBU[subcategory] = reportSubCat
 			}
 			for subcategory, val := range userSaleCount.SubCategory.EBU {
 				if subcategory == "total" {
-					if response.SubCategory.EBU["total"] == nil {
-						response.SubCategory.EBU["total"] = 0
-					}
-					response.SubCategory.EBU["total"] = val.(int) + userSaleCount.SubCategory.EBU["total"].(int)
+					response.SubCategory.EBU["total"] = response.SubCategory.EBU["total"].(int) + val.(int)
 					continue
 				}
 				if response.SubCategory.EBU[subcategory] == nil {
 					response.SubCategory.EBU[subcategory] = &models.SaleCalculation{}
 				}
-				userSubCat := val.(*models.SaleCalculation)
+				userSubCat, ok := val.(*models.SaleCalculation)
+				if !ok {
+					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Interface("type", reflect.TypeOf(val)).
+						Msg("OMSalesCountReport : ebu invalid type conversion")
+					continue
+				}
 				reportSubCat := response.SubCategory.EBU[subcategory].(*models.SaleCalculation)
 				reportSubCat.Count = reportSubCat.Count + userSubCat.Count
 				response.SubCategory.EBU[subcategory] = reportSubCat
