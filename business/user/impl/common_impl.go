@@ -2650,6 +2650,19 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 			response.Category.EBUHBB.Count += userSaleCount.Category.EBUHBB.Count
 
 			//subCategory
+			if response.SubCategory.CBUHBB == nil {
+				response.SubCategory.CBUHBB = make(map[string]interface{})
+			}
+			if response.SubCategory.CBUWFBB == nil {
+				response.SubCategory.CBUWFBB = make(map[string]interface{})
+			}
+			if response.SubCategory.EBUWFBB == nil {
+				response.SubCategory.EBUWFBB = make(map[string]interface{})
+			}
+			if response.SubCategory.EBUHBB == nil {
+				response.SubCategory.EBUHBB = make(map[string]interface{})
+			}
+
 			for subcategory, val := range userSaleCount.SubCategory.CBUWFBB {
 				if subcategory == "total" {
 					if response.SubCategory.CBUWFBB["total"] == nil {
@@ -2716,6 +2729,19 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 			}
 
 			//serviceCategory
+			if response.ServiceCategory.CBUHBB == nil {
+				response.ServiceCategory.CBUHBB = make(map[string]interface{})
+			}
+			if response.ServiceCategory.CBUWFBB == nil {
+				response.ServiceCategory.CBUWFBB = make(map[string]interface{})
+			}
+			if response.ServiceCategory.EBUWFBB == nil {
+				response.ServiceCategory.EBUWFBB = make(map[string]interface{})
+			}
+			if response.ServiceCategory.EBUHBB == nil {
+				response.ServiceCategory.EBUHBB = make(map[string]interface{})
+			}
+
 			for srvccategory, val := range userSaleCount.ServiceCategory.CBUWFBB {
 				if srvccategory == "total" {
 					if response.ServiceCategory.CBUWFBB["total"] == nil {
@@ -2766,18 +2792,19 @@ func (impl *UserImpl) updateOutletManagerUserSaleCountReport(ctx *gin.Context, o
 			}
 
 			//plans
-			if userSaleCount.Plans.CBUWFBB == nil {
-				userSaleCount.Plans.CBUWFBB = make(map[string]int)
+			if response.Plans.CBUWFBB == nil {
+				response.Plans.CBUWFBB = make(map[string]int)
 			}
-			if userSaleCount.Plans.CBUHBB == nil {
-				userSaleCount.Plans.CBUHBB = make(map[string]int)
+			if response.Plans.CBUHBB == nil {
+				response.Plans.CBUHBB = make(map[string]int)
 			}
-			if userSaleCount.Plans.EBUWFBB == nil {
-				userSaleCount.Plans.EBUWFBB = make(map[string]int)
+			if response.Plans.EBUWFBB == nil {
+				response.Plans.EBUWFBB = make(map[string]int)
 			}
-			if userSaleCount.Plans.EBUHBB == nil {
-				userSaleCount.Plans.EBUHBB = make(map[string]int)
+			if response.Plans.EBUHBB == nil {
+				response.Plans.EBUHBB = make(map[string]int)
 			}
+
 			for plan, count := range userSaleCount.Plans.CBUWFBB {
 				response.Plans.CBUWFBB[plan] += count
 			}
@@ -3207,6 +3234,19 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 			response.Category.EBUHBB.Count += userSaleCount.Category.EBUHBB.Count
 
 			//subCategory
+			if response.SubCategory.CBUWFBB == nil {
+				response.SubCategory.CBUWFBB = make(map[string]interface{})
+			}
+			if response.SubCategory.CBUHBB == nil {
+				response.SubCategory.CBUHBB = make(map[string]interface{})
+			}
+			if response.SubCategory.EBUWFBB == nil {
+				response.SubCategory.EBUWFBB = make(map[string]interface{})
+			}
+			if response.SubCategory.EBUHBB == nil {
+				response.SubCategory.EBUHBB = make(map[string]interface{})
+			}
+
 			for subcategory, val := range userSaleCount.SubCategory.CBUWFBB {
 				if subcategory == "total" {
 					if response.SubCategory.CBUWFBB["total"] == nil {
@@ -3273,6 +3313,19 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 			}
 
 			//serviceCategory
+			if response.ServiceCategory.CBUWFBB == nil {
+				response.ServiceCategory.CBUWFBB = make(map[string]interface{})
+			}
+			if response.ServiceCategory.CBUHBB == nil {
+				response.ServiceCategory.CBUHBB = make(map[string]interface{})
+			}
+			if response.ServiceCategory.EBUWFBB == nil {
+				response.ServiceCategory.EBUWFBB = make(map[string]interface{})
+			}
+			if response.ServiceCategory.EBUHBB == nil {
+				response.ServiceCategory.EBUHBB = make(map[string]interface{})
+			}
+
 			for srvccategory, val := range userSaleCount.ServiceCategory.CBUWFBB {
 				if srvccategory == "total" {
 					if response.ServiceCategory.CBUWFBB["total"] == nil {
@@ -3323,18 +3376,19 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 			}
 
 			//plans
-			if userSaleCount.Plans.CBUWFBB == nil {
-				userSaleCount.Plans.CBUWFBB = make(map[string]int)
+			if response.Plans.CBUWFBB == nil {
+				response.Plans.CBUWFBB = make(map[string]int)
 			}
-			if userSaleCount.Plans.CBUHBB == nil {
-				userSaleCount.Plans.CBUHBB = make(map[string]int)
+			if response.Plans.CBUHBB == nil {
+				response.Plans.CBUHBB = make(map[string]int)
 			}
-			if userSaleCount.Plans.EBUWFBB == nil {
-				userSaleCount.Plans.EBUWFBB = make(map[string]int)
+			if response.Plans.EBUWFBB == nil {
+				response.Plans.EBUWFBB = make(map[string]int)
 			}
-			if userSaleCount.Plans.EBUHBB == nil {
-				userSaleCount.Plans.EBUHBB = make(map[string]int)
+			if response.Plans.EBUHBB == nil {
+				response.Plans.EBUHBB = make(map[string]int)
 			}
+
 			for plan, count := range userSaleCount.Plans.CBUWFBB {
 				response.Plans.CBUWFBB[plan] += count
 			}
