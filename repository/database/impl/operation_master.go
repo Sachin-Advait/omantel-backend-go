@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/rendezvousPoint/incentive-cron-job/utils/helper"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
@@ -309,14 +310,179 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, 
 			continue
 		}
 
-		expiryDate := salesDate.Add(90 * 24 * time.Hour)
+		// expiryDate := salesDate.Add(90 * 24 * time.Hour)
+		// if !terminateDate.IsZero() && terminateDate.Sub(expiryDate) <= 0 { //Months<3
+		// 	if !strings.Contains(subCategory.(string), "INVOLUNTARY DEACTIVATION") {
+		// 		logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
+		// 			Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
+		// 		continue
+		// 	}
+		// }
 
-		if !terminateDate.IsZero() && terminateDate.Sub(expiryDate) <= 0 { //Months<3
-			if !strings.Contains(subCategory.(string), "INVOLUNTARY DEACTIVATION") {
-				logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
-					Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
-				continue
+		//TODO: new logic
+		var isTerminated bool
+		if !terminateDate.IsZero() {
+			terminateMonth := int(terminateDate.Month())
+			terminateQuarter := helper.GetQuarterFromMonth(int(terminateDate.Month()))
+			if isQuarterReport && terminateQuarter == quarter {
+				isTerminated = true
 			}
+			if !isQuarterReport && terminateMonth == month {
+				isTerminated = true
+			}
+		}
+
+		if isTerminated {
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
+				Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
+				Int("trx", id).Interface("terminateDate", terminateDate).Msg("FetchActiveUserSales: sale terminated")
+			continue
+		}
+
+		rcrd := &models.SaleRecord{
+			TrxId:           id,
+			Quantity:        quantity,
+			Category:        transactionType,
+			PreviousProduct: prevPlan,
+			CurrentProduct:  currPlan,
+		}
+
+		if trx.SaleRecords[productGroup] == nil {
+			trx.SaleRecords[productGroup] = make([]*models.SaleRecord, 0)
+		}
+
+		trx.SaleRecords[productGroup] = append(trx.SaleRecords[productGroup], rcrd)
+	}
+
+	return trx, nil
+}
+
+// FetchAdjustedActiveUserSales - all adjustedactive sale transaction of a given user and time period
+func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region string, outlet string, isQuarterReport bool, quarter, month, year int) (*models.SaleTransaction, *errors.Error) {
+
+	// logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSales start")
+	// defer logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("end", time.Now()).Msg("FetchUserSales done")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	var (
+		rows *sql.Rows
+		err  error
+	)
+
+	if isQuarterReport {
+		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
+			userID, quarter, year)
+	} else {
+		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3",
+			userID, month, year)
+	}
+
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "FetchUserSales: userID-" + userID + ", query failed - " + err.Error(),
+		}
+	}
+
+	defer rows.Close()
+
+	trx := &models.SaleTransaction{
+		EmpID:  userID,
+		Region: region,
+		Outlet: outlet,
+	}
+
+	trx.SaleRecords = make(map[string][]*models.SaleRecord)
+
+	count := 0
+
+	for rows.Next() {
+
+		var (
+			id              int
+			prevPlan        string
+			currPlan        string
+			quantity        int
+			productGroup    string
+			transactionType string
+			subCategory     interface{}
+			salesDate       time.Time
+			terminateDate   time.Time
+		)
+
+		count++
+
+		if err := rows.Scan(&id, &prevPlan, &currPlan, &quantity, &productGroup, &transactionType, &subCategory, &salesDate, &terminateDate); err != nil {
+			return trx, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    errors.InternalServerError,
+				Details:    "FetchUserSales: " + userID + ", scan failed - " + err.Error(),
+			}
+		}
+
+		switch {
+		case strings.Contains(productGroup, "FIXED") || productGroup == constant.HBBCategory:
+			productGroup = constant.HBBCategory
+
+		case strings.Contains(productGroup, "PREPAID") || productGroup == constant.HayyakCategory:
+			productGroup = constant.HayyakCategory
+
+		case strings.Contains(productGroup, "POSTPAID") || productGroup == constant.BaqatiCategory:
+			productGroup = constant.BaqatiCategory
+
+		default:
+			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: incorrect productGroup")
+			// return trx, &errors.Error{
+			// 	StatusCode: http.StatusInternalServerError,
+			// 	Code:       errors.InternalServerErrorCode,
+			// 	Message:    errors.InternalServerError,
+			// 	Details:    "FetchUserSales: invalid productGrp - " + productGroup,
+			// }
+		}
+
+		if !(productGroup == constant.HBBCategory || productGroup == constant.HayyakCategory || productGroup == constant.BaqatiCategory) {
+			continue
+		}
+
+		if !terminateDate.IsZero() && terminateDate.Before(salesDate) {
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: saleDate-terminateDate incorrect")
+			continue
+		}
+
+		// expiryDate := salesDate.Add(90 * 24 * time.Hour)
+		// if !terminateDate.IsZero() && terminateDate.Sub(expiryDate) <= 0 { //Months<3
+		// 	if !strings.Contains(subCategory.(string), "INVOLUNTARY DEACTIVATION") {
+		// 		logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
+		// 			Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
+		// 		continue
+		// 	}
+		// }
+
+		//TODO: new logic
+		var isTerminated bool
+		if !terminateDate.IsZero() {
+			terminateMonth := int(terminateDate.Month())
+			terminateQuarter := helper.GetQuarterFromMonth(int(terminateDate.Month()))
+			if isQuarterReport && terminateQuarter == quarter {
+				isTerminated = true
+			}
+			if !isQuarterReport && terminateMonth == month {
+				isTerminated = true
+			}
+		}
+
+		if isTerminated {
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
+				Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
+				Int("trx", id).Interface("terminateDate", terminateDate).Msg("FetchActiveUserSales: sale terminated")
+			continue
 		}
 
 		rcrd := &models.SaleRecord{
