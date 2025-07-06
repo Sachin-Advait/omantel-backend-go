@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/rendezvousPoint/incentive-cron-job/utils/helper"
 	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
+	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 /////////////////////// REGION TABLE ///////////////////////////
@@ -323,7 +323,7 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, 
 		var isTerminated bool
 		if !terminateDate.IsZero() {
 			terminateMonth := int(terminateDate.Month())
-			terminateQuarter := helper.GetQuarterFromMonth(int(terminateDate.Month()))
+			terminateQuarter := objecthelper.GetQuarterFromMonth(int(terminateDate.Month()))
 			if isQuarterReport && terminateQuarter == quarter {
 				isTerminated = true
 			}
@@ -357,11 +357,10 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, 
 	return trx, nil
 }
 
-// FetchAdjustedActiveUserSales - all adjustedactive sale transaction of a given user and time period
-func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region string, outlet string, isQuarterReport bool, quarter, month, year int) (*models.SaleTransaction, *errors.Error) {
-
-	// logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSales start")
-	// defer logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("end", time.Now()).Msg("FetchUserSales done")
+// FetchAdjustedActiveUserSales - all active sale transaction of previous quarter ignoring this expired
+// in that quarter as well as in this current quarter
+func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region string, outlet string,
+	isQuarterReport bool, currentQuarter, prevQuarter, year int) (*models.SaleTransaction, *errors.Error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
@@ -371,20 +370,25 @@ func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region 
 		err  error
 	)
 
-	if isQuarterReport {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
-			userID, quarter, year)
-	} else {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3",
-			userID, month, year)
+	if !isQuarterReport {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "FetchAdjustedActiveUserSales: userID-" + userID + ", valid for quarter only",
+		}
 	}
+
+	rows, err = dbConn.DBClient.QueryContext(ctx,
+		"select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
+		userID, prevQuarter, year)
 
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
-			Details:    "FetchUserSales: userID-" + userID + ", query failed - " + err.Error(),
+			Details:    "FetchAdjustedActiveUserSales: userID-" + userID + ", query failed - " + err.Error(),
 		}
 	}
 
@@ -416,12 +420,13 @@ func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region 
 
 		count++
 
-		if err := rows.Scan(&id, &prevPlan, &currPlan, &quantity, &productGroup, &transactionType, &subCategory, &salesDate, &terminateDate); err != nil {
+		if err := rows.Scan(&id, &prevPlan, &currPlan, &quantity, &productGroup, &transactionType, &subCategory,
+			&salesDate, &terminateDate); err != nil {
 			return trx, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
 				Message:    errors.InternalServerError,
-				Details:    "FetchUserSales: " + userID + ", scan failed - " + err.Error(),
+				Details:    "FetchAdjustedActiveUserSales: " + userID + ", scan failed - " + err.Error(),
 			}
 		}
 
@@ -436,51 +441,35 @@ func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region 
 			productGroup = constant.BaqatiCategory
 
 		default:
-			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: incorrect productGroup")
-			// return trx, &errors.Error{
-			// 	StatusCode: http.StatusInternalServerError,
-			// 	Code:       errors.InternalServerErrorCode,
-			// 	Message:    errors.InternalServerError,
-			// 	Details:    "FetchUserSales: invalid productGrp - " + productGroup,
-			// }
+			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
+				Bool("isQuarter", isQuarterReport).Int("quarter", currentQuarter).Int("year", year).Int("trx", id).
+				Msg("FetchAdjustedActiveUserSales: incorrect productGroup")
 		}
 
-		if !(productGroup == constant.HBBCategory || productGroup == constant.HayyakCategory || productGroup == constant.BaqatiCategory) {
+		if !(productGroup == constant.HBBCategory || productGroup == constant.HayyakCategory ||
+			productGroup == constant.BaqatiCategory) {
 			continue
 		}
 
 		if !terminateDate.IsZero() && terminateDate.Before(salesDate) {
-			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: saleDate-terminateDate incorrect")
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
+				Bool("isQuarter", isQuarterReport).Int("quarter", currentQuarter).Int("year", year).Int("trx", id).
+				Msg("FetchAdjustedActiveUserSales: saleDate-terminateDate incorrect")
 			continue
 		}
 
-		// expiryDate := salesDate.Add(90 * 24 * time.Hour)
-		// if !terminateDate.IsZero() && terminateDate.Sub(expiryDate) <= 0 { //Months<3
-		// 	if !strings.Contains(subCategory.(string), "INVOLUNTARY DEACTIVATION") {
-		// 		logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
-		// 			Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
-		// 		continue
-		// 	}
-		// }
-
-		//TODO: new logic
+		//TODO: this logic ignore terminated orders of prev quarters and current quarters
 		var isTerminated bool
 		if !terminateDate.IsZero() {
-			terminateMonth := int(terminateDate.Month())
-			terminateQuarter := helper.GetQuarterFromMonth(int(terminateDate.Month()))
-			if isQuarterReport && terminateQuarter == quarter {
-				isTerminated = true
-			}
-			if !isQuarterReport && terminateMonth == month {
+			terminateQuarter := objecthelper.GetQuarterFromMonth(int(terminateDate.Month()))
+			if isQuarterReport && (terminateQuarter == prevQuarter || terminateQuarter == currentQuarter) {
 				isTerminated = true
 			}
 		}
 
 		if isTerminated {
 			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
-				Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
+				Bool("isQuarter", isQuarterReport).Int("quarter", currentQuarter).Int("year", year).
 				Int("trx", id).Interface("terminateDate", terminateDate).Msg("FetchActiveUserSales: sale terminated")
 			continue
 		}

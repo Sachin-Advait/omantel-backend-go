@@ -152,9 +152,11 @@ type SaleCountRecord struct {
 }
 
 type IndividualIncentive struct {
-	Payout      float64 `json:"payout"`
-	ExtraPayout float64 `json:"extra_payout"`
-	Error       string  `json:"error"`
+	Terminated   int     `json:"terminated"`
+	DeductAmount float64 `json:"deduct_Amount"`
+	Payout       float64 `json:"payout"`
+	ExtraPayout  float64 `json:"extra_payout"`
+	Error        string  `json:"error"`
 }
 
 type TotalIncentive struct {
@@ -163,7 +165,8 @@ type TotalIncentive struct {
 	Hayyak   *IndividualIncentive
 	Upgrade  *IndividualIncentive
 	VOC      *IndividualIncentive
-	TotalPay float64 `json:"total_pay"`
+	TotalPay float64 `json:"total_pay"` // before adjustment
+	FinalPay float64 `json:"final_pay"` // after adjustment
 }
 
 type TargetAchievementData struct {
