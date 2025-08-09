@@ -45,6 +45,12 @@ type UserSalesRequest struct {
 	Product   string `json:"product"`
 }
 
+type MNPSalesRequest struct {
+	ClientId  string `json:"client_id"`
+	Monthly   string `json:"monthly"`
+	Quarterly string `json:"quarterly"`
+}
+
 type UserReportRequest struct {
 	ClientId string `json:"client_id"`
 	Month    int    `json:"month"`
@@ -129,6 +135,7 @@ type SaleRecord struct {
 	CurrentProduct  string
 	Quantity        int
 	Category        string
+	MNPDonor        string
 	SaleDate        time.Time
 }
 
@@ -148,6 +155,7 @@ type SaleCountRecord struct {
 	SubCategory          string
 	LineType             string
 	FinalServiceCategory string
+	MNPDonor             string
 	Quantity             int
 }
 
@@ -167,6 +175,35 @@ type TotalIncentive struct {
 	VOC      *IndividualIncentive
 	TotalPay float64 `json:"total_pay"` // before adjustment
 	FinalPay float64 `json:"final_pay"` // after adjustment
+}
+
+type MNPSalesCount struct {
+	Total      int              `json:"total"`
+	Baqati     *MNPCategorySale `json:"Baqati"`
+	Hayyak     *MNPCategorySale `json:"Hayyak"`
+	CreatedAt  time.Time        `json:"createdAt"`
+	ModifiedAt time.Time        `json:"modifiedAt"`
+}
+
+type MNPCategorySale struct {
+	Count      int                     `json:"count"`
+	Percentage float64                 `json:"percentage"`
+	Error      string                  `json:"error,omitempty"`
+	Types      map[string]*EachMNPSale `json:"types"`
+}
+
+type EachMNPSale struct {
+	Count      int     `json:"count"`
+	Percentage float64 `json:"percentage"`
+}
+
+type MNPPlansCount struct {
+	Total      map[string]map[string]int `json:"total"`
+	Baqati     map[string]map[string]int `json:"Baqati"`
+	Hayyak     map[string]map[string]int `json:"Hayyak"`
+	Error      string                    `json:"error,omitempty"`
+	CreatedAt  time.Time                 `json:"createdAt"`
+	ModifiedAt time.Time                 `json:"modifiedAt"`
 }
 
 type TargetAchievementData struct {

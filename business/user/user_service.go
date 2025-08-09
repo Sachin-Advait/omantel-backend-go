@@ -39,4 +39,9 @@ type UserProvider interface {
 
 	GetUserSalesCount(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error)
 	GetUserPlanCategory(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error)
+
+	GetUserMNPSalesCount(ctx *gin.Context, userID string, isQuarterReport bool,
+		quarter, month, year int) (interface{}, *errors.Error)
+	GetUserMNPPlanCount(ctx *gin.Context, userID string, isQuarterReport bool,
+		quarter, month, year int) (interface{}, *errors.Error)
 }
