@@ -15,6 +15,8 @@ const (
 	NonCluster = "NON_CLUSTER"
 
 	RedisUserReportKey                 = "%s|%v|%v|%v|Report"                 // userId|month|quarter|year|Report
+	RedisUserMNPSaleCountReportKey     = "%s|%v|%v|%v|MNPSaleCountReport"     // userId|month|quarter|year|MNPSaleCountReport
+	RedisUserMNPPlanCountReportKey     = "%s|%v|%v|%v|MNPSalePlanReport"      // userId|month|quarter|year|MNPSalePlanReport
 	RedisOutletRegionReportKey         = "%s|%s|%v|%v|%v|Report"              // outlet|region|month|quarter|year|Report
 	RedisUserSaleCountPerPlanReportKey = "%s|%s|%v|%v|%v|SaleCountPerPlan"    // userId|product|month|quarter|year|SaleCountPerPlan
 	RedisUserPlanPerCategoryReportKey  = "%s|%s|%v|%v|%v|UserPlanPerCategory" // userId|product|month|quarter|year|UserPlanPerCategory

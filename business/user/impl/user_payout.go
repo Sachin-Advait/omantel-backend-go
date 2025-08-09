@@ -29,28 +29,28 @@ func (impl *UserImpl) GetUserPayout(ctx *gin.Context, userID string, isQuarterRe
 	}
 
 	if !isQuarterReport || quarter != 4 {
-		return impl.CoalesceUserPayout(ctx, userID, isQuarterReport, quarter, month, year)
+		return impl.CoalesceAjustedUserPayout(ctx, userID, isQuarterReport, quarter, month, year)
 	}
 
-	q1Report, err := impl.CoalesceUserPayout(ctx, userID, isQuarterReport, 1, month, year)
+	q1Report, err := impl.CoalesceAjustedUserPayout(ctx, userID, isQuarterReport, 1, month, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("coalesces-1, err-%v", err.Details)
 		return nil, err
 	}
 
-	q2Report, err := impl.CoalesceUserPayout(ctx, userID, isQuarterReport, 2, month, year)
+	q2Report, err := impl.CoalesceAjustedUserPayout(ctx, userID, isQuarterReport, 2, month, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("coalesces-2, err-%v", err.Details)
 		return nil, err
 	}
 
-	q3Report, err := impl.CoalesceUserPayout(ctx, userID, isQuarterReport, 3, month, year)
+	q3Report, err := impl.CoalesceAjustedUserPayout(ctx, userID, isQuarterReport, 3, month, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("coalesces-3, err-%v", err.Details)
 		return nil, err
 	}
 
-	q4Report, err := impl.CoalesceUserPayout(ctx, userID, isQuarterReport, 4, month, year)
+	q4Report, err := impl.CoalesceAjustedUserPayout(ctx, userID, isQuarterReport, 4, month, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("coalesces-4, err-%v", err.Details)
 		return nil, err
@@ -93,14 +93,114 @@ func (impl *UserImpl) GetUserPayout(ctx *gin.Context, userID string, isQuarterRe
 	return q4Report, nil
 }
 
-func (impl *UserImpl) CoalesceUserPayout(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.TotalIncentive, *errors.Error) {
+func (impl *UserImpl) CoalesceAjustedUserPayout(ctx *gin.Context, userID string, isQuarterReport bool,
+	quarter, month, year int) (*models.TotalIncentive, *errors.Error) {
+
+	// cRH, _ := ctx.Get(constant.HeaderInContext)
+	// ctxHeader, _ := (cRH).(context.ContextHeader)
+
+	prevQuarter := 0
+	prevYear := 0
+
+	if quarter == 1 {
+		prevQuarter = 4
+		prevYear = year - 1
+	} else {
+		prevQuarter = quarter - 1
+		prevYear = year
+	}
+
+	currentReport, err := impl.CacheService.GetUserReport(userID, isQuarterReport, month, quarter, year)
+	if !isQuarterReport && err == nil && currentReport != nil && objecthelper.IsCurrentDay(currentReport.ModifiedAt) {
+		// return response for monthly report calculated on same day without err
+		return impl.userPayout(ctx, currentReport, nil), nil
+	}
+
+	var adjustedReport *models.UserReportDB
+	if isQuarterReport {
+		adjustedReport, err = impl.CacheService.GetUserReport(userID, isQuarterReport, 0, prevQuarter, prevYear)
+		if err != nil || adjustedReport == nil || !objecthelper.IsCurrentDay(currentReport.ModifiedAt) {
+			adjustedReport = nil
+		}
+	}
+
+	if isQuarterReport && currentReport != nil && adjustedReport != nil {
+		// return quarter response from cache of real report with adjustment
+		return impl.userPayout(ctx, currentReport, adjustedReport), nil
+	}
+
+	if !isQuarterReport {
+		quarter = getQuarterFromMonth(month)
+	}
+
+	user, err := impl.DbService.FetchUserDetails(userID, quarter, year)
+	if err != nil {
+		return nil, err
+	}
+
+	position, ok := constant.EmployeePositionMap[user.Position]
+	if !ok {
+		return nil, &errors.Error{
+			StatusCode: http.StatusBadRequest,
+			Message:    user.UserId + ": INCORRECT USER POSITION - " + user.Position,
+			Details:    "incorrect user position: userId-" + user.UserId + " position-" + user.Position,
+		}
+	}
+	user.Position = position
+
+	/*
+		For Agents
+	*/
+
+	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb {
+
+		_, currentReport, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+		if err != nil {
+			return nil, err
+		}
+
+		if !isQuarterReport {
+			return impl.userPayout(ctx, currentReport, nil), nil
+		}
+
+		_, adjustedReport, err := impl.updateAdjustedAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+		if err != nil {
+			return nil, err
+		}
+
+		return impl.userPayout(ctx, currentReport, adjustedReport), nil
+	}
+
+	/*
+		For All Managers
+	*/
+
+	mngrCurrentReport, err := impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isQuarterReport {
+		return impl.userPayout(ctx, mngrCurrentReport, nil), nil
+	}
+
+	mngrAdjustedReport, err := impl.updateAdjustedManagerReport(ctx, user, isQuarterReport, quarter, month, year)
+	if err != nil {
+		return nil, err
+	}
+
+	return impl.userPayout(ctx, mngrCurrentReport, mngrAdjustedReport), nil
+}
+
+func (impl *UserImpl) CoalesceUserPayout(ctx *gin.Context, userID string, isQuarterReport bool,
+	quarter, month, year int) (*models.TotalIncentive, *errors.Error) {
 
 	// cRH, _ := ctx.Get(constant.HeaderInContext)
 	// ctxHeader, _ := (cRH).(context.ContextHeader)
 
 	report, err := impl.CacheService.GetUserReport(userID, isQuarterReport, month, quarter, year)
 	if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {
-		return impl.userPayout(ctx, report), nil
+		return impl.userPayout(ctx, report, nil), nil
 	}
 
 	if !isQuarterReport {
@@ -159,12 +259,13 @@ func (impl *UserImpl) CoalesceUserPayout(ctx *gin.Context, userID string, isQuar
 	// val, _ := json.Marshal(mngrReport)
 	// logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Str("report", string(val)).Msg("GetUserPayout : updated")
 
-	return impl.userPayout(ctx, mngrReport), nil
+	return impl.userPayout(ctx, mngrReport, nil), nil
 }
 
-func (impl *UserImpl) userPayout(ctx *gin.Context, userReport *models.UserReportDB) *models.TotalIncentive {
+func (impl *UserImpl) userPayout(_ *gin.Context, userReport *models.UserReportDB,
+	adjustedReport *models.UserReportDB) *models.TotalIncentive {
 
-	return &models.TotalIncentive{
+	finalReport := &models.TotalIncentive{
 		HBB: &models.IndividualIncentive{
 			Payout:      userReport.HBBPayout,
 			ExtraPayout: userReport.HBBExtraPayout,
@@ -187,4 +288,23 @@ func (impl *UserImpl) userPayout(ctx *gin.Context, userReport *models.UserReport
 		},
 		TotalPay: userReport.TotalPayout,
 	}
+
+	if adjustedReport == nil {
+		return finalReport
+	}
+
+	finalReport.HBB.Terminated = userReport.HBBSalesCount - adjustedReport.HBBSalesCount
+	finalReport.Baqati.Terminated = userReport.BaqatiSalesCount - adjustedReport.BaqatiSalesCount
+	finalReport.Hayyak.Terminated = userReport.HayyakSalesCount - adjustedReport.HayyakSalesCount
+	finalReport.Upgrade.Terminated = userReport.UpgradeSalesCount - adjustedReport.UpgradeSalesCount
+
+	finalReport.HBB.DeductAmount = (userReport.HBBPayout + userReport.HBBExtraPayout) - (adjustedReport.HBBPayout + adjustedReport.HBBExtraPayout)
+	finalReport.Baqati.DeductAmount = (userReport.BaqatiPayout + userReport.BaqatiExtraPayout) - (adjustedReport.BaqatiPayout + adjustedReport.BaqatiExtraPayout)
+	finalReport.Hayyak.DeductAmount = (userReport.HayyakPayout + userReport.HayyakExtraPayout) - (adjustedReport.HayyakPayout + adjustedReport.HayyakExtraPayout)
+	finalReport.Upgrade.DeductAmount = (userReport.UpgradePayout + userReport.UpgradeExtraPayout) - (adjustedReport.UpgradePayout + adjustedReport.UpgradeExtraPayout)
+	finalReport.VOC.DeductAmount = (userReport.VOCPayout + userReport.VOCExtraPayout) - (adjustedReport.VOCPayout + adjustedReport.VOCExtraPayout)
+
+	finalReport.TotalPay = userReport.TotalPayout - adjustedReport.TotalPayout
+
+	return finalReport
 }

@@ -20,7 +20,7 @@ func main() {
 		log.Fatal("failed fcm connection: " + err.Error())
 	}
 
-	fcmClient, err := app.Messaging(context.TODO())
+	_, err = app.Messaging(context.TODO())
 	if err != nil {
 		log.Fatalf("messaging: %s", err)
 	}

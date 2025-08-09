@@ -284,7 +284,7 @@ func ValidateUserPlanRequest(req *UserSalesRequest, ctxHeader context.ContextHea
 	return
 }
 
-func ValidateUserSaleCountRequest(req *UserSalesRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, quarter, month, year int, err error) {
+func ValidateUserMNPSalesRequest(req *MNPSalesRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, quarter, month, year int, err error) {
 
 	if req.ClientId == "" {
 		err = errors.New("blank userId")
@@ -293,13 +293,6 @@ func ValidateUserSaleCountRequest(req *UserSalesRequest, ctxHeader context.Conte
 
 	// if !ctxHeader.IsAdmin && ctxHeader.XUserId != req.ClientId {
 	// 	err = fmt.Errorf("cannot query for other user, authUser:%v, queryUser:%+v", ctxHeader.XUserId, req.ClientId)
-	// 	return
-	// }
-
-	// product := strings.ToUpper(req.Product)
-
-	// if !(product == constant.HBBCategory || product == constant.BaqatiCategory || product == constant.HayyakCategory || product == constant.UpgradeCategory) {
-	// 	err = errors.New("incorrect product type")
 	// 	return
 	// }
 

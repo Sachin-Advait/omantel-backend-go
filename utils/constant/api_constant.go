@@ -62,6 +62,8 @@ const (
 	UserSalesCountPath         = "/usr_sales_count"
 	UserSalesPerPlanPath       = "/usr_sales_per_plan"
 	UserPlanPerCategoryPath    = "/user_plan_category"
+	UserMNPSalesCountPath      = "/usr_mnp_sale_count"
+	UserMNPPlanCountPath       = "/usr_mnp_plan_count"
 	OutletSalesCountPath       = "/outlet_sales_count"
 	OutletSalesTargetPath      = "/outlet_sales_target"
 	RegionSalesCountPath       = "/region_sales_count"
