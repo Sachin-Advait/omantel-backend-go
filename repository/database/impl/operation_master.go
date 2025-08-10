@@ -380,7 +380,9 @@ func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region 
 	}
 
 	rows, err = dbConn.DBClient.QueryContext(ctx,
-		"select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, mnp_donor, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
+		"select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, mnp_donor, "+
+			"sales_date, terminate_date from sale_transaction_table where "+
+			"emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
 		userID, prevQuarter, year)
 
 	if err != nil {
@@ -895,10 +897,14 @@ func (dbConn *DbServiceImpl) FetchUserSalesCountPerPlan(userID string, isQuarter
 	)
 
 	if isQuarterReport {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, product_group, curr_plan, category, business_unit, subcategory, final_srvc_cat, quantity, line_type, sales_date, mnp_donor, terminate_date from sale_transaction_table where emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
+		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, product_group, curr_plan, category, business_unit, "+
+			"subcategory, final_srvc_cat, quantity, line_type, mnp_donor, sales_date, terminate_date from "+
+			"sale_transaction_table where emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
 			userID, quarter, year)
 	} else {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, product_group, curr_plan, category, business_unit, subcategory, final_srvc_cat, quantity, line_type, sales_date, mnp_donor, terminate_date from sale_transaction_table where emp_id=$1 and EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3",
+		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, product_group, curr_plan, category, business_unit, "+
+			"subcategory, final_srvc_cat, quantity, line_type, mnp_donor, sales_date, terminate_date from "+
+			"sale_transaction_table where emp_id=$1 and EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3",
 			userID, month, year)
 	}
 
@@ -936,8 +942,8 @@ func (dbConn *DbServiceImpl) FetchUserSalesCountPerPlan(userID string, isQuarter
 
 		count++
 
-		if err := rows.Scan(&id, &productGroup, &currPlan, &category, &businessUnit, &subCategory, &finalSrvcCat, &quantity, &lineType,
-			&mnpDonor, &salesDate, &terminateDate); err != nil {
+		if err := rows.Scan(&id, &productGroup, &currPlan, &category, &businessUnit, &subCategory, &finalSrvcCat,
+			&quantity, &lineType, &mnpDonor, &salesDate, &terminateDate); err != nil {
 			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
