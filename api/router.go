@@ -35,16 +35,25 @@ func GetRouter(middlewares ...gin.HandlerFunc) *gin.Engine {
 	//configure actuator
 	router.GET(constant.ActuatorRoute, actuator)
 
+	routePrefix := "/api"
+	if flags.Env() == "prod" {
+		routePrefix = ""
+	}
+
 	//version 1
-	incentiveV1Router := router.Group(constant.SalesIncentiveRoute, middleware.ApiVersionHandler("1"), middleware.OptionalAuthHandler())
+	incentiveV1Router := router.Group(routePrefix+constant.SalesIncentiveRoute, middleware.ApiVersionHandler("1"),
+		middleware.OptionalAuthHandler())
 	incentiveRoutes(incentiveV1Router)
-	incentiveSwagV1Router := router.Group(constant.ApiRoute + constant.SalesIncentiveDocRoute)
+
+	incentiveSwagV1Router := router.Group(routePrefix + constant.SalesIncentiveDocRoute)
 	incentiveSwaggerRoutes(incentiveSwagV1Router)
 
 	//admin version 1
-	incentiveAdminV1Router := router.Group(constant.SalesIncentiveAdminRoute, middleware.ApiVersionHandler("1"), middleware.MandatoryAdminAuthHandler())
+	incentiveAdminV1Router := router.Group(routePrefix+constant.SalesIncentiveAdminRoute, middleware.ApiVersionHandler("1"),
+		middleware.MandatoryAdminAuthHandler())
 	incentiveAdminRoutes(incentiveAdminV1Router)
-	incentiveSwagAdminV1Router := router.Group(constant.ApiRoute + constant.SalesIncentiveDocAdminRoute)
+
+	incentiveSwagAdminV1Router := router.Group(routePrefix + constant.SalesIncentiveDocAdminRoute)
 	incentiveSwaggerAdminRoutes(incentiveSwagAdminV1Router)
 
 	logger.FileLogger.Info().Str("env", flags.Env()).Int("port", flags.Port()).Msg("Router started...")
