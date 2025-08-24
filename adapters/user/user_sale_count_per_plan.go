@@ -24,7 +24,8 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.UserSalesRequest) (int, i
 	isQuarterReport, quarter, month, year, err := models.ValidateUserSalesRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetSaleCountPerPlan : validation failed")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+			Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
 			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
@@ -35,10 +36,13 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.UserSalesRequest) (int, i
 
 	product := strings.ToUpper(req.Product)
 
-	response, errs := userAPIProvider.GetSaleCountPerPlan(ctx, req.ClientId, product, isQuarterReport, quarter, month, year)
+	response, errs := userAPIProvider.GetSaleCountPerPlan(ctx, req.ClientId, req.Channel, product,
+		isQuarterReport, quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetSaleCountPerPlan : provider failed")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).
+			Msg("GetSaleCountPerPlan : provider failed")
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+			Type: "error", Msg: "provider failed",
 			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
 		return errs.StatusCode, &models.APIFailureResponse{
@@ -47,8 +51,10 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.UserSalesRequest) (int, i
 	}
 
 	responseBytes, _ := json.Marshal(response)
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetSaleCountPerPlan : success")
-	dblogger.PrintDBLogs(&dblogger.Logging{UserID: req.ClientId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).
+		Msg("GetSaleCountPerPlan : success")
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: req.ClientId, URL: ctx.Request.URL.String(),
+		Type: "info", Msg: "success", Code: http.StatusOK,
 		Text: string(responseBytes), CreateTime: time.Now().Local()})
 
 	return http.StatusOK, response

@@ -13,7 +13,8 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *CacheServiceImpl) InsertUserReport(isQuarterReport bool, month, quarter, year int, userReport *models.UserReportDB, keyTTL time.Duration) *errors.Error {
+func (impl *CacheServiceImpl) InsertUserReport(chanel string, isQuarterReport bool, month, quarter,
+	year int, userReport *models.UserReportDB, keyTTL time.Duration) *errors.Error {
 
 	if userReport == nil || userReport.UserId == "" {
 		return &errors.Error{
@@ -37,9 +38,9 @@ func (impl *CacheServiceImpl) InsertUserReport(isQuarterReport bool, month, quar
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserReportKey, userReport.UserId, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserReportKey, userReport.UserId, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserReportKey, userReport.UserId, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserReportKey, userReport.UserId, chanel, month, 0, year)
 	}
 
 	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
@@ -55,7 +56,8 @@ func (impl *CacheServiceImpl) InsertUserReport(isQuarterReport bool, month, quar
 	return nil
 }
 
-func (impl *CacheServiceImpl) GetUserReport(userId string, isQuarterReport bool, month, quarter, year int) (*models.UserReportDB, *errors.Error) {
+func (impl *CacheServiceImpl) GetUserReport(userId string, chanel string, isQuarterReport bool,
+	month, quarter, year int) (*models.UserReportDB, *errors.Error) {
 
 	if userId == "" {
 		return nil, &errors.Error{
@@ -69,9 +71,9 @@ func (impl *CacheServiceImpl) GetUserReport(userId string, isQuarterReport bool,
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserReportKey, userId, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserReportKey, userId, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserReportKey, userId, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserReportKey, userId, chanel, month, 0, year)
 	}
 
 	data, err := impl.RedisClient.Get(context.Background(), key).Result()
@@ -108,7 +110,8 @@ func (impl *CacheServiceImpl) GetUserReport(userId string, isQuarterReport bool,
 	return report, nil
 }
 
-func (impl *CacheServiceImpl) DelUserReport(userId string, isQuarterReport bool, month, quarter, year int) *errors.Error {
+func (impl *CacheServiceImpl) DelUserReport(userId string, chanel string, isQuarterReport bool,
+	month, quarter, year int) *errors.Error {
 
 	if userId == "" {
 		return &errors.Error{
@@ -122,9 +125,9 @@ func (impl *CacheServiceImpl) DelUserReport(userId string, isQuarterReport bool,
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserReportKey, userId, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserReportKey, userId, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserReportKey, userId, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserReportKey, userId, chanel, month, 0, year)
 	}
 
 	err := impl.RedisClient.Del(context.Background(), key).Err()
@@ -140,7 +143,8 @@ func (impl *CacheServiceImpl) DelUserReport(userId string, isQuarterReport bool,
 	return nil
 }
 
-func (impl *CacheServiceImpl) InsertOutletReport(isQuarterReport bool, month, quarter, year int, outletReport *models.OutletReportDB, keyTTL time.Duration) *errors.Error {
+func (impl *CacheServiceImpl) InsertOutletReport(chanel string, isQuarterReport bool, month,
+	quarter, year int, outletReport *models.OutletReportDB, keyTTL time.Duration) *errors.Error {
 
 	if outletReport == nil || outletReport.Outlet == "" || outletReport.Region == "" {
 		return &errors.Error{
@@ -164,9 +168,11 @@ func (impl *CacheServiceImpl) InsertOutletReport(isQuarterReport bool, month, qu
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outletReport.Outlet, outletReport.Region, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outletReport.Outlet, outletReport.Region,
+			chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outletReport.Outlet, outletReport.Region, month, 0, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outletReport.Outlet, outletReport.Region,
+			chanel, month, 0, year)
 	}
 
 	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
@@ -182,7 +188,8 @@ func (impl *CacheServiceImpl) InsertOutletReport(isQuarterReport bool, month, qu
 	return nil
 }
 
-func (impl *CacheServiceImpl) GetOutletReport(outlet, region string, isQuarterReport bool, month, quarter, year int) (*models.OutletReportDB, *errors.Error) {
+func (impl *CacheServiceImpl) GetOutletReport(outlet, region string, chanel string, isQuarterReport bool,
+	month, quarter, year int) (*models.OutletReportDB, *errors.Error) {
 
 	if outlet == "" || region == "" {
 		return nil, &errors.Error{
@@ -196,9 +203,9 @@ func (impl *CacheServiceImpl) GetOutletReport(outlet, region string, isQuarterRe
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outlet, region, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outlet, region, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outlet, region, month, 0, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outlet, region, chanel, month, 0, year)
 	}
 
 	data, err := impl.RedisClient.Get(context.Background(), key).Result()
@@ -235,7 +242,8 @@ func (impl *CacheServiceImpl) GetOutletReport(outlet, region string, isQuarterRe
 	return report, nil
 }
 
-func (impl *CacheServiceImpl) DelOutletReport(outlet, region string, isQuarterReport bool, month, quarter, year int) *errors.Error {
+func (impl *CacheServiceImpl) DelOutletReport(outlet, region string, chanel string, isQuarterReport bool,
+	month, quarter, year int) *errors.Error {
 
 	if outlet == "" || region == "" {
 		return &errors.Error{
@@ -249,9 +257,9 @@ func (impl *CacheServiceImpl) DelOutletReport(outlet, region string, isQuarterRe
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outlet, region, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outlet, region, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outlet, region, month, 0, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, outlet, region, chanel, month, 0, year)
 	}
 
 	err := impl.RedisClient.Del(context.Background(), key).Err()
@@ -267,7 +275,8 @@ func (impl *CacheServiceImpl) DelOutletReport(outlet, region string, isQuarterRe
 	return nil
 }
 
-func (impl *CacheServiceImpl) InsertRegionReport(isQuarterReport bool, month, quarter, year int, regionReport *models.RegionReportDB, keyTTL time.Duration) *errors.Error {
+func (impl *CacheServiceImpl) InsertRegionReport(chanel string, isQuarterReport bool, month, quarter,
+	year int, regionReport *models.RegionReportDB, keyTTL time.Duration) *errors.Error {
 
 	if regionReport == nil || regionReport.Region == "" {
 		return &errors.Error{
@@ -291,9 +300,9 @@ func (impl *CacheServiceImpl) InsertRegionReport(isQuarterReport bool, month, qu
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", regionReport.Region, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", regionReport.Region, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", regionReport.Region, month, 0, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", regionReport.Region, chanel, month, 0, year)
 	}
 
 	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
@@ -309,7 +318,8 @@ func (impl *CacheServiceImpl) InsertRegionReport(isQuarterReport bool, month, qu
 	return nil
 }
 
-func (impl *CacheServiceImpl) GetRegionReport(region string, isQuarterReport bool, month, quarter, year int) (*models.RegionReportDB, *errors.Error) {
+func (impl *CacheServiceImpl) GetRegionReport(region string, chanel string, isQuarterReport bool, month,
+	quarter, year int) (*models.RegionReportDB, *errors.Error) {
 
 	if region == "" {
 		return nil, &errors.Error{
@@ -323,9 +333,9 @@ func (impl *CacheServiceImpl) GetRegionReport(region string, isQuarterReport boo
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", region, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", region, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", region, month, 0, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", region, chanel, month, 0, year)
 	}
 
 	data, err := impl.RedisClient.Get(context.Background(), key).Result()
@@ -362,7 +372,8 @@ func (impl *CacheServiceImpl) GetRegionReport(region string, isQuarterReport boo
 	return report, nil
 }
 
-func (impl *CacheServiceImpl) DelRegionReport(region string, isQuarterReport bool, month, quarter, year int) *errors.Error {
+func (impl *CacheServiceImpl) DelRegionReport(region string, chanel string, isQuarterReport bool, month,
+	quarter, year int) *errors.Error {
 
 	if region == "" {
 		return &errors.Error{
@@ -376,9 +387,9 @@ func (impl *CacheServiceImpl) DelRegionReport(region string, isQuarterReport boo
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", region, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", region, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", region, month, 0, year)
+		key = fmt.Sprintf(constant.RedisOutletRegionReportKey, "", region, chanel, month, 0, year)
 	}
 
 	err := impl.RedisClient.Del(context.Background(), key).Err()
@@ -394,8 +405,8 @@ func (impl *CacheServiceImpl) DelRegionReport(region string, isQuarterReport boo
 	return nil
 }
 
-func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, product string, isQuarterReport bool, month, quarter, year int, userReport interface{},
-	keyTTL time.Duration) *errors.Error {
+func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, product string, chanel string,
+	isQuarterReport bool, month, quarter, year int, userReport interface{}, keyTTL time.Duration) *errors.Error {
 
 	if userReport == nil || userId == "" {
 		return &errors.Error{
@@ -419,9 +430,9 @@ func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, pr
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, chanel, month, 0, year)
 	}
 
 	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
@@ -437,8 +448,8 @@ func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, pr
 	return nil
 }
 
-func (impl *CacheServiceImpl) GetUserSaleCountPerPlanReport(userId string, product string, isQuarterReport bool, month, quarter,
-	year int) (interface{}, *errors.Error) {
+func (impl *CacheServiceImpl) GetUserSaleCountPerPlanReport(userId string, product string, chanel string,
+	isQuarterReport bool, month, quarter, year int) (interface{}, *errors.Error) {
 
 	if userId == "" {
 		return nil, &errors.Error{
@@ -452,9 +463,9 @@ func (impl *CacheServiceImpl) GetUserSaleCountPerPlanReport(userId string, produ
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, chanel, month, 0, year)
 	}
 
 	data, err := impl.RedisClient.Get(context.Background(), key).Result()
@@ -498,8 +509,8 @@ func (impl *CacheServiceImpl) GetUserSaleCountPerPlanReport(userId string, produ
 	}
 }
 
-func (impl *CacheServiceImpl) InsertUserPlanCategoryReport(userId string, product string, isQuarterReport bool, month, quarter, year int, userReport interface{},
-	keyTTL time.Duration) *errors.Error {
+func (impl *CacheServiceImpl) InsertUserPlanCategoryReport(userId string, product string, chanel string,
+	isQuarterReport bool, month, quarter, year int, userReport interface{}, keyTTL time.Duration) *errors.Error {
 
 	if userReport == nil || userId == "" {
 		return &errors.Error{
@@ -523,9 +534,9 @@ func (impl *CacheServiceImpl) InsertUserPlanCategoryReport(userId string, produc
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserPlanPerCategoryReportKey, userId, product, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserPlanPerCategoryReportKey, userId, product, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserPlanPerCategoryReportKey, userId, product, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserPlanPerCategoryReportKey, userId, product, chanel, month, 0, year)
 	}
 
 	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
@@ -541,8 +552,8 @@ func (impl *CacheServiceImpl) InsertUserPlanCategoryReport(userId string, produc
 	return nil
 }
 
-func (impl *CacheServiceImpl) GetUserPlanCategoryReport(userId string, product string, isQuarterReport bool, month, quarter,
-	year int) (interface{}, *errors.Error) {
+func (impl *CacheServiceImpl) GetUserPlanCategoryReport(userId string, product string, chanel string,
+	isQuarterReport bool, month, quarter, year int) (interface{}, *errors.Error) {
 
 	if userId == "" {
 		return nil, &errors.Error{
@@ -556,9 +567,9 @@ func (impl *CacheServiceImpl) GetUserPlanCategoryReport(userId string, product s
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserSaleCountPerPlanReportKey, userId, product, chanel, month, 0, year)
 	}
 
 	data, err := impl.RedisClient.Get(context.Background(), key).Result()
@@ -594,8 +605,8 @@ func (impl *CacheServiceImpl) GetUserPlanCategoryReport(userId string, product s
 	}
 }
 
-func (impl *CacheServiceImpl) InsertUserMNPSaleCountPerPlanReport(userId string, isQuarterReport bool, month, quarter, year int, userMNPReport interface{},
-	keyTTL time.Duration) *errors.Error {
+func (impl *CacheServiceImpl) InsertUserMNPSaleCountPerPlanReport(userId string, chanel string, isQuarterReport bool,
+	month, quarter, year int, userMNPReport interface{}, keyTTL time.Duration) *errors.Error {
 
 	if userMNPReport == nil || userId == "" {
 		return &errors.Error{
@@ -619,9 +630,9 @@ func (impl *CacheServiceImpl) InsertUserMNPSaleCountPerPlanReport(userId string,
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserMNPSaleCountReportKey, userId, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserMNPSaleCountReportKey, userId, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserMNPSaleCountReportKey, userId, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserMNPSaleCountReportKey, userId, chanel, month, 0, year)
 	}
 
 	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
@@ -637,8 +648,8 @@ func (impl *CacheServiceImpl) InsertUserMNPSaleCountPerPlanReport(userId string,
 	return nil
 }
 
-func (impl *CacheServiceImpl) GetUserMNPSaleCountPerPlanReport(userId string, isQuarterReport bool, month, quarter,
-	year int) (interface{}, *errors.Error) {
+func (impl *CacheServiceImpl) GetUserMNPSaleCountPerPlanReport(userId string, chanel string, isQuarterReport bool,
+	month, quarter, year int) (interface{}, *errors.Error) {
 
 	if userId == "" {
 		return nil, &errors.Error{
@@ -652,9 +663,9 @@ func (impl *CacheServiceImpl) GetUserMNPSaleCountPerPlanReport(userId string, is
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserMNPSaleCountReportKey, userId, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserMNPSaleCountReportKey, userId, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserMNPSaleCountReportKey, userId, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserMNPSaleCountReportKey, userId, chanel, month, 0, year)
 	}
 
 	data, err := impl.RedisClient.Get(context.Background(), key).Result()
@@ -690,8 +701,8 @@ func (impl *CacheServiceImpl) GetUserMNPSaleCountPerPlanReport(userId string, is
 	}
 }
 
-func (impl *CacheServiceImpl) InsertUserMNPPlanCountPerPlanReport(userId string, isQuarterReport bool, month,
-	quarter, year int, userMNPReport interface{}, keyTTL time.Duration) *errors.Error {
+func (impl *CacheServiceImpl) InsertUserMNPPlanCountPerPlanReport(userId string, chanel string, isQuarterReport bool,
+	month, quarter, year int, userMNPReport interface{}, keyTTL time.Duration) *errors.Error {
 
 	if userMNPReport == nil || userId == "" {
 		return &errors.Error{
@@ -715,9 +726,9 @@ func (impl *CacheServiceImpl) InsertUserMNPPlanCountPerPlanReport(userId string,
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserMNPPlanCountReportKey, userId, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserMNPPlanCountReportKey, userId, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserMNPPlanCountReportKey, userId, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserMNPPlanCountReportKey, userId, chanel, month, 0, year)
 	}
 
 	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
@@ -733,8 +744,8 @@ func (impl *CacheServiceImpl) InsertUserMNPPlanCountPerPlanReport(userId string,
 	return nil
 }
 
-func (impl *CacheServiceImpl) GetUserMNPPlanCountPerPlanReport(userId string, isQuarterReport bool, month, quarter,
-	year int) (interface{}, *errors.Error) {
+func (impl *CacheServiceImpl) GetUserMNPPlanCountPerPlanReport(userId string, chanel string, isQuarterReport bool,
+	month, quarter, year int) (interface{}, *errors.Error) {
 
 	if userId == "" {
 		return nil, &errors.Error{
@@ -748,9 +759,9 @@ func (impl *CacheServiceImpl) GetUserMNPPlanCountPerPlanReport(userId string, is
 	var key string
 
 	if isQuarterReport {
-		key = fmt.Sprintf(constant.RedisUserMNPPlanCountReportKey, userId, 0, quarter, year)
+		key = fmt.Sprintf(constant.RedisUserMNPPlanCountReportKey, userId, chanel, 0, quarter, year)
 	} else {
-		key = fmt.Sprintf(constant.RedisUserMNPPlanCountReportKey, userId, month, 0, year)
+		key = fmt.Sprintf(constant.RedisUserMNPPlanCountReportKey, userId, chanel, month, 0, year)
 	}
 
 	data, err := impl.RedisClient.Get(context.Background(), key).Result()

@@ -24,7 +24,8 @@ func GetOutletTotalSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest
 	isQuarterReport, quarter, month, year, err := models.ValidateUserIncentiveRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetOutletTotalSalesCount : validation failed")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+			Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
 			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
@@ -33,10 +34,13 @@ func GetOutletTotalSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest
 		}
 	}
 
-	response, errs := userAPIProvider.GetOutletTotalSalesCount(ctx, req.ClientId, isQuarterReport, quarter, month, year)
+	response, errs := userAPIProvider.GetOutletTotalSalesCount(ctx, req.ClientId, req.Channel, isQuarterReport,
+		quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetOutletTotalSalesCount : provider failed")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).
+			Msg("GetOutletTotalSalesCount : provider failed")
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+			Type: "error", Msg: "provider failed",
 			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
 		return errs.StatusCode, &models.APIFailureResponse{
@@ -49,8 +53,10 @@ func GetOutletTotalSalesCount(ctx *gin.Context, req *models.UserIncentiveRequest
 	})
 
 	responseBytes, _ := json.Marshal(response)
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", string(responseBytes))).Msg("GetOutletTotalSalesCount : success")
-	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", string(responseBytes))).
+		Msg("GetOutletTotalSalesCount : success")
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+		Type: "info", Msg: "success", Code: http.StatusOK,
 		Text: string(responseBytes), CreateTime: time.Now().Local()})
 
 	return http.StatusOK, response

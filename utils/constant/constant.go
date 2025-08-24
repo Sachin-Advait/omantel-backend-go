@@ -14,12 +14,12 @@ const (
 	Cluster    = "CLUSTER"
 	NonCluster = "NON_CLUSTER"
 
-	RedisUserReportKey                 = "%s|%v|%v|%v|Report"                 // userId|month|quarter|year|Report
-	RedisUserMNPSaleCountReportKey     = "%s|%v|%v|%v|MNPSaleCountReport"     // userId|month|quarter|year|MNPSaleCountReport
-	RedisUserMNPPlanCountReportKey     = "%s|%v|%v|%v|MNPSalePlanReport"      // userId|month|quarter|year|MNPSalePlanReport
-	RedisOutletRegionReportKey         = "%s|%s|%v|%v|%v|Report"              // outlet|region|month|quarter|year|Report
-	RedisUserSaleCountPerPlanReportKey = "%s|%s|%v|%v|%v|SaleCountPerPlan"    // userId|product|month|quarter|year|SaleCountPerPlan
-	RedisUserPlanPerCategoryReportKey  = "%s|%s|%v|%v|%v|UserPlanPerCategory" // userId|product|month|quarter|year|UserPlanPerCategory
+	RedisUserReportKey                 = "%s|%s|%v|%v|%v|UserReport"             // userId|chanel|month|quarter|year|UserReport
+	RedisUserMNPSaleCountReportKey     = "%s|%s|%v|%v|%v|MNPSaleCountReport"     // userId|chanel|month|quarter|year|MNPSaleCountReport
+	RedisUserMNPPlanCountReportKey     = "%s|%s|%v|%v|%v|MNPSalePlanReport"      // userId|chanel|month|quarter|year|MNPSalePlanReport
+	RedisOutletRegionReportKey         = "%s|%s|%s|%v|%v|%v|RegionOutletReport"  // outlet|region|chanel|month|quarter|year|RegionOutletReport
+	RedisUserSaleCountPerPlanReportKey = "%s|%s|%s|%v|%v|%v|SaleCountPerPlan"    // userId|product|chanel|month|quarter|year|SaleCountPerPlan
+	RedisUserPlanPerCategoryReportKey  = "%s|%s|%s|%v|%v|%v|UserPlanPerCategory" // userId|product|chanel|month|quarter|year|UserPlanPerCategory
 )
 
 // jwt tokens

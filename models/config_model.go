@@ -3,6 +3,7 @@ package models
 import "time"
 
 type DbClientConfig struct {
+	Env      string
 	Host     string
 	Port     int
 	DbName   string

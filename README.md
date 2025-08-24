@@ -388,3 +388,12 @@ Baqati
     -businessUnit
         -subcategory
             -planName
+
+
+Server:
+root@185.177.116.176
+Insync2025
+
+scp -r ./incentive_calculator root@185.177.116.176:/root/go/src/gitlab.com/rendezvousPoint/incentive_calculator
+
+env GOARCH=amd64 GOOS=linux go build

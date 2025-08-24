@@ -142,27 +142,32 @@ func initHTTPClient() {
 
 func initDatabase() {
 
+	env := flags.Env()
 	applicationConfig, err := configs.Get(constant.ApplicationConfigFile)
 	if err != nil {
 		logger.FileLogger.Fatal().Err(err).Msg("DB: error loading application config file, env - " + flags.Env())
 	}
 
-	pswd, err := base64.StdEncoding.DecodeString(applicationConfig.GetString(constant.PsqlPassword))
-	if err != nil {
-		logger.FileLogger.Fatal().Err(err).Msg("DB: error decoding password, env - " + flags.Env())
-	}
-
 	//db config load
 	dbConfig := &models.DbClientConfig{
+		Env:                env,
 		Host:               applicationConfig.GetString(constant.PsqlHost),
 		Port:               applicationConfig.GetInt(constant.PsqlPort),
 		DbName:             applicationConfig.GetString(constant.PsqlDbName),
 		UserName:           applicationConfig.GetString(constant.PsqlUser),
-		Password:           string(pswd),
+		Password:           applicationConfig.GetString(constant.PsqlPassword),
 		MaxOpenConnections: applicationConfig.GetInt(constant.PsqlMaxOpenConn),
 		MaxIdleConnections: applicationConfig.GetInt(constant.PsqlMaxIdleConn),
 		MaxLifetime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxLifetime)) * time.Hour,
 		MaxIdletime:        time.Duration(applicationConfig.GetInt(constant.ConnMaxIdleTime)) * time.Minute,
+	}
+
+	if env == "prod" {
+		pswd, err := base64.StdEncoding.DecodeString(applicationConfig.GetString(constant.PsqlPassword))
+		if err != nil {
+			logger.FileLogger.Fatal().Err(err).Msg("DB: error decoding password, env - " + flags.Env())
+		}
+		dbConfig.Password = string(pswd)
 	}
 
 	database.InitDatabase(dbConfig)

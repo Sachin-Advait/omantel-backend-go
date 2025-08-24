@@ -36,6 +36,7 @@ type UserIncentiveRequest struct {
 	ClientId  string `json:"client_id"`
 	Monthly   string `json:"monthly"`
 	Quarterly string `json:"quarterly"`
+	Channel   string `json:"channel"`
 }
 
 type UserSalesRequest struct {
@@ -43,18 +44,21 @@ type UserSalesRequest struct {
 	Monthly   string `json:"monthly"`
 	Quarterly string `json:"quarterly"`
 	Product   string `json:"product"`
+	Channel   string `json:"channel"`
 }
 
 type MNPSalesRequest struct {
 	ClientId  string `json:"client_id"`
 	Monthly   string `json:"monthly"`
 	Quarterly string `json:"quarterly"`
+	Channel   string `json:"channel"`
 }
 
 type UserReportRequest struct {
 	ClientId string `json:"client_id"`
 	Month    int    `json:"month"`
 	Quarter  int    `json:"quarter"`
+	Channel  string `json:"channel"`
 }
 
 type VerifyOTPResponse struct {

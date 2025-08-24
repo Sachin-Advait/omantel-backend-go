@@ -14,7 +14,8 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error) {
+func (impl *UserImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID string, chanel string,
+	isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerStaff, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
@@ -32,14 +33,6 @@ func (impl *UserImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID string
 		quarter = getQuarterFromMonth(month)
 	}
 
-	// if ctxHeader.IsAdmin {
-	// 	vps, err := impl.DbService.FetchVP(quarter, year)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	userID = vps[0]
-	// }
-
 	user, err := impl.DbService.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
@@ -54,6 +47,10 @@ func (impl *UserImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID string
 		}
 	}
 	user.Position = position
+
+	if user.Position == constant.OutletManagerAbb {
+		chanel = ""
+	}
 
 	resp := make([]*models.ProductWiseSalesTargetPerStaff, 0)
 
@@ -74,11 +71,11 @@ func (impl *UserImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID string
 		}
 
 		for _, agent := range agentList {
-			cacheReport, err := impl.CacheService.GetUserReport(agent.UserId, isQuarterReport, month, quarter, year)
+			cacheReport, err := impl.CacheService.GetUserReport(agent.UserId, chanel, isQuarterReport, month, quarter, year)
 			if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
 				resp = append(resp, impl.userSaleTarget(ctx, cacheReport))
 			} else {
-				_, report, err := impl.updateAgentUserReport(ctx, agent, isQuarterReport, quarter, month, year)
+				_, report, err := impl.updateAgentUserReport(ctx, agent, chanel, isQuarterReport, quarter, month, year)
 				if err != nil {
 					return nil, err
 				}
@@ -112,11 +109,11 @@ func (impl *UserImpl) GetTopTenEmpSalesAndTarget(ctx *gin.Context, userID string
 	}
 
 	for _, eachMngr := range allDistinctMngr {
-		cacheReport, err := impl.CacheService.GetUserReport(eachMngr.UserId, isQuarterReport, month, quarter, year)
+		cacheReport, err := impl.CacheService.GetUserReport(eachMngr.UserId, chanel, isQuarterReport, month, quarter, year)
 		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
 			resp = append(resp, impl.userSaleTarget(ctx, cacheReport))
 		} else {
-			report, err := impl.updateManagerReport(ctx, eachMngr, isQuarterReport, quarter, month, year)
+			report, err := impl.updateManagerReport(ctx, eachMngr, chanel, isQuarterReport, quarter, month, year)
 			if err != nil {
 				return nil, err
 			}

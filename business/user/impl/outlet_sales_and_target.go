@@ -14,7 +14,8 @@ import (
 )
 
 // GetOutletSalesAndTarget: userID should be a manager
-func (impl *UserImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error) {
+func (impl *UserImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, chanel string,
+	isQuarterReport bool, quarter, month, year int) ([]*models.ProductWiseSalesTargetPerOutlet, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
@@ -32,14 +33,6 @@ func (impl *UserImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, i
 		quarter = getQuarterFromMonth(month)
 	}
 
-	// if ctxHeader.IsAdmin {
-	// 	vps, err := impl.DbService.FetchVP(quarter, year)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	userID = vps[0]
-	// }
-
 	user, err := impl.DbService.FetchUserBasicDetails(userID, quarter, year)
 	if err != nil {
 		return nil, err
@@ -55,6 +48,10 @@ func (impl *UserImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, i
 	}
 	user.Position = position
 
+	if user.Position == constant.OutletManagerAbb {
+		chanel = ""
+	}
+
 	resp := make([]*models.ProductWiseSalesTargetPerOutlet, 0)
 
 	/*
@@ -62,20 +59,14 @@ func (impl *UserImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, i
 	*/
 
 	if user.Position == constant.OutletManagerAbb {
-
-		cacheReport, err := impl.CacheService.GetOutletReport(user.Outlet, user.Region, isQuarterReport, month, quarter, year)
+		cacheReport, err := impl.CacheService.GetOutletReport(user.Outlet, user.Region, chanel, isQuarterReport, month, quarter, year)
 		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
 			return append(resp, impl.singleOutletSalesAndTarget(ctx, cacheReport)), nil
 		}
-
-		outletResp, err := impl.updateOutletReport(ctx, user.Region, user.Outlet, isQuarterReport, quarter, month, year)
+		outletResp, err := impl.updateOutletReport(ctx, user.Region, user.Outlet, chanel, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
-
-		// val, _ := json.Marshal(outletResp)
-		// logger.FileLogger.CtxInfo(ctx).Interface("OM outletReport", string(val)).Msg("GetOutletSalesAndTarget : trace")
-
 		return append(resp, impl.singleOutletSalesAndTarget(ctx, outletResp)), nil
 	}
 
@@ -94,7 +85,6 @@ func (impl *UserImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, i
 	}
 
 	for _, eachOM := range allDistinctOM {
-
 		if eachOM.Position != constant.OutletManagerAbb {
 			return nil, &errors.Error{
 				StatusCode: http.StatusBadRequest,
@@ -103,11 +93,11 @@ func (impl *UserImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, i
 			}
 		}
 
-		cacheReport, err := impl.CacheService.GetOutletReport(eachOM.Outlet, eachOM.Region, isQuarterReport, month, quarter, year)
+		cacheReport, err := impl.CacheService.GetOutletReport(eachOM.Outlet, eachOM.Region, chanel, isQuarterReport, month, quarter, year)
 		if err == nil && cacheReport != nil && objecthelper.IsCurrentDay(cacheReport.ModifiedAt) {
 			resp = append(resp, impl.singleOutletSalesAndTarget(ctx, cacheReport))
 		} else {
-			outletResp, err := impl.updateOutletReport(ctx, eachOM.Region, eachOM.Outlet, isQuarterReport, quarter, month, year)
+			outletResp, err := impl.updateOutletReport(ctx, eachOM.Region, eachOM.Outlet, chanel, isQuarterReport, quarter, month, year)
 			if err != nil {
 				return nil, err
 			}
@@ -122,7 +112,8 @@ func (impl *UserImpl) GetOutletSalesAndTarget(ctx *gin.Context, userID string, i
 	return resp, nil
 }
 
-func (impl *UserImpl) singleOutletSalesAndTarget(ctx *gin.Context, outletReport *models.OutletReportDB) *models.ProductWiseSalesTargetPerOutlet {
+func (impl *UserImpl) singleOutletSalesAndTarget(ctx *gin.Context,
+	outletReport *models.OutletReportDB) *models.ProductWiseSalesTargetPerOutlet {
 
 	eachOutletResp := &models.ProductWiseSalesTargetPerOutlet{
 		OutletName:    outletReport.Outlet,

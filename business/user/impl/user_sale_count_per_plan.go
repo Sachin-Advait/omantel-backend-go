@@ -12,7 +12,8 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) ([]*models.SaleCountPerPlan, *errors.Error) {
+func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product string, chanel string,
+	isQuarterReport bool, quarter, month, year int) ([]*models.SaleCountPerPlan, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
@@ -36,24 +37,9 @@ func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product stri
 		}
 	}
 
-	report, err := impl.CacheService.GetUserReport(userID, isQuarterReport, month, quarter, year)
-	if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {
-		if resp, err := impl.userPerPlanSale(ctx, product, report); err == nil {
-			return resp, nil
-		}
-	}
-
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
 	}
-
-	// if ctxHeader.IsAdmin {
-	// 	vps, err := impl.DbService.FetchVP(quarter, year)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	userID = vps[0]
-	// }
 
 	user, err := impl.DbService.FetchUserDetails(userID, quarter, year)
 	if err != nil {
@@ -70,20 +56,26 @@ func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product stri
 	}
 	user.Position = position
 
+	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb || user.Position == constant.OutletManagerAbb {
+		chanel = ""
+	}
+
+	report, err := impl.CacheService.GetUserReport(userID, chanel, isQuarterReport, month, quarter, year)
+	if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {
+		if resp, err := impl.userPerPlanSale(ctx, product, report); err == nil {
+			return resp, nil
+		}
+	}
+
 	/*
 		For Agents
 	*/
 
 	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb {
-
-		_, report, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+		_, report, err := impl.updateAgentUserReport(ctx, user, chanel, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
-
-		// val, _ := json.Marshal(resp)
-		// logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Str("report", string(val)).Msg("GetSaleCountPerPlan : updated")
-
 		return impl.userPerPlanSale(ctx, product, report)
 	}
 
@@ -91,14 +83,10 @@ func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product stri
 		For All Managers
 	*/
 
-	mngrReport, err := impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
+	mngrReport, err := impl.updateManagerReport(ctx, user, chanel, isQuarterReport, quarter, month, year)
 	if err != nil {
 		return nil, err
 	}
-
-	// val, _ := json.Marshal(mngrReport)
-	// logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Str("report", string(val)).Msg("GetSingleUserIncentive : updated")
-
 	return impl.userPerPlanSale(ctx, product, mngrReport)
 }
 

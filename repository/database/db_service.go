@@ -51,9 +51,12 @@ type DbService interface {
 
 	FetchOutletDetailsViaName(regionName, outletName string, quarter, year int) (*models.OutletResponse, *errors.Error)
 	FetchAllOutletNames(regionName string, quarter, year int) ([]string, *errors.Error)
-	FetchOutletSalesCount(region, outlet string, isQuarterReport bool, quarter, month, year int) (hbbSales, hayyakSales, baqatiSales, upgradeSales int, err *errors.Error)
-	FetchActiveUserSales(userID string, region string, outlet string, isQuarterReport bool, quarter, month, year int) (*models.SaleTransaction, *errors.Error)
-	FetchAdjustedActiveUserSales(userID string, region string, outlet string, isQuarterReport bool, currentQuarter, prevQuarter, year int) (*models.SaleTransaction, *errors.Error)
+	FetchOutletSalesCount(region, outlet, channel string, isQuarterReport bool, quarter, month,
+		year int) (hbbSales, hayyakSales, baqatiSales, upgradeSales int, err *errors.Error)
+	FetchActiveUserSales(userID string, channel string, isQuarterReport bool,
+		quarter, month, year int) (*models.SaleTransaction, *errors.Error)
+	FetchAdjustedActiveUserSales(userID string, channel string, isQuarterReport bool,
+		quarter, month, year int) (*models.SaleTransaction, *errors.Error)
 	FetchAllAgentsUserOfOM(outletManagerID string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error)
 	FetchAllOMReportingToGivenManager(managerPosition string, managerID string, quarter, year int) (map[string]*models.UserBasicDetailsDB, *errors.Error)
 	FetchAllMngrReportingToManagerRole(managerID, managerPosition string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error)

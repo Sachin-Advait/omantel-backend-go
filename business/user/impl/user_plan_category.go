@@ -11,7 +11,8 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) GetUserPlanCategory(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error) {
+func (impl *UserImpl) GetUserPlanCategory(ctx *gin.Context, userID, product string, chanel string,
+	isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
@@ -34,25 +35,6 @@ func (impl *UserImpl) GetUserPlanCategory(ctx *gin.Context, userID, product stri
 	// 	}
 	// }
 
-	report, err := impl.CacheService.GetUserPlanCategoryReport(userID, product, isQuarterReport, month, quarter, year)
-	if err == nil && report != nil {
-		planReport, ok := report.(map[string]interface{})
-		if !ok {
-			return nil, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerErrorCode,
-				Message:    errors.InternalServerError,
-				Details:    "getUserPlanCategoryReport - invalid cache data",
-			}
-		}
-		modifiedDate, _ := planReport["ModifiedAt"].(time.Time)
-		if objecthelper.IsCurrentDay(modifiedDate) {
-			return report, nil
-		}
-	}
-
-	// Compute real time
-
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
 	}
@@ -72,13 +54,33 @@ func (impl *UserImpl) GetUserPlanCategory(ctx *gin.Context, userID, product stri
 	}
 	user.Position = position
 
+	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb || user.Position == constant.OutletManagerAbb {
+		chanel = ""
+	}
+
+	report, err := impl.CacheService.GetUserPlanCategoryReport(userID, product, chanel, isQuarterReport, month, quarter, year)
+	if err == nil && report != nil {
+		planReport, ok := report.(map[string]interface{})
+		if !ok {
+			return nil, &errors.Error{
+				StatusCode: http.StatusInternalServerError,
+				Code:       errors.InternalServerErrorCode,
+				Message:    errors.InternalServerError,
+				Details:    "getUserPlanCategoryReport - invalid cache data",
+			}
+		}
+		modifiedDate, _ := planReport["ModifiedAt"].(time.Time)
+		if objecthelper.IsCurrentDay(modifiedDate) {
+			return report, nil
+		}
+	}
+
 	/*
 		For Agents
 	*/
 
 	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb {
-
-		report, err := impl.updateAgentUserPlanPerCategoryReport(ctx, user, product, isQuarterReport, quarter, month, year)
+		report, err := impl.updateAgentUserPlanPerCategoryReport(ctx, user, product, chanel, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +91,7 @@ func (impl *UserImpl) GetUserPlanCategory(ctx *gin.Context, userID, product stri
 		For All Managers
 	*/
 
-	mngrReport, err := impl.updateManagerUserPlanPerCategoryReport(ctx, user, product, isQuarterReport, quarter, month, year)
+	mngrReport, err := impl.updateManagerUserPlanPerCategoryReport(ctx, user, product, chanel, isQuarterReport, quarter, month, year)
 	if err != nil {
 		return nil, err
 	}
