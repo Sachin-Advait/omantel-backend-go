@@ -12,7 +12,8 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) GetUserSalesCount(ctx *gin.Context, userID, product string, isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error) {
+func (impl *UserImpl) GetUserSalesCount(ctx *gin.Context, userID, product string, chanel string,
+	isQuarterReport bool, quarter, month, year int) (interface{}, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
@@ -36,22 +37,6 @@ func (impl *UserImpl) GetUserSalesCount(ctx *gin.Context, userID, product string
 		}
 	}
 
-	report, err := impl.CacheService.GetUserSaleCountPerPlanReport(userID, product, isQuarterReport, month, quarter, year)
-	if err == nil && report != nil {
-		var modifiedDate time.Time
-		if product == constant.HBBCategory {
-			modifiedDate = report.(*models.HbbUserSalesCountPerPlanDB).ModifiedAt
-		} else {
-			modifiedDate = report.(*models.UserSalesCountPerPlanDB).ModifiedAt
-		}
-
-		if objecthelper.IsCurrentDay(modifiedDate) {
-			return report, nil
-		}
-	}
-
-	// Compute real time
-
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
 	}
@@ -71,13 +56,30 @@ func (impl *UserImpl) GetUserSalesCount(ctx *gin.Context, userID, product string
 	}
 	user.Position = position
 
+	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb || user.Position == constant.OutletManagerAbb {
+		chanel = ""
+	}
+
+	report, err := impl.CacheService.GetUserSaleCountPerPlanReport(userID, product, chanel, isQuarterReport, month, quarter, year)
+	if err == nil && report != nil {
+		var modifiedDate time.Time
+		if product == constant.HBBCategory {
+			modifiedDate = report.(*models.HbbUserSalesCountPerPlanDB).ModifiedAt
+		} else {
+			modifiedDate = report.(*models.UserSalesCountPerPlanDB).ModifiedAt
+		}
+
+		if objecthelper.IsCurrentDay(modifiedDate) {
+			return report, nil
+		}
+	}
+
 	/*
 		For Agents
 	*/
 
 	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb {
-
-		report, err := impl.updateAgentUserSalesCountReport(ctx, user, product, isQuarterReport, quarter, month, year)
+		report, err := impl.updateAgentUserSalesCountReport(ctx, user, product, chanel, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +90,7 @@ func (impl *UserImpl) GetUserSalesCount(ctx *gin.Context, userID, product string
 		For All Managers
 	*/
 
-	mngrReport, err := impl.updateManagerUserSalesCountReport(ctx, user, product, isQuarterReport, quarter, month, year)
+	mngrReport, err := impl.updateManagerUserSalesCountReport(ctx, user, product, chanel, isQuarterReport, quarter, month, year)
 	if err != nil {
 		return nil, err
 	}

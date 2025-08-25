@@ -23,7 +23,8 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.UserIncentiveReque
 	isQuarterReport, quarter, month, year, err := models.ValidateUserIncentiveRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetTopTenEmpSalesAndTarget : validation failed")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+			Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
 			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
@@ -32,10 +33,13 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.UserIncentiveReque
 		}
 	}
 
-	response, errs := userAPIProvider.GetTopTenEmpSalesAndTarget(ctx, req.ClientId, isQuarterReport, quarter, month, year)
+	response, errs := userAPIProvider.GetTopTenEmpSalesAndTarget(ctx, req.ClientId, req.Channel, isQuarterReport,
+		quarter, month, year)
 	if errs != nil {
-		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetTopTenEmpSalesAndTarget : provider failed")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).
+			Msg("GetTopTenEmpSalesAndTarget : provider failed")
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+			Type: "error", Msg: "provider failed",
 			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
 		return errs.StatusCode, &models.APIFailureResponse{
@@ -46,8 +50,10 @@ func GetTopTenEmpSalesAndTarget(ctx *gin.Context, req *models.UserIncentiveReque
 	models.ValidateTopTenSalesResponse(response)
 
 	responseBytes, _ := json.Marshal(response)
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetTopTenEmpSalesAndTarget : success")
-	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).
+		Msg("GetTopTenEmpSalesAndTarget : success")
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+		Type: "info", Msg: "success", Code: http.StatusOK,
 		Text: string(responseBytes), CreateTime: time.Now().Local()})
 
 	return http.StatusOK, response

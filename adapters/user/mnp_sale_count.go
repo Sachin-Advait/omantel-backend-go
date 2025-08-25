@@ -33,7 +33,7 @@ func GetUserMNPSalesCount(ctx *gin.Context, req *models.MNPSalesRequest) (int, i
 		}
 	}
 
-	response, errs := userAPIProvider.GetUserMNPSalesCount(ctx, req.ClientId, isQuarterReport, quarter, month, year)
+	response, errs := userAPIProvider.GetUserMNPSalesCount(ctx, req.ClientId, req.Channel, isQuarterReport, quarter, month, year)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUserMNPSalesCount : provider failed")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),

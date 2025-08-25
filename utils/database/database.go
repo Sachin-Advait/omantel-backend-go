@@ -28,9 +28,14 @@ var db *dbClient
 
 // InitDatabase is used to initialise the database
 func InitDatabase(conf *models.DbClientConfig) {
-
-	psqlConf := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.UserName, conf.Password, conf.DbName)
+	var psqlConf string
+	if conf.Env == "prod" {
+		psqlConf = fmt.Sprintf("host=%s port=%d user=%s "+
+			"password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.UserName, conf.Password, conf.DbName)
+	} else {
+		psqlConf = fmt.Sprintf("host=%s port=%d user=%s "+
+			"password=%s dbname=%s sslmode=require", conf.Host, conf.Port, conf.UserName, conf.Password, conf.DbName)
+	}
 
 	conn, err := sql.Open("postgres", psqlConf+" connect_timeout=1")
 	if err != nil {

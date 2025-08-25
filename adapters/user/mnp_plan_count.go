@@ -33,7 +33,7 @@ func GetUserMNPPlanCount(ctx *gin.Context, req *models.MNPSalesRequest) (int, in
 		}
 	}
 
-	response, errs := userAPIProvider.GetUserMNPPlanCount(ctx, req.ClientId, isQuarterReport, quarter, month, year)
+	response, errs := userAPIProvider.GetUserMNPPlanCount(ctx, req.ClientId, req.Channel, isQuarterReport, quarter, month, year)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUserMNPPlanCount : provider failed")
 		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),

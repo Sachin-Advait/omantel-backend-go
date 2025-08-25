@@ -11,7 +11,8 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) GetUserSalesAndTargetChart(ctx *gin.Context, userID string, isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error) {
+func (impl *UserImpl) GetUserSalesAndTargetChart(ctx *gin.Context, userID string, chanel string,
+	isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
@@ -25,22 +26,9 @@ func (impl *UserImpl) GetUserSalesAndTargetChart(ctx *gin.Context, userID string
 		}
 	}
 
-	report, err := impl.CacheService.GetUserReport(userID, isQuarterReport, month, quarter, year)
-	if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {
-		return impl.userTarget(ctx, report), nil
-	}
-
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
 	}
-
-	// if ctxHeader.IsAdmin {
-	// 	vps, err := impl.DbService.FetchVP(quarter, year)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	userID = vps[0]
-	// }
 
 	user, err := impl.DbService.FetchUserDetails(userID, quarter, year)
 	if err != nil {
@@ -57,20 +45,24 @@ func (impl *UserImpl) GetUserSalesAndTargetChart(ctx *gin.Context, userID string
 	}
 	user.Position = position
 
+	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb || user.Position == constant.OutletManagerAbb {
+		chanel = ""
+	}
+
+	report, err := impl.CacheService.GetUserReport(userID, chanel, isQuarterReport, month, quarter, year)
+	if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {
+		return impl.userTarget(ctx, report), nil
+	}
+
 	/*
 		For Agents
 	*/
 
 	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb {
-
-		_, report, err := impl.updateAgentUserReport(ctx, user, isQuarterReport, quarter, month, year)
+		_, report, err := impl.updateAgentUserReport(ctx, user, chanel, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
-
-		// val, _ := json.Marshal(resp)
-		// logger.FileLogger.CtxInfo(ctx).Str("agent", user.UserId).Str("report", string(val)).Msg("GetSingleUserTargetChart : updated")
-
 		return impl.userTarget(ctx, report), nil
 	}
 
@@ -78,18 +70,14 @@ func (impl *UserImpl) GetUserSalesAndTargetChart(ctx *gin.Context, userID string
 		For All Managers
 	*/
 
-	mngrReport, err := impl.updateManagerReport(ctx, user, isQuarterReport, quarter, month, year)
+	mngrReport, err := impl.updateManagerReport(ctx, user, chanel, isQuarterReport, quarter, month, year)
 	if err != nil {
 		return nil, err
 	}
-
-	// val, _ := json.Marshal(mngrReport)
-	// logger.FileLogger.CtxInfo(ctx).Str("manger", user.UserId).Str("report", string(val)).Msg("GetSingleUserTargetChart : updated")
-
 	return impl.userTarget(ctx, mngrReport), nil
 }
 
-func (impl *UserImpl) userTarget(ctx *gin.Context, userReport *models.UserReportDB) *models.ChartDataResponse {
+func (impl *UserImpl) userTarget(_ *gin.Context, userReport *models.UserReportDB) *models.ChartDataResponse {
 
 	return &models.ChartDataResponse{
 		HBB: &models.TargetAchievementData{

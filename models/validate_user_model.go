@@ -75,7 +75,8 @@ func ValidateUserMapRequest(req *UserMapRequest, ctxHeader context.ContextHeader
 	return
 }
 
-func ValidateUserIncentiveRequest(req *UserIncentiveRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, quarter, month, year int, err error) {
+func ValidateUserIncentiveRequest(req *UserIncentiveRequest, ctxHeader context.ContextHeader) (isQuarterReport bool,
+	quarter, month, year int, err error) {
 
 	if req.ClientId == "" {
 		err = errors.New("blank userId")
@@ -135,6 +136,12 @@ func ValidateUserIncentiveRequest(req *UserIncentiveRequest, ctxHeader context.C
 		}
 
 		year = date.Year()
+	}
+
+	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
+		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		err = errors.New("invalid chanel:" + req.Channel)
+		return
 	}
 
 	return
@@ -209,6 +216,12 @@ func ValidateUserSalesRequest(req *UserSalesRequest, ctxHeader context.ContextHe
 		year = date.Year()
 	}
 
+	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
+		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		err = errors.New("invalid chanel:" + req.Channel)
+		return
+	}
+
 	return
 }
 
@@ -281,10 +294,17 @@ func ValidateUserPlanRequest(req *UserSalesRequest, ctxHeader context.ContextHea
 		year = date.Year()
 	}
 
+	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
+		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		err = errors.New("invalid chanel:" + req.Channel)
+		return
+	}
+
 	return
 }
 
-func ValidateUserMNPSalesRequest(req *MNPSalesRequest, ctxHeader context.ContextHeader) (isQuarterReport bool, quarter, month, year int, err error) {
+func ValidateUserMNPSalesRequest(req *MNPSalesRequest, ctxHeader context.ContextHeader) (isQuarterReport bool,
+	quarter, month, year int, err error) {
 
 	if req.ClientId == "" {
 		err = errors.New("blank userId")
@@ -344,6 +364,12 @@ func ValidateUserMNPSalesRequest(req *MNPSalesRequest, ctxHeader context.Context
 		}
 
 		year = date.Year()
+	}
+
+	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
+		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		err = errors.New("invalid chanel:" + req.Channel)
+		return
 	}
 
 	return
@@ -480,6 +506,12 @@ func ValidateUserReportRequest(req *UserReportRequest, ctxHeader context.Context
 
 	if req.Quarter >= 1 && req.Quarter <= 4 {
 		isQuarterReport = true
+	}
+
+	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
+		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		err = errors.New("invalid chanel:" + req.Channel)
+		return
 	}
 
 	return isQuarterReport, nil

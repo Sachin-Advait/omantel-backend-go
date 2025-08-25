@@ -23,7 +23,8 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 	isQuarterReport, err := models.ValidateUserReportRequest(req, ctxHeader)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Err(err).Msg("GetUserReport : validation failed")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+			Type: "error", Msg: "invalid req params", Code: http.StatusBadRequest,
 			Text: err.Error(), CreateTime: time.Now().Local()})
 
 		return http.StatusBadRequest, &models.APIFailureResponse{
@@ -32,10 +33,12 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 		}
 	}
 
-	response, errs := userAPIProvider.GetUserReport(ctx, req.ClientId, isQuarterReport, req.Quarter, req.Month, time.Now().Year())
+	response, errs := userAPIProvider.GetUserReport(ctx, req.ClientId, req.Channel, isQuarterReport,
+		req.Quarter, req.Month, time.Now().Year())
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).Msg("GetUserReport : provider failed")
-		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "error", Msg: "provider failed",
+		dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+			Type: "error", Msg: "provider failed",
 			Text: errs.Details.(string), CreateTime: time.Now().Local()})
 
 		return errs.StatusCode, &models.APIFailureResponse{
@@ -46,8 +49,10 @@ func GetUserReport(ctx *gin.Context, req *models.UserReportRequest) (int, interf
 	models.ValidateUserReportResponse(ctx, response)
 
 	responseBytes, _ := json.Marshal(response)
-	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).Msg("GetUserReport : success")
-	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(), Type: "info", Msg: "success", Code: http.StatusOK,
+	logger.FileLogger.CtxInfo(ctx).Str(logger.ResponseParam, fmt.Sprintf("%+v", response)).
+		Msg("GetUserReport : success")
+	dblogger.PrintDBLogs(&dblogger.Logging{UserID: ctxHeader.XUserId, URL: ctx.Request.URL.String(),
+		Type: "info", Msg: "success", Code: http.StatusOK,
 		Text: string(responseBytes), CreateTime: time.Now().Local()})
 
 	return http.StatusOK, response

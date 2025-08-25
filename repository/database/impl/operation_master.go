@@ -143,13 +143,25 @@ func (dbConn *DbServiceImpl) FetchAllOutletNames(regionName string, quarter, yea
 
 /////////////////////// SALES TRANSACTION TABLE ///////////////////////////
 
-func (dbConn *DbServiceImpl) FetchOutletSalesCount(region, outlet string, isQuarterReport bool, quarter, month, year int) (hbbSales, hayyakSales, baqatiSales, upgradeSales int, err *errors.Error) {
-
-	// logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchOutletSalesCount start")
-	// defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchOutletSalesCount done")
+func (dbConn *DbServiceImpl) FetchOutletSalesCount(region, outlet, channel string, isQuarterReport bool, quarter,
+	month, year int) (hbbSales, hayyakSales, baqatiSales, upgradeSales int, err *errors.Error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
+
+	channelFilter := ""
+	switch channel {
+	case "all":
+		channelFilter = "chanel in ('DIRECT', 'FRANCHISE', 'FRANCHISEINFOLINE') AND "
+	case "all-franchise":
+		channelFilter = "chanel in ('FRANCHISE', 'FRANCHISEINFOLINE') AND "
+	case "franchise":
+		channelFilter = "chanel = 'FRANCHISE' AND "
+	case "franchiseinfoline":
+		channelFilter = "chanel = 'FRANCHISEINFOLINE' AND "
+	case "direct":
+		channelFilter = "chanel = 'DIRECT' AND "
+	}
 
 	var (
 		rows   *sql.Rows
@@ -158,11 +170,19 @@ func (dbConn *DbServiceImpl) FetchOutletSalesCount(region, outlet string, isQuar
 
 	if isQuarterReport {
 		rows, sqlErr = dbConn.DBClient.QueryContext(ctx,
-			"select transaction_type, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and quarter=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY transaction_type, product_group",
+			"select transaction_type, product_group, SUM(quantity) AS total from sale_transaction_table "+
+				"where "+
+				channelFilter+
+				"region=$1 and outlet=$2 and quarter=$3 and EXTRACT('year' from sales_date)=$4 "+
+				"GROUP BY transaction_type, product_group",
 			region, outlet, quarter, year)
 	} else {
 		rows, sqlErr = dbConn.DBClient.QueryContext(ctx,
-			"select transaction_type, product_group, SUM(quantity) AS total from sale_transaction_table where region=$1 and outlet=$2 and EXTRACT('month' from sales_date)=$3 and EXTRACT('year' from sales_date)=$4 GROUP BY transaction_type, product_group",
+			"select transaction_type, product_group, SUM(quantity) AS total from sale_transaction_table "+
+				"where "+
+				channelFilter+
+				"region=$1 and outlet=$2 and EXTRACT('month' from sales_date)=$3 and "+
+				"EXTRACT('year' from sales_date)=$4 GROUP BY transaction_type, product_group",
 			region, outlet, month, year)
 	}
 
@@ -212,13 +232,30 @@ func (dbConn *DbServiceImpl) FetchOutletSalesCount(region, outlet string, isQuar
 }
 
 // FetchActiveUserSales - all active sale transaction of a given user and time period
-func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, outlet string, isQuarterReport bool, quarter, month, year int) (*models.SaleTransaction, *errors.Error) {
-
-	// logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("start", time.Now()).Msg("FetchUserSales start")
-	// defer logger.FileLogger.Info().Str("clientID", userID).Int("month", month).Int("year", year).Int("quarter", quarter).Bool("isQuarterReport", isQuarterReport).Time("end", time.Now()).Msg("FetchUserSales done")
+func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, channel string, isQuarterReport bool,
+	quarter, month, year int) (*models.SaleTransaction, *errors.Error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
+
+	resp := &models.SaleTransaction{
+		EmpID:       userID,
+		SaleRecords: make(map[string][]*models.SaleRecord),
+	}
+
+	channelFilter := ""
+	switch channel {
+	case "all":
+		channelFilter = " AND chanel in ('DIRECT', 'FRANCHISE', 'FRANCHISEINFOLINE')"
+	case "all-franchise":
+		channelFilter = " AND chanel in ('FRANCHISE', 'FRANCHISEINFOLINE')"
+	case "franchise":
+		channelFilter = " AND chanel = 'FRANCHISE'"
+	case "franchiseinfoline":
+		channelFilter = " AND chanel = 'FRANCHISEINFOLINE'"
+	case "direct":
+		channelFilter = " AND chanel = 'DIRECT'"
+	}
 
 	var (
 		rows *sql.Rows
@@ -226,13 +263,16 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, 
 	)
 
 	if isQuarterReport {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
+		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, "+
+			"transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and "+
+			"quarter=$2 and EXTRACT('year' from sales_date)=$3"+channelFilter,
 			userID, quarter, year)
 	} else {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3",
+		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, "+
+			"transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and "+
+			"EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3"+channelFilter,
 			userID, month, year)
 	}
-
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -241,37 +281,22 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, 
 			Details:    "FetchUserSales: userID-" + userID + ", query failed - " + err.Error(),
 		}
 	}
-
 	defer rows.Close()
 
-	trx := &models.SaleTransaction{
-		EmpID:  userID,
-		Region: region,
-		Outlet: outlet,
-	}
-
-	trx.SaleRecords = make(map[string][]*models.SaleRecord)
-
 	count := 0
-
 	for rows.Next() {
-
+		count++
 		var (
-			id              int
-			prevPlan        string
-			currPlan        string
-			quantity        int
-			productGroup    string
-			transactionType string
-			subCategory     interface{}
-			salesDate       time.Time
-			terminateDate   time.Time
+			productGroup  string
+			subCategory   interface{}
+			salesDate     time.Time
+			terminateDate time.Time
+			rcrd          models.SaleRecord
 		)
 
-		count++
-
-		if err := rows.Scan(&id, &prevPlan, &currPlan, &quantity, &productGroup, &transactionType, &subCategory, &salesDate, &terminateDate); err != nil {
-			return trx, &errors.Error{
+		if err := rows.Scan(&rcrd.TrxId, &rcrd.PreviousProduct, &rcrd.CurrentProduct, &rcrd.Quantity, &productGroup,
+			&rcrd.Category, &subCategory, &salesDate, &terminateDate); err != nil {
+			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
 				Message:    errors.InternalServerError,
@@ -290,36 +315,34 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, 
 			productGroup = constant.BaqatiCategory
 
 		default:
-			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: incorrect productGroup")
-			// return trx, &errors.Error{
-			// 	StatusCode: http.StatusInternalServerError,
-			// 	Code:       errors.InternalServerErrorCode,
-			// 	Message:    errors.InternalServerError,
-			// 	Details:    "FetchUserSales: invalid productGrp - " + productGroup,
-			// }
+			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", rcrd.TrxId).
+				Msg("FetchActiveUserSales: incorrect productGroup")
 		}
 
-		if !(productGroup == constant.HBBCategory || productGroup == constant.HayyakCategory || productGroup == constant.BaqatiCategory) {
+		if !(productGroup == constant.HBBCategory || productGroup == constant.HayyakCategory ||
+			productGroup == constant.BaqatiCategory) {
 			continue
 		}
 
 		if !terminateDate.IsZero() && terminateDate.Before(salesDate) {
-			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: saleDate-terminateDate incorrect")
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", rcrd.TrxId).
+				Msg("Db-FetchActiveUserSales: saleDate-terminateDate incorrect")
 			continue
 		}
 
 		// expiryDate := salesDate.Add(90 * 24 * time.Hour)
 		// if !terminateDate.IsZero() && terminateDate.Sub(expiryDate) <= 0 { //Months<3
 		// 	if !strings.Contains(subCategory.(string), "INVOLUNTARY DEACTIVATION") {
-		// 		logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).Bool("isQuarter", isQuarterReport).
-		// 			Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
+		// 		logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
+		// 			Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
+		// 			Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
 		// 		continue
 		// 	}
 		// }
 
-		//TODO: new logic
+		//TODO: new logic is ignore records if it is terminated on the same month or same quarter depending on
 		var isTerminated bool
 		if !terminateDate.IsZero() {
 			terminateMonth := int(terminateDate.Month())
@@ -333,43 +356,26 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, region string, 
 		}
 
 		if isTerminated {
-			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
-				Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
-				Int("trx", id).Interface("terminateDate", terminateDate).Msg("FetchActiveUserSales: sale terminated")
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", rcrd.TrxId).
+				Interface("terminateDate", terminateDate).Msg("Db-FetchActiveUserSales: sale terminated")
 			continue
 		}
 
-		rcrd := &models.SaleRecord{
-			TrxId:           id,
-			Quantity:        quantity,
-			Category:        transactionType,
-			PreviousProduct: prevPlan,
-			CurrentProduct:  currPlan,
+		if resp.SaleRecords[productGroup] == nil {
+			resp.SaleRecords[productGroup] = make([]*models.SaleRecord, 0)
 		}
 
-		if trx.SaleRecords[productGroup] == nil {
-			trx.SaleRecords[productGroup] = make([]*models.SaleRecord, 0)
-		}
-
-		trx.SaleRecords[productGroup] = append(trx.SaleRecords[productGroup], rcrd)
+		resp.SaleRecords[productGroup] = append(resp.SaleRecords[productGroup], &rcrd)
 	}
 
-	return trx, nil
+	return resp, nil
 }
 
-// FetchAdjustedActiveUserSales - all active sale transaction of previous quarter ignoring this expired
-// in that quarter as well as in this current quarter
-func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region string, outlet string,
-	isQuarterReport bool, currentQuarter, prevQuarter, year int) (*models.SaleTransaction, *errors.Error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	var (
-		rows *sql.Rows
-		err  error
-	)
-
+// FetchAdjustedActiveUserSales - for quarter only fetch all active sale transaction of previous quarter
+// ignoring those expired in that quarter as well as in this current quarter
+func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, channel string, isQuarterReport bool,
+	quarter, month, year int) (*models.SaleTransaction, *errors.Error) {
 	if !isQuarterReport {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -379,12 +385,40 @@ func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region 
 		}
 	}
 
+	prevQuarter, prevYear := objecthelper.GetPreviousQuarterAndMonth(quarter, year)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	resp := &models.SaleTransaction{
+		EmpID:       userID,
+		SaleRecords: make(map[string][]*models.SaleRecord),
+	}
+
+	channelFilter := ""
+	switch channel {
+	case "all":
+		channelFilter = " AND chanel in ('DIRECT', 'FRANCHISE', 'FRANCHISEINFOLINE')"
+	case "all-franchise":
+		channelFilter = " AND chanel in ('FRANCHISE', 'FRANCHISEINFOLINE')"
+	case "franchise":
+		channelFilter = " AND chanel = 'FRANCHISE'"
+	case "franchiseinfoline":
+		channelFilter = " AND chanel = 'FRANCHISEINFOLINE'"
+	case "direct":
+		channelFilter = " AND chanel = 'DIRECT'"
+	}
+
+	var (
+		rows *sql.Rows
+		err  error
+	)
+
 	rows, err = dbConn.DBClient.QueryContext(ctx,
 		"select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, mnp_donor, "+
 			"sales_date, terminate_date from sale_transaction_table where "+
-			"emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3",
-		userID, prevQuarter, year)
-
+			"emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3"+channelFilter,
+		userID, prevQuarter, prevYear)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -393,39 +427,22 @@ func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region 
 			Details:    "FetchAdjustedActiveUserSales: userID-" + userID + ", query failed - " + err.Error(),
 		}
 	}
-
 	defer rows.Close()
 
-	trx := &models.SaleTransaction{
-		EmpID:  userID,
-		Region: region,
-		Outlet: outlet,
-	}
-
-	trx.SaleRecords = make(map[string][]*models.SaleRecord)
-
 	count := 0
-
 	for rows.Next() {
-
+		count++
 		var (
-			id              int
-			prevPlan        string
-			currPlan        string
-			quantity        int
-			productGroup    string
-			transactionType string
-			subCategory     interface{}
-			mnpDonor        string
-			salesDate       time.Time
-			terminateDate   time.Time
+			productGroup  string
+			subCategory   interface{}
+			salesDate     time.Time
+			terminateDate time.Time
+			rcrd          models.SaleRecord
 		)
 
-		count++
-
-		if err := rows.Scan(&id, &prevPlan, &currPlan, &quantity, &productGroup, &transactionType, &subCategory,
-			&mnpDonor, &salesDate, &terminateDate); err != nil {
-			return trx, &errors.Error{
+		if err := rows.Scan(&rcrd.TrxId, &rcrd.PreviousProduct, &rcrd.CurrentProduct, &rcrd.Quantity, &productGroup,
+			&rcrd.Category, &subCategory, &rcrd.MNPDonor, &salesDate, &terminateDate); err != nil {
+			return nil, &errors.Error{
 				StatusCode: http.StatusInternalServerError,
 				Code:       errors.InternalServerErrorCode,
 				Message:    errors.InternalServerError,
@@ -444,9 +461,9 @@ func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region 
 			productGroup = constant.BaqatiCategory
 
 		default:
-			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
-				Bool("isQuarter", isQuarterReport).Int("quarter", currentQuarter).Int("year", year).Int("trx", id).
-				Msg("FetchAdjustedActiveUserSales: incorrect productGroup")
+			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("year", year).Int("trx", rcrd.TrxId).
+				Msg("Db-FetchAdjustedActiveUserSales: incorrect productGroup")
 		}
 
 		if !(productGroup == constant.HBBCategory || productGroup == constant.HayyakCategory ||
@@ -455,45 +472,36 @@ func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, region 
 		}
 
 		if !terminateDate.IsZero() && terminateDate.Before(salesDate) {
-			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
-				Bool("isQuarter", isQuarterReport).Int("quarter", currentQuarter).Int("year", year).Int("trx", id).
-				Msg("FetchAdjustedActiveUserSales: saleDate-terminateDate incorrect")
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("year", year).Int("trx", rcrd.TrxId).
+				Msg("Db-FetchAdjustedActiveUserSales: saleDate-terminateDate incorrect")
 			continue
 		}
 
-		//TODO: this logic ignore terminated orders of prev quarters and current quarters
+		// this logic ignore terminated orders of prev quarters and current quarters
 		var isTerminated bool
 		if !terminateDate.IsZero() {
 			terminateQuarter := objecthelper.GetQuarterFromMonth(int(terminateDate.Month()))
-			if isQuarterReport && (terminateQuarter == prevQuarter || terminateQuarter == currentQuarter) {
+			if isQuarterReport && (terminateQuarter == prevQuarter || terminateQuarter == quarter) {
 				isTerminated = true
 			}
 		}
 
 		if isTerminated {
-			logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
-				Bool("isQuarter", isQuarterReport).Int("quarter", currentQuarter).Int("year", year).
-				Int("trx", id).Interface("terminateDate", terminateDate).Msg("FetchActiveUserSales: sale terminated")
+			logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+				Int("quarter", quarter).Int("year", year).Int("trx", rcrd.TrxId).
+				Interface("terminateDate", terminateDate).Msg("Db-FetchActiveUserSales: sale terminated")
 			continue
 		}
 
-		rcrd := &models.SaleRecord{
-			TrxId:           id,
-			Quantity:        quantity,
-			Category:        transactionType,
-			PreviousProduct: prevPlan,
-			CurrentProduct:  currPlan,
-			MNPDonor:        mnpDonor,
+		if resp.SaleRecords[productGroup] == nil {
+			resp.SaleRecords[productGroup] = make([]*models.SaleRecord, 0)
 		}
 
-		if trx.SaleRecords[productGroup] == nil {
-			trx.SaleRecords[productGroup] = make([]*models.SaleRecord, 0)
-		}
-
-		trx.SaleRecords[productGroup] = append(trx.SaleRecords[productGroup], rcrd)
+		resp.SaleRecords[productGroup] = append(resp.SaleRecords[productGroup], &rcrd)
 	}
 
-	return trx, nil
+	return resp, nil
 }
 
 // FetchAllAgentsUserOfOM - all outlet employees reporting to given outlet manager in argument

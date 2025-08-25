@@ -36,7 +36,6 @@ const (
 
 // routes
 const (
-	ApiRoute                    = "/api"
 	SwaggerRoute                = "/swagger/*any"
 	ActuatorRoute               = "/actuator/*any"
 	SalesIncentiveRoute         = "/sales/incentive"

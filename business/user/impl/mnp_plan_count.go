@@ -11,7 +11,7 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) GetUserMNPPlanCount(ctx *gin.Context, userID string, isQuarterReport bool,
+func (impl *UserImpl) GetUserMNPPlanCount(ctx *gin.Context, userID string, chanel string, isQuarterReport bool,
 	quarter, month, year int) (interface{}, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
@@ -26,16 +26,6 @@ func (impl *UserImpl) GetUserMNPPlanCount(ctx *gin.Context, userID string, isQua
 		}
 	}
 
-	report, err := impl.CacheService.GetUserMNPPlanCountPerPlanReport(userID, isQuarterReport, month, quarter, year)
-	if err == nil && report != nil {
-		modifiedDate := report.(*models.MNPPlansCount).ModifiedAt
-		if objecthelper.IsCurrentDay(modifiedDate) {
-			return report, nil
-		}
-	}
-
-	// Compute real time
-
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
 	}
@@ -44,7 +34,6 @@ func (impl *UserImpl) GetUserMNPPlanCount(ctx *gin.Context, userID string, isQua
 	if err != nil {
 		return nil, err
 	}
-
 	position, ok := constant.EmployeePositionMap[user.Position]
 	if !ok {
 		return nil, &errors.Error{
@@ -55,13 +44,24 @@ func (impl *UserImpl) GetUserMNPPlanCount(ctx *gin.Context, userID string, isQua
 	}
 	user.Position = position
 
+	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb || user.Position == constant.OutletManagerAbb {
+		chanel = ""
+	}
+
+	report, err := impl.CacheService.GetUserMNPPlanCountPerPlanReport(userID, chanel, isQuarterReport, month, quarter, year)
+	if err == nil && report != nil {
+		modifiedDate := report.(*models.MNPPlansCount).ModifiedAt
+		if objecthelper.IsCurrentDay(modifiedDate) {
+			return report, nil
+		}
+	}
+
 	/*
 		For Agents
 	*/
 
 	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb {
-
-		report, err := impl.updateAgentUserMNPPlanCountReport(ctx, user, isQuarterReport, quarter, month, year)
+		report, err := impl.updateAgentUserMNPPlanCountReport(ctx, user, chanel, isQuarterReport, quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +72,7 @@ func (impl *UserImpl) GetUserMNPPlanCount(ctx *gin.Context, userID string, isQua
 		For All Managers
 	*/
 
-	mngrReport, err := impl.updateManagerUserMNPPlanCountReport(ctx, user, isQuarterReport, quarter, month, year)
+	mngrReport, err := impl.updateManagerUserMNPPlanCountReport(ctx, user, chanel, isQuarterReport, quarter, month, year)
 	if err != nil {
 		return nil, err
 	}

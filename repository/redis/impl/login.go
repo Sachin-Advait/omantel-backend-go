@@ -11,7 +11,8 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *CacheServiceImpl) InsertUseSessionToken(userId string, userSession *models.UserSessionToken, keyTTL time.Duration) *errors.Error {
+func (impl *CacheServiceImpl) InsertUseSessionToken(userId string, userSession *models.UserSessionToken,
+	keyTTL time.Duration) *errors.Error {
 
 	customError := &errors.Error{
 		StatusCode: http.StatusInternalServerError,
