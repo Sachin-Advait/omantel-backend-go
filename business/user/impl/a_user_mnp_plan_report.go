@@ -125,24 +125,6 @@ func (impl *UserImpl) updateAgentUserMNPPlanCountReport(ctx *gin.Context, user *
 			}
 
 			switch grp {
-			case constant.BaqatiCategory:
-				plan := resp.Baqati[v.CurrentProduct]
-				if plan == nil {
-					plan = map[string]int{
-						v.MNPDonor: v.Quantity,
-					}
-				} else {
-					plan[v.MNPDonor] += v.Quantity
-				}
-
-				group := resp.Total[grp]
-				if group == nil {
-					group = map[string]int{
-						v.MNPDonor: v.Quantity,
-					}
-				} else {
-					group[v.MNPDonor] += v.Quantity
-				}
 			case constant.HayyakCategory:
 				plan := resp.Hayyak[v.CurrentProduct]
 				if plan == nil {
@@ -152,6 +134,7 @@ func (impl *UserImpl) updateAgentUserMNPPlanCountReport(ctx *gin.Context, user *
 				} else {
 					plan[v.MNPDonor] += v.Quantity
 				}
+				resp.Hayyak[v.CurrentProduct] = plan
 
 				group := resp.Total[grp]
 				if group == nil {
@@ -161,6 +144,31 @@ func (impl *UserImpl) updateAgentUserMNPPlanCountReport(ctx *gin.Context, user *
 				} else {
 					group[v.MNPDonor] += v.Quantity
 				}
+				resp.Total[grp] = group
+
+			case constant.BaqatiCategory:
+				plan := resp.Baqati[v.CurrentProduct]
+				if plan == nil {
+					plan = map[string]int{
+						v.MNPDonor: v.Quantity,
+					}
+				} else {
+					plan[v.MNPDonor] += v.Quantity
+				}
+				resp.Baqati[v.CurrentProduct] = plan
+
+				group := resp.Total[grp]
+				if group == nil {
+					group = map[string]int{
+						v.MNPDonor: v.Quantity,
+					}
+					resp.Total[grp] = group
+				} else {
+					group[v.MNPDonor] += v.Quantity
+					resp.Total[grp] = group
+				}
+				resp.Total[grp] = group
+
 			default:
 				continue
 			}
