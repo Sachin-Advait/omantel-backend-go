@@ -81,6 +81,7 @@ func (impl *UserImpl) updateAgentUserPlanPerCategoryReport(ctx *gin.Context, use
 	response["CreatedAt"] = time.Now()
 	response["ModifiedAt"] = time.Now()
 	response["GRAND TOTAL"] = make(map[string]int)
+
 	for _, v := range allUserSales {
 		if v.ProductGroup != constant.HBBCategory {
 			continue
@@ -94,7 +95,8 @@ func (impl *UserImpl) updateAgentUserPlanPerCategoryReport(ctx *gin.Context, use
 		}
 
 		//only consider HBB (i.e CBU-HBB and EBU-HBB) and ignore WFBB (i.e CBU-WFBB and EBU-WFBB)
-		if !(v.LineType == "ILL SERVICE" || v.LineType == "MPLS SERVICE" || v.LineType == "P2P LEASED LINE SERVICE" || v.LineType == "PSTN VOICE SERVICE") {
+		if !(v.LineType == "ILL SERVICE" || v.LineType == "MPLS SERVICE" || v.LineType == "P2P LEASED LINE SERVICE" ||
+			v.LineType == "PSTN VOICE SERVICE") {
 			continue
 		}
 
@@ -202,24 +204,31 @@ func (impl *UserImpl) updateOutletManagerUserPlanPerCategoryReport(ctx *gin.Cont
 	response["GRAND TOTAL"] = make(map[string]int)
 
 	for _, eachAgent := range userAgents {
-		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, chanel, isQuarterReport, month, quarter, year)
+		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, chanel,
+			isQuarterReport, month, quarter, year)
 		if err != nil {
-			logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMUserPlanPerCategoryReport : cache report failed")
-			resp, err := impl.updateAgentUserPlanPerCategoryReport(ctx, eachAgent, product, chanel, isQuarterReport, quarter, month, year)
+			logger.FileLogger.CtxWarn(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).
+				Msg("OMUserPlanPerCategoryReport : cache report failed")
+			resp, err := impl.updateAgentUserPlanPerCategoryReport(ctx, eachAgent, product, chanel, isQuarterReport,
+				quarter, month, year)
 			if err != nil {
-				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMUserPlanPerCategoryReport : agent report failed")
+				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).
+					Msg("OMUserPlanPerCategoryReport : agent report failed")
 				continue
 			}
 			rawReport, _ := json.Marshal(resp)
-			logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("OMUserPlanPerCategoryReport : agent log")
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).
+				Str("record", string(rawReport)).Msg("OMUserPlanPerCategoryReport : agent log")
 			agentReport = resp
 		} else if agentReport != nil {
 			report, _ := agentReport.(map[string]interface{})
 			modifiedAt, _ := report["ModifiedAt"].(time.Time)
 			if objecthelper.IsCurrentDay(modifiedAt) {
-				resp, err := impl.updateAgentUserPlanPerCategoryReport(ctx, eachAgent, product, chanel, isQuarterReport, quarter, month, year)
+				resp, err := impl.updateAgentUserPlanPerCategoryReport(ctx, eachAgent, product, chanel, isQuarterReport,
+					quarter, month, year)
 				if err != nil {
-					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMUserPlanPerCategoryReport : agent report failed")
+					logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).
+						Err(err).Msg("OMUserPlanPerCategoryReport : agent report failed")
 					continue
 				}
 				rawReport, _ := json.Marshal(resp)
@@ -355,16 +364,21 @@ func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, m
 	response["GRAND TOTAL"] = make(map[string]int)
 
 	for _, eachAgent := range allDistinctOM {
-		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, chanel, isQuarterReport, month, quarter, year)
+		agentReport, err := impl.CacheService.GetUserPlanCategoryReport(eachAgent.UserId, product, chanel,
+			isQuarterReport, month, quarter, year)
 		if err != nil {
-			logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrUserPlanPerCategoryReport : cache report failed")
-			resp, err := impl.updateOutletManagerUserPlanPerCategoryReport(ctx, eachAgent, product, chanel, isQuarterReport, quarter, month, year)
+			logger.FileLogger.CtxWarn(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).
+				Msg("MngrUserPlanPerCategoryReport : cache report failed")
+			resp, err := impl.updateOutletManagerUserPlanPerCategoryReport(ctx, eachAgent, product, chanel, isQuarterReport,
+				quarter, month, year)
 			if err != nil {
-				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("MngrUserPlanPerCategoryReport : agent report failed")
+				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Err(err).
+					Msg("MngrUserPlanPerCategoryReport : agent report failed")
 				continue
 			}
 			rawReport, _ := json.Marshal(resp)
-			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).Str("record", string(rawReport)).Msg("MngrUserPlanPerCategoryReport : agent log")
+			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).
+				Str("record", string(rawReport)).Msg("MngrUserPlanPerCategoryReport : agent log")
 			agentReport = resp
 		} else if agentReport != nil {
 			report, _ := agentReport.(map[string]interface{})

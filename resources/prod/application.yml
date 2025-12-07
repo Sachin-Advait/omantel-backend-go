@@ -1,9 +1,9 @@
 masterCronTime: "* 5 * * *"
 secretKey: gis-jwt-token
 adminSecretKey: gis-admin-jwt-token
-corsOrigin: https://omantelsip.omantel.om/, http://sip-golang-omantel-sip.apps.ocpprod01.otg.om/
-expectedHostName: [omantelsip.omantel.om, sip-golang-omantel-sip.apps.ocpprod01.otg.om]
-expectedReferer: [https://omantelsip.online, http://sip-golang-omantel-sip.apps.ocpprod01.otg.om]
+corsOrigin: https://omantelsip.omantel.om/, http://sip-golang-omantel-sip.apps.ocpprod01.otg.om/, https://omantelsip.omantel.om/,
+expectedHostName: [omantelsip.omantel.om, sip-golang-omantel-sip.apps.ocpprod01.otg.om, omantelsip.omantel.om]
+expectedReferer: [https://omantelsip.online, http://sip-golang-omantel-sip.apps.ocpprod01.otg.om, https://omantelsip.omantel.om]
 reportCacheTTLInHours: 48
 sessionExpiryTimeMinutes: 30
 refreshTokenExpiryHours: 3
@@ -41,7 +41,7 @@ userIncentiveRedis:
   readTimeoutInMilliSecond: 3000
   writeTimeoutInMilliSecond: 3000
   contextTimeoutInMilliSecond: 5000
-  mode: "CLUSTER"
+  mode: "NON_CLUSTER"
 http:
   tlsCertificate: ./cert/omantel.om.cer
   connectTimeoutInMillis: 10000

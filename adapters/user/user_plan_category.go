@@ -46,7 +46,7 @@ func GetUserPlanCategory(ctx *gin.Context, req *models.UserSalesRequest) (int, i
 	// 	}
 	// }
 
-	response, errs := userAPIProvider.GetUserPlanCategory(ctx, req.ClientId, req.Channel, product,
+	response, errs := userAPIProvider.GetUserPlanCategory(ctx, req.ClientId, product, req.Channel,
 		isQuarterReport, quarter, month, year)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).

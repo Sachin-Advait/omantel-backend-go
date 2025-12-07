@@ -126,6 +126,9 @@ func (impl *UserImpl) updateAgentUserMNPSalesCountReport(ctx *gin.Context, user 
 
 	for grp, rcds := range allUserSales.SaleRecords {
 		for _, v := range rcds {
+			if v.MNPDonor == "" {
+				continue
+			}
 			if v.Category != constant.UpgradeCategory {
 				if grpPlans[grp] == nil {
 					grpPlans[grp] = make(map[string]int)
@@ -290,8 +293,8 @@ func (impl *UserImpl) updateOutletManagerUserMNPSaleCountReport(ctx *gin.Context
 		agentMNPReport, err := impl.CacheService.GetUserMNPSaleCountPerPlanReport(eachAgent.UserId,
 			chanel, isQuarterReport, month, quarter, year)
 		if err != nil || agentMNPReport == nil {
-			logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).
-				Err(err).Msg("OMMNPSalesCountReport : cache report failed")
+			logger.FileLogger.CtxWarn(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).
+				Msg("OMMNPSalesCountReport : cache report failed")
 		} else {
 			userResp = agentMNPReport.(*models.MNPSalesCount)
 			if objecthelper.IsCurrentDay(userResp.ModifiedAt) {
@@ -467,8 +470,8 @@ func (impl *UserImpl) updateManagerUserMNPSalesCountReport(ctx *gin.Context, mng
 		agentMNPReport, err := impl.CacheService.GetUserMNPSaleCountPerPlanReport(eachAgent.UserId,
 			chanel, isQuarterReport, month, quarter, year)
 		if err != nil || agentMNPReport == nil {
-			logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).
-				Err(err).Msg("MngrMNPSalesCountReport : cache report failed")
+			logger.FileLogger.CtxWarn(ctx).Str("clientID", mngr.UserId).Str("agent", eachAgent.UserId).
+				Msg("MngrMNPSalesCountReport : cache report failed")
 		} else {
 			userResp = agentMNPReport.(*models.MNPSalesCount)
 			if objecthelper.IsCurrentDay(userResp.ModifiedAt) {

@@ -60,7 +60,7 @@ type DbService interface {
 	FetchAllAgentsUserOfOM(outletManagerID string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error)
 	FetchAllOMReportingToGivenManager(managerPosition string, managerID string, quarter, year int) (map[string]*models.UserBasicDetailsDB, *errors.Error)
 	FetchAllMngrReportingToManagerRole(managerID, managerPosition string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error)
-	FetchAllEmpReportingToGivenManagerRole(managerPosition string, managerID string, quarter, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
+	FetchAllEmpReportingToGivenManagerRole(managerPosition string, managerID string, channel string, quarter, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
 	FetchVP(quarter, year int) ([]string, *errors.Error)
 
 	FetchUserBasicDetails(userID string, quarter, year int, args ...bool) (*models.UserBasicDetailsDB, *errors.Error)
@@ -68,9 +68,10 @@ type DbService interface {
 	FetchDistinctUserCountFromOutletAndRegion(region, outlet string, quarter, year int) (int, *errors.Error)
 	FetchDistinctUserIdFromOutletAndRegion(region, outlet string, quarter, year int) ([]string, *errors.Error)
 	FetchUserDetails(userID string, quarter, year int) (*models.UserBasicDetailsDB, *errors.Error)
+	FetchUserManagerDetails(userID string, userPosition string, quarter, year int) (*models.UserManagerDetailsDB, *errors.Error)
 	FetchOTPValidity(userID string) (*models.OtpModel, *errors.Error)
 	InsertStaffOTP(update bool, otpModel *models.OtpModel) *errors.Error
-	FetchTotalNonManagerialEmployees(region, outlet string, quarter, year int) (int, *errors.Error)
+	FetchTotalNonManagerialEmployees(region, outlet, channel string, quarter, year int) (int, *errors.Error)
 
 	InsertLoginDetails(login *models.LoginUsers) *errors.Error
 	FetchLoginCount(region string, start, end time.Time) (int, *errors.Error)

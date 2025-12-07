@@ -44,6 +44,54 @@ type UserReportDB struct {
 	ModifiedAt                   time.Time
 }
 
+type AdjustedReportDB struct {
+	HayyakSalesCount           int
+	HayyakUpdatedSalesCount    int
+	HayyakTerminatedSalesCount int
+	HayyakPayment              float64
+	HayyakUpdatedPayment       float64
+	HayyakExtraPayment         float64
+	HayyakUpdatedExtraPayment  float64
+	HayyakTotalPayment         float64
+	HayyakUpdatedTotalPayment  float64
+	HayyakDeductAmount         float64
+
+	HBBSalesCount           int
+	HBBUpdatedSalesCount    int
+	HBBTerminatedSalesCount int
+	HBBPayment              float64
+	HBBUpdatedPayment       float64
+	HBBExtraPayment         float64
+	HBBUpdatedExtraPayment  float64
+	HBBTotalPayment         float64
+	HBBUpdatedTotalPayment  float64
+	HBBDeductAmount         float64
+
+	BaqatiSalesCount           int
+	BaqatiUpdatedSalesCount    int
+	BaqatiTerminatedSalesCount int
+	BaqatiPayment              float64
+	BaqatiUpdatedPayment       float64
+	BaqatiExtraPayment         float64
+	BaqatiUpdatedExtraPayment  float64
+	BaqatiTotalPayment         float64
+	BaqatiUpdatedTotalPayment  float64
+	BaqatiDeductAmount         float64
+
+	UpgradeSalesCount           int
+	UpgradeUpdatedSalesCount    int
+	UpgradeTerminatedSalesCount int
+	UpgradePayment              float64
+	UpgradeUpdatedPayment       float64
+	UpgradeExtraPayment         float64
+	UpgradeUpdatedExtraPayment  float64
+	UpgradeTotalPayment         float64
+	UpgradeUpdatedTotalPayment  float64
+	UpgradeDeductAmount         float64
+
+	TotalDeductedAmount float64
+}
+
 type OutletReportDB struct {
 	Outlet             string
 	Region             string
@@ -83,8 +131,8 @@ type UserSalesCountPerPlanDB struct {
 		Government *SaleCalculation `json:"government"`
 	} `json:"businessUnit"`
 	SubCategory struct {
-		CBU map[string]interface{} `json:"CBU"`
-		EBU map[string]interface{} `json:"EBU"`
+		CBU map[string]*SaleCalculation `json:"CBU"`
+		EBU map[string]*SaleCalculation `json:"EBU"`
 	} `json:"subCategory"`
 	Plans struct {
 		CBU map[string]int `json:"CBU"`
@@ -108,16 +156,16 @@ type HbbUserSalesCountPerPlanDB struct {
 		EBUHBB  *SaleCalculation `json:"EBU HBB"`
 	} `json:"category"`
 	SubCategory struct {
-		CBUWFBB map[string]interface{} `json:"CBU WFBB"`
-		CBUHBB  map[string]interface{} `json:"CBU HBB"`
-		EBUWFBB map[string]interface{} `json:"EBU WFBB"`
-		EBUHBB  map[string]interface{} `json:"EBU HBB"`
+		CBUWFBB map[string]*SaleCalculation `json:"CBU WFBB"`
+		CBUHBB  map[string]*SaleCalculation `json:"CBU HBB"`
+		EBUWFBB map[string]*SaleCalculation `json:"EBU WFBB"`
+		EBUHBB  map[string]*SaleCalculation `json:"EBU HBB"`
 	} `json:"subCategory"`
 	ServiceCategory struct {
-		CBUWFBB map[string]interface{} `json:"CBU WFBB"`
-		CBUHBB  map[string]interface{} `json:"CBU HBB"`
-		EBUWFBB map[string]interface{} `json:"EBU WFBB"`
-		EBUHBB  map[string]interface{} `json:"EBU HBB"`
+		CBUWFBB map[string]*SaleCalculation `json:"CBU WFBB"`
+		CBUHBB  map[string]*SaleCalculation `json:"CBU HBB"`
+		EBUWFBB map[string]*SaleCalculation `json:"EBU WFBB"`
+		EBUHBB  map[string]*SaleCalculation `json:"EBU HBB"`
 	} `json:"serviceCategory"`
 	Plans struct {
 		CBUWFBB map[string]int `json:"CBU WFBB"`
@@ -127,9 +175,6 @@ type HbbUserSalesCountPerPlanDB struct {
 	} `json:"plans"`
 	CreatedAt  time.Time
 	ModifiedAt time.Time
-}
-
-type UserPlanPerCategory struct {
 }
 
 type SaleCalculation struct {
@@ -156,6 +201,13 @@ type UserBasicDetailsDB struct {
 	ManagerPosition string
 	IsAdmin         bool
 	IsActive        bool
+}
+
+type UserManagerDetailsDB struct {
+	UserId          string
+	Position        string
+	ManagerId       string
+	ManagerPosition string
 }
 
 type NotificationDB struct {

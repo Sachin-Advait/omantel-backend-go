@@ -2,10 +2,8 @@ package impl
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"gitlab.com/rendezvousPoint/incentive_calculator/models"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
@@ -60,18 +58,13 @@ func (impl *UserImpl) GetUserSalesCount(ctx *gin.Context, userID, product string
 		chanel = ""
 	}
 
-	report, err := impl.CacheService.GetUserSaleCountPerPlanReport(userID, product, chanel, isQuarterReport, month, quarter, year)
-	if err == nil && report != nil {
-		var modifiedDate time.Time
-		if product == constant.HBBCategory {
-			modifiedDate = report.(*models.HbbUserSalesCountPerPlanDB).ModifiedAt
-		} else {
-			modifiedDate = report.(*models.UserSalesCountPerPlanDB).ModifiedAt
-		}
+	report, hbbReport, err := impl.CacheService.GetUserSaleCountPerPlanReport(userID, product, chanel, isQuarterReport,
+		month, quarter, year)
 
-		if objecthelper.IsCurrentDay(modifiedDate) {
-			return report, nil
-		}
+	if product == constant.HBBCategory && err == nil && hbbReport != nil && objecthelper.IsCurrentDay(hbbReport.ModifiedAt) {
+		return hbbReport, nil
+	} else if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {
+		return report, nil
 	}
 
 	/*
@@ -79,20 +72,32 @@ func (impl *UserImpl) GetUserSalesCount(ctx *gin.Context, userID, product string
 	*/
 
 	if user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb {
-		report, err := impl.updateAgentUserSalesCountReport(ctx, user, product, chanel, isQuarterReport, quarter, month, year)
+		report, hbbReport, err := impl.updateAgentUserSalesCountReport(ctx, user, product, chanel, isQuarterReport,
+			quarter, month, year)
 		if err != nil {
 			return nil, err
 		}
-		return report, nil
+
+		if product == constant.HBBCategory {
+			return hbbReport, nil
+		} else {
+			return report, nil
+		}
 	}
 
 	/*
 		For All Managers
 	*/
 
-	mngrReport, err := impl.updateManagerUserSalesCountReport(ctx, user, product, chanel, isQuarterReport, quarter, month, year)
+	mngrReport, hbbMngrReport, err := impl.updateManagerUserSalesCountReport(ctx, user, product, chanel, isQuarterReport,
+		quarter, month, year)
 	if err != nil {
 		return nil, err
 	}
-	return mngrReport, nil
+
+	if product == constant.HBBCategory {
+		return hbbMngrReport, nil
+	} else {
+		return mngrReport, nil
+	}
 }

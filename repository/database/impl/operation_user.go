@@ -13,58 +13,6 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-// FetchUserBasicDetails - userID, name, position, region, outlet, mobile, isAdmin, isActive
-func (dbConn *DbServiceImpl) FetchUserBasicDetails(userID string, quarter, year int, args ...bool) (*models.UserBasicDetailsDB, *errors.Error) {
-
-	// logger.FileLogger.Info().Str("clientID", userID).Time("start", time.Now()).Msg("FetchUserBasicDetails start")
-	// defer logger.FileLogger.Info().Str("clientID", userID).Time("end", time.Now()).Msg("FetchUserBasicDetails done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	var (
-		err  error
-		user = &models.UserBasicDetailsDB{}
-	)
-
-	if args != nil {
-		err = dbConn.DBClient.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and isActive=true",
-			userID).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive)
-	} else {
-		err = dbConn.DBClient.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
-			userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber, &user.IsAdmin, &user.IsActive)
-	}
-
-	if err == nil {
-		position, ok := constant.EmployeePositionMap[user.Position]
-		if !ok {
-			return nil, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Message:    user.UserId + ": INCORRECT USER POSITION - " + user.Position,
-				Details:    "FetchUserBasicDetails: incorrect user position: userId-" + user.UserId + " position-" + user.Position,
-			}
-		}
-		user.Position = position
-		return user, nil
-	}
-
-	if strings.Contains(err.Error(), "no rows") {
-		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidReqParameterCode,
-			Message:    errors.UserNotFound,
-			Details:    "FetchUserBasicDetails: no rows - " + err.Error(),
-		}
-	}
-
-	return nil, &errors.Error{
-		StatusCode: http.StatusInternalServerError,
-		Code:       errors.InternalServerErrorCode,
-		Message:    errors.InternalServerError,
-		Details:    "FetchUserBasicDetails: err - " + err.Error(),
-	}
-}
-
 // FetchUserIdFromOutletAndRegion - userID, name, position, region, outlet, mobile, isAdmin, isActive
 func (dbConn *DbServiceImpl) FetchUserIdFromOutletAndRegion(region, outlet string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error) {
 
@@ -428,30 +376,4 @@ func (dbConn *DbServiceImpl) InsertStaffOTP(update bool, otpModel *models.OtpMod
 	}
 
 	return nil
-}
-
-// FetchTotalNonManagerialEmployees - all non-managerial employees count of a given region and outlet
-func (dbConn *DbServiceImpl) FetchTotalNonManagerialEmployees(region, outlet string, quarter, year int) (int, *errors.Error) {
-
-	// logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("start", time.Now()).Msg("FetchTotalNonManagerialEmployees start")
-	// defer logger.FileLogger.Info().Str("region", region).Str("outlet", outlet).Time("end", time.Now()).Msg("FetchTotalNonManagerialEmployees done")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	var count int
-
-	//usr_position=='BACK OFFICE'
-	err := dbConn.DBClient.QueryRowContext(ctx, "select count(*) from user_master_table where deleted IS NULL and isactive=true and region=$1 and outlet=$2 and (usr_position='PROMOTER' OR usr_position='CSR') and quarter=$3 and year=$4",
-		region, outlet, quarter, year).Scan(&count)
-	if err != nil {
-		return -1, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "FetchTotalNonManagerialEmployees: query - " + err.Error(),
-		}
-	}
-
-	return count, nil
 }

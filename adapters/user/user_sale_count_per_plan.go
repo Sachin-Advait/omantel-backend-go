@@ -36,7 +36,7 @@ func GetSaleCountPerPlan(ctx *gin.Context, req *models.UserSalesRequest) (int, i
 
 	product := strings.ToUpper(req.Product)
 
-	response, errs := userAPIProvider.GetSaleCountPerPlan(ctx, req.ClientId, req.Channel, product,
+	response, errs := userAPIProvider.GetSaleCountPerPlan(ctx, req.ClientId, product, req.Channel,
 		isQuarterReport, quarter, month, year)
 	if errs != nil {
 		logger.FileLogger.CtxError(ctx).Err(errors.New(errs.Details.(string))).

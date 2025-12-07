@@ -11,7 +11,6 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
-	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
 /////////////////////// REGION TABLE ///////////////////////////
@@ -152,15 +151,15 @@ func (dbConn *DbServiceImpl) FetchOutletSalesCount(region, outlet, channel strin
 	channelFilter := ""
 	switch channel {
 	case "all":
-		channelFilter = "chanel in ('DIRECT', 'FRANCHISE', 'FRANCHISEINFOLINE') AND "
+		channelFilter = " AND a.chanel in ('DIRECT', 'SELCO', 'INFOLINE')"
 	case "all-franchise":
-		channelFilter = "chanel in ('FRANCHISE', 'FRANCHISEINFOLINE') AND "
-	case "franchise":
-		channelFilter = "chanel = 'FRANCHISE' AND "
+		channelFilter = " AND a.chanel in ('INFOLINE', 'SELCO')"
+	case "selco":
+		channelFilter = " AND a.chanel = 'SELCO'"
 	case "franchiseinfoline":
-		channelFilter = "chanel = 'FRANCHISEINFOLINE' AND "
+		channelFilter = " AND a.chanel = 'INFOLINE'"
 	case "direct":
-		channelFilter = "chanel = 'DIRECT' AND "
+		channelFilter = " AND a.chanel = 'DIRECT'"
 	}
 
 	var (
@@ -229,279 +228,6 @@ func (dbConn *DbServiceImpl) FetchOutletSalesCount(region, outlet, channel strin
 	}
 
 	return
-}
-
-// FetchActiveUserSales - all active sale transaction of a given user and time period
-func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, channel string, isQuarterReport bool,
-	quarter, month, year int) (*models.SaleTransaction, *errors.Error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	resp := &models.SaleTransaction{
-		EmpID:       userID,
-		SaleRecords: make(map[string][]*models.SaleRecord),
-	}
-
-	channelFilter := ""
-	switch channel {
-	case "all":
-		channelFilter = " AND chanel in ('DIRECT', 'FRANCHISE', 'FRANCHISEINFOLINE')"
-	case "all-franchise":
-		channelFilter = " AND chanel in ('FRANCHISE', 'FRANCHISEINFOLINE')"
-	case "franchise":
-		channelFilter = " AND chanel = 'FRANCHISE'"
-	case "franchiseinfoline":
-		channelFilter = " AND chanel = 'FRANCHISEINFOLINE'"
-	case "direct":
-		channelFilter = " AND chanel = 'DIRECT'"
-	}
-
-	var (
-		rows *sql.Rows
-		err  error
-	)
-
-	if isQuarterReport {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, "+
-			"transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and "+
-			"quarter=$2 and EXTRACT('year' from sales_date)=$3"+channelFilter,
-			userID, quarter, year)
-	} else {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, "+
-			"transaction_type, subcategory, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and "+
-			"EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3"+channelFilter,
-			userID, month, year)
-	}
-	if err != nil {
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "FetchUserSales: userID-" + userID + ", query failed - " + err.Error(),
-		}
-	}
-	defer rows.Close()
-
-	count := 0
-	for rows.Next() {
-		count++
-		var (
-			productGroup  string
-			subCategory   interface{}
-			salesDate     time.Time
-			terminateDate time.Time
-			rcrd          models.SaleRecord
-		)
-
-		if err := rows.Scan(&rcrd.TrxId, &rcrd.PreviousProduct, &rcrd.CurrentProduct, &rcrd.Quantity, &productGroup,
-			&rcrd.Category, &subCategory, &salesDate, &terminateDate); err != nil {
-			return nil, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerErrorCode,
-				Message:    errors.InternalServerError,
-				Details:    "FetchUserSales: " + userID + ", scan failed - " + err.Error(),
-			}
-		}
-
-		switch {
-		case strings.Contains(productGroup, "FIXED") || productGroup == constant.HBBCategory:
-			productGroup = constant.HBBCategory
-
-		case strings.Contains(productGroup, "PREPAID") || productGroup == constant.HayyakCategory:
-			productGroup = constant.HayyakCategory
-
-		case strings.Contains(productGroup, "POSTPAID") || productGroup == constant.BaqatiCategory:
-			productGroup = constant.BaqatiCategory
-
-		default:
-			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", rcrd.TrxId).
-				Msg("FetchActiveUserSales: incorrect productGroup")
-		}
-
-		if !(productGroup == constant.HBBCategory || productGroup == constant.HayyakCategory ||
-			productGroup == constant.BaqatiCategory) {
-			continue
-		}
-
-		if !terminateDate.IsZero() && terminateDate.Before(salesDate) {
-			logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", rcrd.TrxId).
-				Msg("Db-FetchActiveUserSales: saleDate-terminateDate incorrect")
-			continue
-		}
-
-		// expiryDate := salesDate.Add(90 * 24 * time.Hour)
-		// if !terminateDate.IsZero() && terminateDate.Sub(expiryDate) <= 0 { //Months<3
-		// 	if !strings.Contains(subCategory.(string), "INVOLUNTARY DEACTIVATION") {
-		// 		logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("region", region).Str("outlet", outlet).
-		// 			Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
-		// 			Int("trx", id).Msg("FetchActiveUserSales: sale terminated")
-		// 		continue
-		// 	}
-		// }
-
-		//TODO: new logic is ignore records if it is terminated on the same month or same quarter depending on
-		var isTerminated bool
-		if !terminateDate.IsZero() {
-			terminateMonth := int(terminateDate.Month())
-			terminateQuarter := objecthelper.GetQuarterFromMonth(int(terminateDate.Month()))
-			if isQuarterReport && terminateQuarter == quarter {
-				isTerminated = true
-			}
-			if !isQuarterReport && terminateMonth == month {
-				isTerminated = true
-			}
-		}
-
-		if isTerminated {
-			logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", rcrd.TrxId).
-				Interface("terminateDate", terminateDate).Msg("Db-FetchActiveUserSales: sale terminated")
-			continue
-		}
-
-		if resp.SaleRecords[productGroup] == nil {
-			resp.SaleRecords[productGroup] = make([]*models.SaleRecord, 0)
-		}
-
-		resp.SaleRecords[productGroup] = append(resp.SaleRecords[productGroup], &rcrd)
-	}
-
-	return resp, nil
-}
-
-// FetchAdjustedActiveUserSales - for quarter only fetch all active sale transaction of previous quarter
-// ignoring those expired in that quarter as well as in this current quarter
-func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, channel string, isQuarterReport bool,
-	quarter, month, year int) (*models.SaleTransaction, *errors.Error) {
-	if !isQuarterReport {
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "FetchAdjustedActiveUserSales: userID-" + userID + ", valid for quarter only",
-		}
-	}
-
-	prevQuarter, prevYear := objecthelper.GetPreviousQuarterAndMonth(quarter, year)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
-
-	resp := &models.SaleTransaction{
-		EmpID:       userID,
-		SaleRecords: make(map[string][]*models.SaleRecord),
-	}
-
-	channelFilter := ""
-	switch channel {
-	case "all":
-		channelFilter = " AND chanel in ('DIRECT', 'FRANCHISE', 'FRANCHISEINFOLINE')"
-	case "all-franchise":
-		channelFilter = " AND chanel in ('FRANCHISE', 'FRANCHISEINFOLINE')"
-	case "franchise":
-		channelFilter = " AND chanel = 'FRANCHISE'"
-	case "franchiseinfoline":
-		channelFilter = " AND chanel = 'FRANCHISEINFOLINE'"
-	case "direct":
-		channelFilter = " AND chanel = 'DIRECT'"
-	}
-
-	var (
-		rows *sql.Rows
-		err  error
-	)
-
-	rows, err = dbConn.DBClient.QueryContext(ctx,
-		"select id, prev_plan, curr_plan, quantity, product_group, transaction_type, subcategory, mnp_donor, "+
-			"sales_date, terminate_date from sale_transaction_table where "+
-			"emp_id=$1 and quarter=$2 and EXTRACT('year' from sales_date)=$3"+channelFilter,
-		userID, prevQuarter, prevYear)
-	if err != nil {
-		return nil, &errors.Error{
-			StatusCode: http.StatusInternalServerError,
-			Code:       errors.InternalServerErrorCode,
-			Message:    errors.InternalServerError,
-			Details:    "FetchAdjustedActiveUserSales: userID-" + userID + ", query failed - " + err.Error(),
-		}
-	}
-	defer rows.Close()
-
-	count := 0
-	for rows.Next() {
-		count++
-		var (
-			productGroup  string
-			subCategory   interface{}
-			salesDate     time.Time
-			terminateDate time.Time
-			rcrd          models.SaleRecord
-		)
-
-		if err := rows.Scan(&rcrd.TrxId, &rcrd.PreviousProduct, &rcrd.CurrentProduct, &rcrd.Quantity, &productGroup,
-			&rcrd.Category, &subCategory, &rcrd.MNPDonor, &salesDate, &terminateDate); err != nil {
-			return nil, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerErrorCode,
-				Message:    errors.InternalServerError,
-				Details:    "FetchAdjustedActiveUserSales: " + userID + ", scan failed - " + err.Error(),
-			}
-		}
-
-		switch {
-		case strings.Contains(productGroup, "FIXED") || productGroup == constant.HBBCategory:
-			productGroup = constant.HBBCategory
-
-		case strings.Contains(productGroup, "PREPAID") || productGroup == constant.HayyakCategory:
-			productGroup = constant.HayyakCategory
-
-		case strings.Contains(productGroup, "POSTPAID") || productGroup == constant.BaqatiCategory:
-			productGroup = constant.BaqatiCategory
-
-		default:
-			logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("year", year).Int("trx", rcrd.TrxId).
-				Msg("Db-FetchAdjustedActiveUserSales: incorrect productGroup")
-		}
-
-		if !(productGroup == constant.HBBCategory || productGroup == constant.HayyakCategory ||
-			productGroup == constant.BaqatiCategory) {
-			continue
-		}
-
-		if !terminateDate.IsZero() && terminateDate.Before(salesDate) {
-			logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("year", year).Int("trx", rcrd.TrxId).
-				Msg("Db-FetchAdjustedActiveUserSales: saleDate-terminateDate incorrect")
-			continue
-		}
-
-		// this logic ignore terminated orders of prev quarters and current quarters
-		var isTerminated bool
-		if !terminateDate.IsZero() {
-			terminateQuarter := objecthelper.GetQuarterFromMonth(int(terminateDate.Month()))
-			if isQuarterReport && (terminateQuarter == prevQuarter || terminateQuarter == quarter) {
-				isTerminated = true
-			}
-		}
-
-		if isTerminated {
-			logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("year", year).Int("trx", rcrd.TrxId).
-				Interface("terminateDate", terminateDate).Msg("Db-FetchActiveUserSales: sale terminated")
-			continue
-		}
-
-		if resp.SaleRecords[productGroup] == nil {
-			resp.SaleRecords[productGroup] = make([]*models.SaleRecord, 0)
-		}
-
-		resp.SaleRecords[productGroup] = append(resp.SaleRecords[productGroup], &rcrd)
-	}
-
-	return resp, nil
 }
 
 // FetchAllAgentsUserOfOM - all outlet employees reporting to given outlet manager in argument
@@ -762,20 +488,33 @@ func (dbConn *DbServiceImpl) FetchAllMngrReportingToManagerRole(managerID, manag
 }
 
 // FetchAllEmpReportingToGivenManagerRole
-func (dbConn *DbServiceImpl) FetchAllEmpReportingToGivenManagerRole(managerPosition string, managerID string, quarter, year int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
-
-	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllEmpReportingToGivenManagerRole start")
-	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllEmpReportingToGivenManagerRole done")
+func (dbConn *DbServiceImpl) FetchAllEmpReportingToGivenManagerRole(managerPosition string, managerID string,
+	channel string, quarter, year int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
 	position, ok := constant.ManagerMap[managerPosition]
 	if !ok {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Message:    managerID + ": INCORRECT MANAGER POSITION - " + managerPosition,
-			Details:    "FetchAllEmpReportingToGivenManagerRole: incorrect user position: userId-" + managerID + " position-" + managerPosition,
+			Details: "FetchAllEmpReportingToGivenManagerRole: incorrect user position: userId-" + managerID +
+				" position-" + managerPosition,
 		}
 	}
 	managerPosition = position
+
+	channelFilter := ""
+	switch channel {
+	case "all":
+		channelFilter = " AND a.chanel in ('DIRECT', 'SELCO', 'INFOLINE')"
+	case "all-franchise":
+		channelFilter = " AND a.chanel in ('INFOLINE', 'SELCO')"
+	case "selco":
+		channelFilter = " AND a.chanel = 'SELCO'"
+	case "franchiseinfoline":
+		channelFilter = " AND a.chanel = 'INFOLINE'"
+	case "direct":
+		channelFilter = " AND a.chanel = 'DIRECT'"
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
@@ -784,15 +523,15 @@ func (dbConn *DbServiceImpl) FetchAllEmpReportingToGivenManagerRole(managerPosit
 
 	switch {
 	case managerPosition == constant.VicePresidentAbb: //managerPosition == constant.VicePresident || managerPosition == constant.VicePresidentAbb || managerPosition == constant.VicePresidentCC:
-		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.general_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.general_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" + channelFilter // AND a.isactive=true
 	case managerPosition == constant.GeneralManagerAbb: //managerPosition == constant.GeneralManager || managerPosition == constant.GeneralManagerAbb || managerPosition == constant.GeneralManagerCC:
-		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.senior_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.senior_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" + channelFilter // AND a.isactive=true
 	case managerPosition == constant.SeniorManagerAbb: //managerPosition == constant.SeniorManager || managerPosition == constant.SeniorManagerAbb || managerPosition == constant.SeniorManagerCC:
-		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" + channelFilter // AND a.isactive=true
 	case managerPosition == constant.ManagerAbb: //managerPosition == constant.Manager || managerPosition == constant.ManagerAbb || managerPosition == constant.ManagerCC:
-		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.outlet_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.outlet_manager AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" + channelFilter // AND a.isactive=true
 	case managerPosition == constant.OutletManagerAbb: //managerPosition == constant.OutletManager || managerPosition == constant.OutletManagerAbb || managerPosition == constant.OutletManagerCC:
-		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.outlet_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id, a.name, a.usr_position, a.region, a.outlet from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id=b.emp_id AND a.quarter=b.quarter AND a.year=b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.outlet_manager=$1 AND a.quarter=$2 AND a.year=$3" + channelFilter // AND a.isactive=true
 	}
 
 	rows, err := dbConn.DBClient.QueryContext(ctx, query, managerID, quarter, year)
@@ -987,9 +726,9 @@ func (dbConn *DbServiceImpl) FetchUserSalesCountPerPlan(userID string, isQuarter
 
 		if !terminateDate.IsZero() && terminateDate.Sub(expiryDate) <= 0 { //Months<3
 			if !strings.Contains(subCategory, "INVOLUNTARY DEACTIVATION") {
-				logger.FileLogger.CtxError(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
+				logger.FileLogger.CtxWarn(ctx).Str("userID", userID).Bool("isQuarter", isQuarterReport).
 					Int("quarter", quarter).Int("month", month).Int("year", year).Int("trx", id).
-					Msg("FetchActiveUserSales: sale terminated")
+					Msg("FetchUserSalesCountPerPlan: sale terminated")
 				continue
 			}
 		}

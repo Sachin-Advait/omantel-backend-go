@@ -397,3 +397,49 @@ Insync2025
 scp -r ./incentive_calculator root@185.177.116.176:/root/go/src/gitlab.com/rendezvousPoint/incentive_calculator
 
 env GOARCH=amd64 GOOS=linux go build
+
+# 📕 Docker
+
+- Either use the script to build and push to docker hub. [here](./docker_build_push.sh)
+- Use the following commands to manually upload to docker hub.
+
+## Build the Docker image
+
+```bash
+docker build -t sateninsync/incentive_calculator:latest .
+```
+
+## Test the container locally before pushing
+```bash
+docker run --rm -p 8080:8080 sateninsync/incentive_calculator:latest
+
+# If you need to override arguments during testing:
+docker run --rm -p 8080:8080 sateninsync/incentive_calculator:latest \
+  --env prod \
+  --port 8080 \
+  --base-config-path ./resources
+```
+
+## DockerHub Login
+``` bash
+docker login
+
+#username
+sateninsync
+
+#password
+Insync@12345
+```
+
+## Push to DockerHub
+```bash
+docker sateninsync/incentive_calculator:latest
+
+# Optional version tag
+docker tag sateninsync/incentive_calculator:latest sateninsync/incentive_calculator:v1.0.0
+docker push sateninsync/incentive_calculator:v1.0.0
+
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t sateninsync/incentive_calculator:v1.0.0 \
+  --push .
+```

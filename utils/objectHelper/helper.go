@@ -73,6 +73,19 @@ func GetPreviousQuarterAndMonth(quarter int, year int) (prevQuarter int, prevYea
 	return
 }
 
+func GetNextQuarterAndMonth(quarter int, year int) (nextQuarter int, nextYear int) {
+	switch {
+	case quarter == 4:
+		nextQuarter = 4
+		nextYear = year + 1
+	case quarter == 1 || quarter == 2 || quarter == 3:
+		nextQuarter = quarter + 1
+		nextYear = year
+	}
+
+	return
+}
+
 func GenerateOTP(max int) int {
 
 	low := 100000

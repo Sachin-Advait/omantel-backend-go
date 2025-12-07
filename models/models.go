@@ -62,7 +62,7 @@ type UserReportRequest struct {
 }
 
 type VerifyOTPResponse struct {
-	Error         string    `json:"error"`
+	Error         string    `json:"error,omitempty"`
 	IsAdmin       bool      `json:"is_admin"`
 	StaffName     string    `json:"staff_name"`
 	StaffPosition string    `json:"staff_position"`
@@ -164,21 +164,21 @@ type SaleCountRecord struct {
 }
 
 type IndividualIncentive struct {
-	Terminated   int     `json:"terminated"`
-	DeductAmount float64 `json:"deduct_Amount"`
-	Payout       float64 `json:"payout"`
-	ExtraPayout  float64 `json:"extra_payout"`
-	Error        string  `json:"error"`
+	Payout      float64 `json:"payout"`
+	ExtraPayout float64 `json:"extra_payout"`
+	// Terminated   int     `json:"terminated"`
+	// DeductAmount float64 `json:"deduct_Amount"`
+	Error string `json:"error,omitempty"`
 }
 
 type TotalIncentive struct {
-	HBB      *IndividualIncentive
-	Baqati   *IndividualIncentive
-	Hayyak   *IndividualIncentive
-	Upgrade  *IndividualIncentive
-	VOC      *IndividualIncentive
-	TotalPay float64 `json:"total_pay"` // before adjustment
-	FinalPay float64 `json:"final_pay"` // after adjustment
+	HBB                     *IndividualIncentive
+	Baqati                  *IndividualIncentive
+	Hayyak                  *IndividualIncentive
+	Upgrade                 *IndividualIncentive
+	VOC                     *IndividualIncentive
+	TotalPayBeforeDeduction float64 `json:"total_pay_before_deduction"` // after adjustment
+	TotalPay                float64 `json:"total_pay"`                  // before adjustment
 }
 
 type MNPSalesCount struct {
@@ -214,7 +214,7 @@ type TargetAchievementData struct {
 	SalesCount         int     `json:"sales_count"`
 	Target             float64 `json:"target"`
 	AchievedPercentage float64 `json:"achieved_percentage"`
-	Error              string  `json:"error"`
+	Error              string  `json:"error,omitempty"`
 }
 
 type ChartDataResponse struct {

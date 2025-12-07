@@ -143,6 +143,103 @@ func (impl *CacheServiceImpl) DelUserReport(userId string, chanel string, isQuar
 	return nil
 }
 
+func (impl *CacheServiceImpl) InsertUserAdjustedReport(chanel string, isQuarterReport bool, month, quarter,
+	year int, userReport *models.UserReportDB, keyTTL time.Duration) *errors.Error {
+
+	if userReport == nil || userReport.UserId == "" {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "insertUserAdjustedReport: cache missing details",
+		}
+	}
+
+	bytes, err := objecthelper.MarshalJSON(userReport)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "insertUserAdjustedReport: cache marshal failed - " + err.Error(),
+		}
+	}
+
+	var key string
+
+	if isQuarterReport {
+		key = fmt.Sprintf(constant.RedisUserAdjustedReportKey, userReport.UserId, chanel, 0, quarter, year)
+	} else {
+		key = fmt.Sprintf(constant.RedisUserAdjustedReportKey, userReport.UserId, chanel, month, 0, year)
+	}
+
+	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "insertUserAdjustedReport: cache operation failed - " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (impl *CacheServiceImpl) GetUserAdjustedReport(userId string, chanel string, isQuarterReport bool,
+	month, quarter, year int) (*models.UserReportDB, *errors.Error) {
+
+	if userId == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "getUserAdjustedReport: cache missing details",
+		}
+	}
+
+	var key string
+
+	if isQuarterReport {
+		key = fmt.Sprintf(constant.RedisUserAdjustedReportKey, userId, chanel, 0, quarter, year)
+	} else {
+		key = fmt.Sprintf(constant.RedisUserAdjustedReportKey, userId, chanel, month, 0, year)
+	}
+
+	data, err := impl.RedisClient.Get(context.Background(), key).Result()
+	if err != nil && err != redis.Nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "getUserAdjustedReport: cache operation failed - " + err.Error(),
+		}
+	}
+
+	if err == redis.Nil || data == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusNotFound,
+			Code:       errors.UserNotFoundCode,
+			Message:    errors.UserNotFound,
+			Details:    "getUserAdjustedReport: cache no record found",
+		}
+	}
+
+	report := &models.UserReportDB{}
+
+	err = objecthelper.UnmarshalJSON([]byte(data), &report)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "getUserAdjustedReport: cache unmarshal failed - " + err.Error(),
+		}
+	}
+
+	return report, nil
+}
+
 func (impl *CacheServiceImpl) InsertOutletReport(chanel string, isQuarterReport bool, month,
 	quarter, year int, outletReport *models.OutletReportDB, keyTTL time.Duration) *errors.Error {
 
@@ -406,9 +503,10 @@ func (impl *CacheServiceImpl) DelRegionReport(region string, chanel string, isQu
 }
 
 func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, product string, chanel string,
-	isQuarterReport bool, month, quarter, year int, userReport interface{}, keyTTL time.Duration) *errors.Error {
+	isQuarterReport bool, month, quarter, year int, saleReport *models.UserSalesCountPerPlanDB,
+	hbbSaleReport *models.HbbUserSalesCountPerPlanDB, keyTTL time.Duration) *errors.Error {
 
-	if userReport == nil || userId == "" {
+	if userId == "" || (saleReport == nil && hbbSaleReport == nil) || (saleReport != nil && hbbSaleReport != nil) {
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
@@ -417,7 +515,17 @@ func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, pr
 		}
 	}
 
-	bytes, err := objecthelper.MarshalJSON(userReport)
+	var (
+		bytes []byte
+		err   error
+	)
+
+	if saleReport != nil {
+		bytes, err = objecthelper.MarshalJSON(saleReport)
+	} else {
+		bytes, err = objecthelper.MarshalJSON(hbbSaleReport)
+	}
+
 	if err != nil {
 		return &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -449,10 +557,11 @@ func (impl *CacheServiceImpl) InsertUserSaleCountPerPlanReport(userId string, pr
 }
 
 func (impl *CacheServiceImpl) GetUserSaleCountPerPlanReport(userId string, product string, chanel string,
-	isQuarterReport bool, month, quarter, year int) (interface{}, *errors.Error) {
+	isQuarterReport bool, month, quarter, year int) (*models.UserSalesCountPerPlanDB, *models.HbbUserSalesCountPerPlanDB,
+	*errors.Error) {
 
 	if userId == "" {
-		return nil, &errors.Error{
+		return nil, nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
@@ -470,7 +579,7 @@ func (impl *CacheServiceImpl) GetUserSaleCountPerPlanReport(userId string, produ
 
 	data, err := impl.RedisClient.Get(context.Background(), key).Result()
 	if err != nil && err != redis.Nil {
-		return nil, &errors.Error{
+		return nil, nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
 			Code:       errors.InternalServerErrorCode,
 			Message:    errors.InternalServerError,
@@ -479,7 +588,7 @@ func (impl *CacheServiceImpl) GetUserSaleCountPerPlanReport(userId string, produ
 	}
 
 	if err == redis.Nil || data == "" {
-		return nil, &errors.Error{
+		return nil, nil, &errors.Error{
 			StatusCode: http.StatusNotFound,
 			Code:       errors.UserNotFoundCode,
 			Message:    errors.UserNotFound,
@@ -491,17 +600,17 @@ func (impl *CacheServiceImpl) GetUserSaleCountPerPlanReport(userId string, produ
 		report := &models.HbbUserSalesCountPerPlanDB{}
 		err = objecthelper.UnmarshalJSON([]byte(data), &report)
 		if err == nil {
-			return report, nil
+			return nil, report, nil
 		}
 	} else {
 		report := &models.UserSalesCountPerPlanDB{}
 		err = objecthelper.UnmarshalJSON([]byte(data), &report)
 		if err == nil {
-			return report, nil
+			return report, nil, nil
 		}
 	}
 
-	return nil, &errors.Error{
+	return nil, nil, &errors.Error{
 		StatusCode: http.StatusInternalServerError,
 		Code:       errors.InternalServerErrorCode,
 		Message:    errors.InternalServerError,
@@ -783,7 +892,7 @@ func (impl *CacheServiceImpl) GetUserMNPPlanCountPerPlanReport(userId string, ch
 		}
 	}
 
-	report := &models.MNPSalesCount{}
+	report := &models.MNPPlansCount{}
 	err = objecthelper.UnmarshalJSON([]byte(data), report)
 	if err == nil {
 		return report, nil

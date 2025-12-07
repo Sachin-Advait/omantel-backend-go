@@ -150,7 +150,8 @@ func (impl *UserImpl) getSIPRatePlan(quarter, year int, planName string) (float6
 	return 0, errors.New("PLAN-NAME INVALID - " + planName)
 }
 
-func (impl *UserImpl) getSaleTargetPerOutlet(year, month, quarter int, isQuarterReport bool, grp, region, outlet string) (int, error) {
+func (impl *UserImpl) getSaleTargetPerOutlet(year, month, quarter int, isQuarterReport bool, grp,
+	region, outlet string) (int, error) {
 
 	var (
 		start int

@@ -19,6 +19,11 @@ type CacheService interface {
 		year int) (*models.UserReportDB, *errors.Error)
 	DelUserReport(userId string, chanel string, isQuarterReport bool, month, quarter,
 		year int) *errors.Error
+	InsertUserAdjustedReport(chanel string, isQuarterReport bool, month, quarter,
+		year int, userReport *models.UserReportDB, keyTTL time.Duration) *errors.Error
+	GetUserAdjustedReport(userId string, chanel string, isQuarterReport bool,
+		month, quarter, year int) (*models.UserReportDB, *errors.Error)
+
 	InsertOutletReport(chanel string, isQuarterReport bool, month, quarter, year int,
 		outletReport *models.OutletReportDB, keyTTL time.Duration) *errors.Error
 	GetOutletReport(outlet, region string, chanel string, isQuarterReport bool, month,
@@ -32,10 +37,11 @@ type CacheService interface {
 	DelRegionReport(region string, chanel string, isQuarterReport bool, month, quarter,
 		year int) *errors.Error
 
-	InsertUserSaleCountPerPlanReport(userId string, product string, chanel string, isQuarterReport bool,
-		month, quarter, year int, userReport interface{}, keyTTL time.Duration) *errors.Error
-	GetUserSaleCountPerPlanReport(userId string, product string, chanel string, isQuarterReport bool,
-		month, quarter, year int) (interface{}, *errors.Error)
+	InsertUserSaleCountPerPlanReport(userId string, product string, chanel string, isQuarterReport bool, month,
+		quarter, year int, saleReport *models.UserSalesCountPerPlanDB, hbbSaleReport *models.HbbUserSalesCountPerPlanDB,
+		keyTTL time.Duration) *errors.Error
+	GetUserSaleCountPerPlanReport(userId string, product string, chanel string, isQuarterReport bool, month,
+		quarter, year int) (*models.UserSalesCountPerPlanDB, *models.HbbUserSalesCountPerPlanDB, *errors.Error)
 
 	InsertUserPlanCategoryReport(userId string, product string, chanel string, isQuarterReport bool,
 		month, quarter, year int, userReport interface{}, keyTTL time.Duration) *errors.Error

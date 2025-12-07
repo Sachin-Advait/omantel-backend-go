@@ -16,6 +16,8 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
+// updateAdjustedAgentUserReport - is calculated for (current-1) quarter so that sale transactions which were made
+// in (current-1) quarter are now deactivated
 func (impl *UserImpl) updateAdjustedAgentUserReport(ctx *gin.Context, user *models.UserBasicDetailsDB, chanel string,
 	isQuarterReport bool, quarter, month, year int) (*models.TotalIncentive, *models.UserReportDB, *errors.Error) {
 
@@ -80,22 +82,22 @@ func (impl *UserImpl) updateAdjustedAgentUserReport(ctx *gin.Context, user *mode
 		err.Details = fmt.Sprintf("updateAdjustedAgentUserReport: %v", err.Details)
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).
 			Msg("AAdjustedReport : fetch outlet info failed")
-		return nil, nil, err
+		// return nil, nil, err
 	}
 
-	if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
-		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Msg("AAdjustedReport : outlet co-ordinates invalid")
-		return nil, nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message: user.UserId + ": AGENT INVALID OUTLET CO-ORDINATES - region:" +
-				user.Region + " outlet:" + user.Outlet,
-			Details: "updateAdjustedAgentUserReport: " + user.UserId + ": AGENT invalid outlet co-ordintaes - region:" +
-				user.Region + " outlet:" + user.Outlet,
-		}
-	}
+	// if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
+	// 	logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Msg("AAdjustedReport : outlet co-ordinates invalid")
+	// 	return nil, nil, &errors.Error{
+	// 		StatusCode: http.StatusBadRequest,
+	// 		Code:       errors.InvalidDetailsCode,
+	// 		Message: user.UserId + ": AGENT INVALID OUTLET CO-ORDINATES - region:" +
+	// 			user.Region + " outlet:" + user.Outlet,
+	// 		Details: "updateAdjustedAgentUserReport: " + user.UserId + ": AGENT invalid outlet co-ordintaes - region:" +
+	// 			user.Region + " outlet:" + user.Outlet,
+	// 	}
+	// }
 
-	totalEmp, err := impl.DbService.FetchTotalNonManagerialEmployees(user.Region, user.Outlet, quarter, year)
+	totalEmp, err := impl.DbService.FetchTotalNonManagerialEmployees(user.Region, user.Outlet, chanel, quarter, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAdjustedAgentUserReport: %v", err.Details)
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(err).Msg("AAdjustedReport : fetch empCount failed")
@@ -703,7 +705,7 @@ func (impl *UserImpl) updateAdjustedAgentUserReport(ctx *gin.Context, user *mode
 			return
 		}
 
-		err = impl.CacheService.InsertUserReport(chanel, isQuarterReport, month, quarter, year, report,
+		err = impl.CacheService.InsertUserAdjustedReport(chanel, isQuarterReport, month, quarter, year, report,
 			impl.Config.ReportCacheTTL)
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).
@@ -784,20 +786,20 @@ func (impl *UserImpl) updateAdjustedOutletManagerReport(ctx *gin.Context, omngr 
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).
 			Err(err).Msg("OMAdjustedReport : fetch outlet info failed")
-		return nil, err
+		//return nil, err
 	}
 
-	if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
-		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Msg("OMAdjustedReport : outlet co-ordinates invalid")
-		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message: omngr.UserId + ": OUTLET MANAGER INVALID OUTLET CO-ORDINATES - region:" +
-				omngr.Region + " outlet:" + omngr.Outlet,
-			Details: omngr.UserId + ": OUTLET MANAGER invalid outlet co-ordintaes - region:" +
-				omngr.Region + " outlet:" + omngr.Outlet,
-		}
-	}
+	// if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
+	// 	logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Msg("OMAdjustedReport : outlet co-ordinates invalid")
+	// 	return nil, &errors.Error{
+	// 		StatusCode: http.StatusBadRequest,
+	// 		Code:       errors.InvalidDetailsCode,
+	// 		Message: omngr.UserId + ": OUTLET MANAGER INVALID OUTLET CO-ORDINATES - region:" +
+	// 			omngr.Region + " outlet:" + omngr.Outlet,
+	// 		Details: omngr.UserId + ": OUTLET MANAGER invalid outlet co-ordintaes - region:" +
+	// 			omngr.Region + " outlet:" + omngr.Outlet,
+	// 	}
+	// }
 
 	userAgents, err := impl.DbService.FetchAllAgentsUserOfOM(omngr.UserId, quarter, year)
 	if err != nil {
@@ -834,7 +836,7 @@ func (impl *UserImpl) updateAdjustedOutletManagerReport(ctx *gin.Context, omngr 
 	upgradeSaleMap := make(map[string]int, 0)
 
 	for _, eachAgent := range userAgents {
-		agentReport, err := impl.CacheService.GetUserReport(eachAgent.UserId, chanel, isQuarterReport, month, quarter, year)
+		agentReport, err := impl.CacheService.GetUserAdjustedReport(eachAgent.UserId, chanel, isQuarterReport, month, quarter, year)
 		if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(agentReport.ModifiedAt)) {
 			ind, resp, err := impl.updateAdjustedAgentUserReport(ctx, eachAgent, chanel, isQuarterReport, quarter, month, year)
 			if err != nil {
@@ -1111,7 +1113,7 @@ func (impl *UserImpl) updateAdjustedOutletManagerReport(ctx *gin.Context, omngr 
 	}
 
 	go func(user *models.UserReportDB) {
-		err = impl.CacheService.InsertUserReport(chanel, isQuarterReport, month, quarter, year, report, impl.Config.ReportCacheTTL)
+		err = impl.CacheService.InsertUserAdjustedReport(chanel, isQuarterReport, month, quarter, year, report, impl.Config.ReportCacheTTL)
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).
 				Err(errors.New(err.Details.(string))).Msg("OMAdjustedReport : cache update failed")
@@ -1228,7 +1230,7 @@ func (impl *UserImpl) updateAdjustedManagerReport(ctx *gin.Context, mngr *models
 
 	for _, om := range allDistinctOM {
 
-		omReport, err := impl.CacheService.GetUserReport(om.UserId, chanel, isQuarterReport, month, quarter, year)
+		omReport, err := impl.CacheService.GetUserAdjustedReport(om.UserId, chanel, isQuarterReport, month, quarter, year)
 
 		if !(err == nil && omReport != nil && objecthelper.IsCurrentDay(omReport.ModifiedAt)) {
 			resp, err := impl.updateAdjustedOutletManagerReport(ctx, om, chanel, isQuarterReport, quarter, month, year)
@@ -1493,7 +1495,7 @@ func (impl *UserImpl) updateAdjustedManagerReport(ctx *gin.Context, mngr *models
 			}
 		}
 
-		//UPGRADE
+		// UPGRADE
 		if mngr.Position == constant.ManagerAbb {
 			maxPayAllowed, _ = impl.getMaxPayout(quarter, year, constant.ManagerCC, constant.UpgradeCategory)
 		} else {
@@ -1545,7 +1547,8 @@ func (impl *UserImpl) updateAdjustedManagerReport(ctx *gin.Context, mngr *models
 
 	go func(user *models.UserReportDB) {
 
-		err = impl.CacheService.InsertUserReport(chanel, isQuarterReport, month, quarter, year, report, impl.Config.ReportCacheTTL)
+		err = impl.CacheService.InsertUserAdjustedReport(chanel, isQuarterReport, month, quarter, year, report,
+			impl.Config.ReportCacheTTL)
 		if err != nil {
 			logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).
 				Err(errors.New(err.Details.(string))).Msg("MngrAdjustedReport : cache update failed")

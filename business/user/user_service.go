@@ -32,15 +32,15 @@ type UserProvider interface {
 	GetUserReport(ctx *gin.Context, userId string, chanel string, isQuarterReport bool, quarter, month,
 		year int) (*models.UserReportDB, *errors.Error)
 
-	GetUsersReportingToManager(ctx *gin.Context, managerID string, isQuarterReport bool, quarter, month,
-		year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
-	GetUsersReportingToOutletManager(ctx *gin.Context, outletManagerID string, isQuarterReport bool,
+	GetUsersReportingToManager(ctx *gin.Context, managerID string, chanel string, isQuarterReport bool,
 		quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
-	GetUsersReportingToSeniorManager(ctx *gin.Context, seniorManagerID string, isQuarterReport bool,
+	GetUsersReportingToOutletManager(ctx *gin.Context, outletManagerID string, chanel string, isQuarterReport bool,
 		quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
-	GetUsersReportingToGeneralManager(ctx *gin.Context, generalManagerID string, isQuarterReport bool,
+	GetUsersReportingToSeniorManager(ctx *gin.Context, seniorManagerID string, chanel string, isQuarterReport bool,
 		quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
-	GetUsersReportingToVicePresident(ctx *gin.Context, vicePresidentID string, isQuarterReport bool,
+	GetUsersReportingToGeneralManager(ctx *gin.Context, generalManagerID string, chanel string, isQuarterReport bool,
+		quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
+	GetUsersReportingToVicePresident(ctx *gin.Context, vicePresidentID string, chanel string, isQuarterReport bool,
 		quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
 
 	GetOutletTotalSalesCount(ctx *gin.Context, userId string, chanel string, isQuarterReport bool,

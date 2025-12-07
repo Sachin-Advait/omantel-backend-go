@@ -139,7 +139,7 @@ func ValidateUserIncentiveRequest(req *UserIncentiveRequest, ctxHeader context.C
 	}
 
 	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
-		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		req.Channel == "selco" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
 		err = errors.New("invalid chanel:" + req.Channel)
 		return
 	}
@@ -161,7 +161,8 @@ func ValidateUserSalesRequest(req *UserSalesRequest, ctxHeader context.ContextHe
 
 	product := strings.ToUpper(req.Product)
 
-	if !(product == constant.HBBCategory || product == constant.BaqatiCategory || product == constant.HayyakCategory || product == constant.UpgradeCategory) {
+	if !(product == constant.HBBCategory || product == constant.BaqatiCategory ||
+		product == constant.HayyakCategory || product == constant.UpgradeCategory) {
 		err = errors.New("incorrect product type")
 		return
 	}
@@ -217,7 +218,7 @@ func ValidateUserSalesRequest(req *UserSalesRequest, ctxHeader context.ContextHe
 	}
 
 	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
-		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		req.Channel == "selco" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
 		err = errors.New("invalid chanel:" + req.Channel)
 		return
 	}
@@ -295,7 +296,7 @@ func ValidateUserPlanRequest(req *UserSalesRequest, ctxHeader context.ContextHea
 	}
 
 	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
-		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		req.Channel == "selco" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
 		err = errors.New("invalid chanel:" + req.Channel)
 		return
 	}
@@ -367,7 +368,7 @@ func ValidateUserMNPSalesRequest(req *MNPSalesRequest, ctxHeader context.Context
 	}
 
 	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
-		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		req.Channel == "selco" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
 		err = errors.New("invalid chanel:" + req.Channel)
 		return
 	}
@@ -461,6 +462,7 @@ func ValidateUserPayoutResponse(ctx *gin.Context, res *TotalIncentive) {
 	}
 
 	if achievedCount < 3 {
+		res.TotalPayBeforeDeduction = 0
 		res.TotalPay = 0
 		res.HBB.Payout = 0
 		res.HBB.ExtraPayout = 0
@@ -476,6 +478,7 @@ func ValidateUserPayoutResponse(ctx *gin.Context, res *TotalIncentive) {
 		return
 	}
 
+	res.TotalPayBeforeDeduction = math.Round(res.TotalPayBeforeDeduction*1000) / 1000
 	res.TotalPay = math.Round(res.TotalPay*1000) / 1000
 	res.HBB.Payout = math.Round(res.HBB.Payout*1000) / 1000
 	res.HBB.ExtraPayout = math.Round(res.HBB.ExtraPayout*1000) / 1000
@@ -509,7 +512,7 @@ func ValidateUserReportRequest(req *UserReportRequest, ctxHeader context.Context
 	}
 
 	if !(req.Channel == "" || req.Channel == "all" || req.Channel == "all-franchise" ||
-		req.Channel == "franchise" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
+		req.Channel == "selco" || req.Channel == "franchiseinfoline" || req.Channel == "direct") {
 		err = errors.New("invalid chanel:" + req.Channel)
 		return
 	}

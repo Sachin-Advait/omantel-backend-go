@@ -10,7 +10,8 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
 )
 
-func (impl *UserImpl) GetUsersReportingToGeneralManager(ctx *gin.Context, generalManagerID string, isQuarterReport bool, quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
+func (impl *UserImpl) GetUsersReportingToGeneralManager(ctx *gin.Context, generalManagerID string, chanel string,
+	isQuarterReport bool, quarter, month, year int) ([]*models.ReportingStaffIDAndName, *errors.Error) {
 
 	cRH, _ := ctx.Get(constant.HeaderInContext)
 	ctxHeader, _ := (cRH).(context.ContextHeader)
@@ -36,7 +37,8 @@ func (impl *UserImpl) GetUsersReportingToGeneralManager(ctx *gin.Context, genera
 	// 	generalManagerID = vps[0]
 	// }
 
-	response, err := impl.DbService.FetchAllEmpReportingToGivenManagerRole(constant.GeneralManagerAbb, generalManagerID, quarter, year)
+	response, err := impl.DbService.FetchAllEmpReportingToGivenManagerRole(constant.GeneralManagerAbb, generalManagerID,
+		chanel, quarter, year)
 	if err != nil {
 		return nil, err
 	}
