@@ -58,7 +58,7 @@ type DbService interface {
 	FetchAdjustedActiveUserSales(userID string, channel string, isQuarterReport bool,
 		quarter, month, year int) (*models.SaleTransaction, *errors.Error)
 	FetchAllAgentsUserOfOM(outletManagerID string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error)
-	FetchAllOMReportingToGivenManager(managerPosition string, managerID string, quarter, year int) (map[string]*models.UserBasicDetailsDB, *errors.Error)
+	FetchAllOMReportingToGivenManager(managerPosition string, managerID string, channel string, quarter, year int) (map[string]*models.UserBasicDetailsDB, *errors.Error)
 	FetchAllMngrReportingToManagerRole(managerID, managerPosition string, quarter, year int) ([]*models.UserBasicDetailsDB, *errors.Error)
 	FetchAllEmpReportingToGivenManagerRole(managerPosition string, managerID string, channel string, quarter, year int) ([]*models.ReportingStaffIDAndName, *errors.Error)
 	FetchVP(quarter, year int) ([]string, *errors.Error)

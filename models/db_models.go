@@ -195,6 +195,7 @@ type UserBasicDetailsDB struct {
 	Name            string
 	Position        string
 	MobileNumber    string
+	Role            string
 	Region          string
 	Outlet          string
 	ManagerId       string

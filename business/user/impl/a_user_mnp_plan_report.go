@@ -73,26 +73,27 @@ func (impl *UserImpl) updateAgentUserMNPPlanCountReport(ctx *gin.Context, user *
 		}
 	}
 
-	outletResponse, err := impl.DbService.FetchOutletDetailsViaName(user.Region, user.Outlet, quarter, year)
+	_, err := impl.DbService.FetchOutletDetailsViaName(user.Region, user.Outlet, quarter, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAgentUserMNPPlanCountReport: %v", err.Details)
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).
 			Msg("AMNPPlanReport : fetch outlet info failed")
-		return nil, err
+		// return nil, err
 	}
 
-	if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
-		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Msg("AMNPPlanReport : outlet co-ordinates invalid")
-		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message: user.UserId + ": AGENT INVALID OUTLET CO-ORDINATES - region:" + user.Region +
-				" outlet:" + user.Outlet,
-			Details: "updateAgentUserMNPPlanCountReport: " + user.UserId + ": AGENT invalid outlet co-ordintaes - region:" +
-				user.Region + " outlet:" + user.Outlet,
-		}
-	}
+	// if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
+	// 	logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Msg("AMNPPlanReport : outlet co-ordinates invalid")
+	// 	return nil, &errors.Error{
+	// 		StatusCode: http.StatusBadRequest,
+	// 		Code:       errors.InvalidDetailsCode,
+	// 		Message: user.UserId + ": AGENT INVALID OUTLET CO-ORDINATES - region:" + user.Region +
+	// 			" outlet:" + user.Outlet,
+	// 		Details: "updateAgentUserMNPPlanCountReport: " + user.UserId + ": AGENT invalid outlet co-ordintaes - region:" +
+	// 			user.Region + " outlet:" + user.Outlet,
+	// 	}
+	// }
 
+	chanel = "" // chanel is not considered for promoters/csr sales
 	allUserSales, err := impl.DbService.FetchActiveUserSales(user.UserId, chanel, isQuarterReport, quarter, month, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAgentUserMNPPlanCountReport: %v", err.Details)
@@ -420,7 +421,7 @@ func (impl *UserImpl) updateManagerUserMNPPlanCountReport(ctx *gin.Context, mngr
 		}
 	}
 
-	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
+	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, chanel, quarter, year)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).
 			Err(errors.New(err.Details.(string))).Msg("MngrMNPPlanCountReport : fetch om list failed")

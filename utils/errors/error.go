@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 )
@@ -78,10 +79,7 @@ func (e Error) Value() *Error {
 
 // Error is used to get the detail from the error
 func (e *Error) Error() string {
-	if e.Code == "" {
-		return e.Message
-	}
-	return e.Code
+	return fmt.Sprintf("code:%v, msg:%v, details:%v", e.Code, e.Message, e.Details)
 }
 
 // Wrap is used to wrap the error

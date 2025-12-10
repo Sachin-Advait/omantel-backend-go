@@ -9,6 +9,7 @@ import (
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/constant"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/context"
 	"gitlab.com/rendezvousPoint/incentive_calculator/utils/errors"
+	"gitlab.com/rendezvousPoint/incentive_calculator/utils/logger"
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
@@ -62,7 +63,7 @@ func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product stri
 
 	report, err := impl.CacheService.GetUserReport(userID, chanel, isQuarterReport, month, quarter, year)
 	if err == nil && report != nil && objecthelper.IsCurrentDay(report.ModifiedAt) {
-		if resp, err := impl.userPerPlanSale(ctx, product, report); err == nil {
+		if resp, err := impl.userPerPlanSale(ctx, userID, product, true, report); err == nil {
 			return resp, nil
 		}
 	}
@@ -76,7 +77,7 @@ func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product stri
 		if err != nil {
 			return nil, err
 		}
-		return impl.userPerPlanSale(ctx, product, report)
+		return impl.userPerPlanSale(ctx, userID, product, false, report)
 	}
 
 	/*
@@ -87,10 +88,17 @@ func (impl *UserImpl) GetSaleCountPerPlan(ctx *gin.Context, userID, product stri
 	if err != nil {
 		return nil, err
 	}
-	return impl.userPerPlanSale(ctx, product, mngrReport)
+	return impl.userPerPlanSale(ctx, userID, product, false, mngrReport)
 }
 
-func (impl *UserImpl) userPerPlanSale(ctx *gin.Context, product string, userReport *models.UserReportDB) ([]*models.SaleCountPerPlan, *errors.Error) {
+func (impl *UserImpl) userPerPlanSale(ctx *gin.Context, userID string, product string,
+	isCache bool, userReport *models.UserReportDB) ([]*models.SaleCountPerPlan, *errors.Error) {
+
+	report, _ := json.Marshal(userReport)
+
+	logger.FileLogger.CtxError(ctx).Str("userID", userID).Str("product", product).
+		Bool("cache", isCache).Str("report", string(report)).Str("func", "userPerPlanSale").
+		Msg("GetSaleCountPerPlan : service")
 
 	response := make([]*models.SaleCountPerPlan, 0)
 

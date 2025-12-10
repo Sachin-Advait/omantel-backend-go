@@ -66,6 +66,7 @@ type VerifyOTPResponse struct {
 	IsAdmin       bool      `json:"is_admin"`
 	StaffName     string    `json:"staff_name"`
 	StaffPosition string    `json:"staff_position"`
+	StaffRole     string    `json:"staff_role"`
 	StaffOutlet   string    `json:"staff_outlet"`
 	StaffRegion   string    `json:"staff_region"`
 	Authenticated bool      `json:"authenticated"`

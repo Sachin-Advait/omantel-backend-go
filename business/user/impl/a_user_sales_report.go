@@ -14,28 +14,41 @@ import (
 	objecthelper "gitlab.com/rendezvousPoint/incentive_calculator/utils/objectHelper"
 )
 
-func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *models.UserBasicDetailsDB, product string,
-	chanel string, isQuarterReport bool, quarter, month, year int) (*models.UserSalesCountPerPlanDB, *models.HbbUserSalesCountPerPlanDB,
-	*errors.Error) {
+func (impl *UserImpl) updateAgentUserSalesCountReport(
+	ctx *gin.Context,
+	user *models.UserBasicDetailsDB,
+	product string,
+	chanel string,
+	isQuarterReport bool,
+	quarter,
+	month,
+	year int) (
+	*models.UserSalesCountPerPlanDB, *models.HbbUserSalesCountPerPlanDB, *errors.Error) {
+
+	if user == nil {
+		logger.FileLogger.CtxError(ctx).Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).
+			Int("year", year).Str("product", product).Str("chanel", chanel).Msg("<< updateAgentUserSalesCountReport >>")
+		return nil, nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "INVALID AGENT DETAILS",
+			Details:    "updateAgentUserSalesCountReport: invalid agent details",
+		}
+	} else {
+		bytes, _ := json.Marshal(user)
+		logger.FileLogger.CtxDebug(ctx).Str("client", string(bytes)).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Str("product", product).Str("chanel", chanel).
+			Msg("<< updateAgentUserSalesCountReport >>")
+	}
 
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
 	}
 
-	if user == nil || user.UserId == "" || user.ManagerId == "" || user.ManagerPosition == "" {
-		if user == nil {
-			logger.FileLogger.CtxError(ctx).Str("clientID", "").Str("region", "").Str("outlet", "").Bool("isQuarter", isQuarterReport).
-				Int("quarter", quarter).Int("month", month).Int("year", year).Msg("ASalesCountReport : nil info")
-			return nil, nil, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerErrorCode,
-				Message:    "INVALID AGENT DETAILS",
-				Details:    "updateAgentUserSalesCountReport: invalid agent details",
-			}
-		}
-
-		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
-			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("ASalesCountReport : invalid info")
+	if user.UserId == "" { // || user.ManagerId == "" || user.ManagerPosition == ""
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).
+			Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
+			Str("product", product).Str("chanel", chanel).Msg("ASalesCountReport : invalid info")
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
@@ -44,11 +57,13 @@ func (impl *UserImpl) updateAgentUserSalesCountReport(ctx *gin.Context, user *mo
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).
-		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("ASalesCountReport : info")
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).
+		Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
+		Str("product", product).Str("chanel", chanel).Msg("ASalesCountReport : info")
 
 	if !(user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb) {
-		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("position", user.Position).Msg("ASalesCountReport : invalid position")
+		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("position", user.Position).
+			Msg("ASalesCountReport : invalid position")
 		return nil, nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Message:    user.UserId + ": INCORRECT AGENT POSITION - " + user.Position,
@@ -918,7 +933,7 @@ func (impl *UserImpl) updateManagerUserSalesCountReport(ctx *gin.Context, mngr *
 		}
 	}
 
-	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
+	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, chanel, quarter, year)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).
 			Err(errors.New(err.Details.(string))).Msg("MngrSalesCountReport : fetch om list failed")

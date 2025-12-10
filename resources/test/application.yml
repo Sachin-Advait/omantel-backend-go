@@ -32,7 +32,7 @@ psqlDB:
   connMaxIdleTimeInMinute: 30
 userIncentiveRedis:
   address: 127.0.0.1:6379
-  password: 
+  password: redis12345
   db: 0
   poolSize: 36
   minIdleConn: 8

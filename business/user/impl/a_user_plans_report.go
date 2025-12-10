@@ -345,7 +345,7 @@ func (impl *UserImpl) updateManagerUserPlanPerCategoryReport(ctx *gin.Context, m
 		}
 	}
 
-	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
+	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, chanel, quarter, year)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Err(errors.New(err.Details.(string))).Msg("MngrUserPlanPerCategoryReport : fetch om list failed")
 		return nil, err

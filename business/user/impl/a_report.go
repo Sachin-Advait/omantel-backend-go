@@ -17,25 +17,37 @@ import (
 )
 
 // updateAgentUserReport
-func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserBasicDetailsDB, chanel string,
-	isQuarterReport bool, quarter, month, year int) (*models.TotalIncentive, *models.UserReportDB, *errors.Error) {
+func (impl *UserImpl) updateAgentUserReport(
+	ctx *gin.Context,
+	user *models.UserBasicDetailsDB,
+	chanel string,
+	isQuarterReport bool,
+	quarter,
+	month,
+	year int) (
+	*models.TotalIncentive, *models.UserReportDB, *errors.Error) {
+
+	if user == nil {
+		logger.FileLogger.CtxError(ctx).Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).
+			Int("year", year).Str("chanel", chanel).Msg("<< updateAgentUserReport >>")
+		return nil, nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    "INVALID AGENT DETAILS",
+			Details:    "updateAgentUserReport: invalid agent details",
+		}
+	} else {
+		bytes, _ := json.Marshal(user)
+		logger.FileLogger.CtxDebug(ctx).Str("client", string(bytes)).Bool("isQuarter", isQuarterReport).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Str("chanel", chanel).
+			Msg("<< updateAgentUserReport >>")
+	}
 
 	if !isQuarterReport {
 		quarter = getQuarterFromMonth(month)
 	}
 
-	if user == nil || user.UserId == "" || user.ManagerId == "" || user.ManagerPosition == "" {
-		if user == nil {
-			logger.FileLogger.CtxError(ctx).Str("clientID", "").Str("region", "").Str("outlet", "").Bool("isQuarter",
-				isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).Msg("AReport : nil info")
-			return nil, nil, &errors.Error{
-				StatusCode: http.StatusInternalServerError,
-				Code:       errors.InternalServerErrorCode,
-				Message:    "INVALID AGENT DETAILS",
-				Details:    "updateAgentUserReport: invalid agent details",
-			}
-		}
-
+	if user.UserId == "" { //  || user.ManagerId == "" || user.ManagerPosition == ""
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).
 			Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
 			Msg("AReport : invalid info")
@@ -47,8 +59,9 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("region", user.Region).Str("outlet", user.Outlet).
-		Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).Msg("AReport : info")
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("region", user.Region).
+		Str("outlet", user.Outlet).Bool("isQuarter", isQuarterReport).Int("quarter", quarter).
+		Int("month", month).Int("year", year).Str("chanel", chanel).Msg("AReport : info")
 
 	if !(user.Position == constant.PromoterAbb || user.Position == constant.CSRAbb) {
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Str("position", user.Position).Msg("AReport : invalid position")
@@ -71,12 +84,16 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		}
 	}
 
+	lat, long := 0.0, 0.0
 	outletResponse, err := impl.DbService.FetchOutletDetailsViaName(user.Region, user.Outlet, quarter, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAgentUserReport: %v", err.Details)
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).
 			Msg("AReport : fetch outlet info failed")
 		// return nil, nil, err
+	} else if outletResponse != nil {
+		lat = outletResponse.Lat
+		long = outletResponse.Lang
 	}
 
 	// if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
@@ -90,6 +107,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 	// 	}
 	// }
 
+	chanel = "" // chanel is not considered for promoters/csr count
 	totalEmp, err := impl.DbService.FetchTotalNonManagerialEmployees(user.Region, user.Outlet, chanel, quarter, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAgentUserReport: %v", err.Details)
@@ -97,6 +115,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		return nil, nil, err
 	}
 
+	chanel = "" // chanel is not considered for promoters/csr sales
 	allUserSales, err := impl.DbService.FetchActiveUserSales(user.UserId, chanel, isQuarterReport, quarter, month, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAgentUserReport: %v", err.Details)
@@ -118,8 +137,8 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 		ManagerPosition: user.ManagerPosition,
 		Region:          user.Region,
 		Outlet:          user.Outlet,
-		Latitude:        outletResponse.Lat,
-		Longitude:       outletResponse.Lang,
+		Latitude:        lat,
+		Longitude:       long,
 		CreatedAt:       time.Now(),
 		ModifiedAt:      time.Now(),
 	}
@@ -177,7 +196,7 @@ func (impl *UserImpl) updateAgentUserReport(ctx *gin.Context, user *models.UserB
 			Msg("AReport : sale count")
 	}
 	logger.FileLogger.CtxInfo(ctx).Str("clientID", user.UserId).Str("category", constant.UpgradeCategory).
-		Int("count", totalActiveUpgrade).Msg("AReport : sale count")
+		Int("count", totalActiveUpgrade).Msg("AReport : upgrade sale count")
 
 	for grp, plans := range grpPlans {
 
@@ -707,8 +726,10 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 			}
 		}
 
-		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
-			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("OMReport : invalid info")
+		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).
+			Bool("isQuarter", isQuarterReport).Int("quarter", quarter).Int("month", month).Int("year", year).
+			Msg("OMReport : invalid info")
+
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,
 			Code:       errors.InvalidDetailsCode,
@@ -736,14 +757,19 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 		}
 	}
 
-	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
-		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("OMReport : info")
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).
+		Bool("isQuarter", isQuarterReport).Str("channel", chanel).Int("quarter", quarter).Int("month", month).
+		Int("year", year).Msg("OMReport : info")
 
+	lat, long := 0.0, 0.0
 	outletResponse, err := impl.DbService.FetchOutletDetailsViaName(omngr.Region, omngr.Outlet, quarter, year)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("region", omngr.Region).Str("outlet", omngr.Outlet).Bool("isQuarter", isQuarterReport).
 			Int("quarter", quarter).Int("month", month).Err(err).Msg("OMReport : fetch outlet info failed")
 		// return nil, err
+	} else if outletResponse != nil {
+		lat = outletResponse.Lat
+		long = outletResponse.Lang
 	}
 
 	// if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
@@ -771,8 +797,8 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 		ManagerPosition: omngr.ManagerPosition,
 		Region:          omngr.Region,
 		Outlet:          omngr.Outlet,
-		Latitude:        outletResponse.Lat,
-		Longitude:       outletResponse.Lang,
+		Latitude:        lat,
+		Longitude:       long,
 		CreatedAt:       time.Now(),
 		ModifiedAt:      time.Now(),
 	}
@@ -790,22 +816,25 @@ func (impl *UserImpl) updateOutletManagerReport(ctx *gin.Context, omngr *models.
 	upgradeSaleMap := make(map[string]int, 0)
 
 	for _, eachAgent := range userAgents {
-
+		var isCache bool = true
 		agentReport, err := impl.CacheService.GetUserReport(eachAgent.UserId, chanel, isQuarterReport, month, quarter, year)
 
 		if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(agentReport.ModifiedAt)) {
-			ind, resp, err := impl.updateAgentUserReport(ctx, eachAgent, chanel, isQuarterReport, quarter, month, year)
+			isCache = false
+			_, resp, err := impl.updateAgentUserReport(ctx, eachAgent, chanel, isQuarterReport, quarter, month, year)
 			if err != nil {
 				logger.FileLogger.CtxError(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Err(err).Msg("OMReport : agent report failed")
 				// return nil, err
 				continue
 			}
-			rawIncentiveReport, _ := json.Marshal(ind)
-			rawUserReport, _ := json.Marshal(resp)
-			logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).Str("incentive", string(rawIncentiveReport)).
-				Str("record", string(rawUserReport)).Msg("OMReport : agent log")
 			agentReport = resp
 		}
+
+		rawUserReport, _ := json.Marshal(agentReport)
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", omngr.UserId).Str("agent", eachAgent.UserId).
+			Str("record", string(rawUserReport)).Bool("isQuarter", isQuarterReport).Str("channel", chanel).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Bool("isCache", isCache).
+			Msg("OMReport : agent log")
 
 		report.HayyakSalesCount += agentReport.HayyakSalesCount
 		report.HBBSalesCount += agentReport.HBBSalesCount
@@ -1136,7 +1165,7 @@ func (impl *UserImpl) updateManagerReport(ctx *gin.Context, mngr *models.UserBas
 		report.Longitude = outletResponse.Lang
 	}
 
-	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
+	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, chanel, quarter, year)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).Err(errors.New(err.Details.(string))).Msg("MngrReport : fetch om list failed")
 		return nil, err
@@ -1158,20 +1187,25 @@ func (impl *UserImpl) updateManagerReport(ctx *gin.Context, mngr *models.UserBas
 	emptyTarget := make(map[string][]string, 0)
 
 	for _, om := range allDistinctOM {
-
+		var isCache bool = true
 		omReport, err := impl.CacheService.GetUserReport(om.UserId, chanel, isQuarterReport, month, quarter, year)
 
 		if !(err == nil && omReport != nil && objecthelper.IsCurrentDay(omReport.ModifiedAt)) {
+			isCache = false
 			resp, err := impl.updateOutletManagerReport(ctx, om, chanel, isQuarterReport, quarter, month, year)
 			if err != nil {
-				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("om", om.UserId).Err(err).Msg("MngrReport : om report failed")
+				logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("om", om.UserId).Err(err).
+					Msg("MngrReport : om report failed")
 				continue
 				//return nil, err
 			}
-			rawUserReport, _ := json.Marshal(resp)
-			logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", om.UserId).Str("record", string(rawUserReport)).Msg("OMReport : agent log")
 			omReport = resp
 		}
+
+		rawUserReport, _ := json.Marshal(omReport)
+		logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Str("agent", om.UserId).Str("record",
+			string(rawUserReport)).Bool("isCache", isCache).Bool("isQuarter", isQuarterReport).Str("channel", chanel).
+			Int("quarter", quarter).Int("month", month).Int("year", year).Msg("MngrReport : agent log")
 
 		report.HBBSalesCount += omReport.HBBSalesCount
 		report.HayyakSalesCount += omReport.HayyakSalesCount
@@ -1242,7 +1276,8 @@ func (impl *UserImpl) updateManagerReport(ctx *gin.Context, mngr *models.UserBas
 		}
 	}
 
-	logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Interface("inactive", inactiveOM).Interface("blank", emptyTarget).Msg("MngrReport : om target defaulters")
+	logger.FileLogger.CtxInfo(ctx).Str("clientID", mngr.UserId).Interface("inactive", inactiveOM).
+		Interface("blank", emptyTarget).Msg("MngrReport : om target defaulters")
 
 	/*
 		HBB Updates
@@ -1523,6 +1558,7 @@ func (impl *UserImpl) updateAgentUserReportRefactor(ctx *gin.Context, user *mode
 		ModifiedAt:      time.Now(),
 	}
 
+	chanel = "" // chanel is not considered for promoters/csr sales
 	totalEmp, totalEmpErr := impl.DbService.FetchTotalNonManagerialEmployees(user.Region, user.Outlet, chanel, quarter, year)
 	allSales, allSalesErr := impl.DbService.FetchActiveUserSales(user.UserId, chanel, isQuarterReport, quarter, month, year)
 	if totalEmpErr != nil || allSalesErr != nil || len(allSales.SaleRecords) == 0 || totalEmp == 0 {

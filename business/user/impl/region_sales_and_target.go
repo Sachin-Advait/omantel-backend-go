@@ -77,7 +77,7 @@ func (impl *UserImpl) GetRegionSalesAndTarget(ctx *gin.Context, userID string, c
 		For Other Managers
 	*/
 
-	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(user.Position, userID, quarter, year)
+	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(user.Position, userID, chanel, quarter, year)
 	if err != nil {
 		return nil, err
 	}

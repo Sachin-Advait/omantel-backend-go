@@ -151,15 +151,15 @@ func (dbConn *DbServiceImpl) FetchOutletSalesCount(region, outlet, channel strin
 	channelFilter := ""
 	switch channel {
 	case "all":
-		channelFilter = " AND a.chanel in ('DIRECT', 'SELCO', 'INFOLINE')"
+		channelFilter = "chanel in ('DIRECT', 'SELCO', 'INFOLINE') AND "
 	case "all-franchise":
-		channelFilter = " AND a.chanel in ('INFOLINE', 'SELCO')"
+		channelFilter = "chanel in ('INFOLINE', 'SELCO') AND "
 	case "selco":
-		channelFilter = " AND a.chanel = 'SELCO'"
+		channelFilter = " AND chanel = 'SELCO' AND "
 	case "franchiseinfoline":
-		channelFilter = " AND a.chanel = 'INFOLINE'"
+		channelFilter = " AND chanel = 'INFOLINE' AND "
 	case "direct":
-		channelFilter = " AND a.chanel = 'DIRECT'"
+		channelFilter = " AND chanel = 'DIRECT' AND "
 	}
 
 	var (
@@ -180,7 +180,7 @@ func (dbConn *DbServiceImpl) FetchOutletSalesCount(region, outlet, channel strin
 			"select transaction_type, product_group, SUM(quantity) AS total from sale_transaction_table "+
 				"where "+
 				channelFilter+
-				"region=$1 and outlet=$2 and EXTRACT('month' from sales_date)=$3 and "+
+				" region=$1 and outlet=$2 and EXTRACT('month' from sales_date)=$3 and "+
 				"EXTRACT('year' from sales_date)=$4 GROUP BY transaction_type, product_group",
 			region, outlet, month, year)
 	}
@@ -303,7 +303,8 @@ func (dbConn *DbServiceImpl) FetchAllAgentsUserOfOM(outletManagerID string, quar
 }
 
 // FetchAllOMReportingToGivenManager - all outlet managers reporting to given manager in argument
-func (dbConn *DbServiceImpl) FetchAllOMReportingToGivenManager(managerPosition string, managerID string, quarter, year int) (map[string]*models.UserBasicDetailsDB, *errors.Error) {
+func (dbConn *DbServiceImpl) FetchAllOMReportingToGivenManager(managerPosition string, managerID string,
+	channel string, quarter, year int) (map[string]*models.UserBasicDetailsDB, *errors.Error) {
 
 	// logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("start", time.Now()).Msg("FetchAllOMReportingToGivenManager start")
 	// defer logger.FileLogger.Info().Str("managerID", managerID).Str("managerPosition", managerPosition).Time("end", time.Now()).Msg("FetchAllOMReportingToGivenManager done")
@@ -318,6 +319,20 @@ func (dbConn *DbServiceImpl) FetchAllOMReportingToGivenManager(managerPosition s
 	}
 	managerPosition = position
 
+	channelFilter := ""
+	switch channel {
+	case "all":
+		channelFilter = " AND a.chanel in ('DIRECT', 'SELCO', 'INFOLINE')"
+	case "all-franchise":
+		channelFilter = " AND a.chanel in ('INFOLINE', 'SELCO')"
+	case "selco":
+		channelFilter = " AND a.chanel = 'SELCO'"
+	case "franchiseinfoline":
+		channelFilter = " AND a.chanel = 'INFOLINE'"
+	case "direct":
+		channelFilter = " AND a.chanel = 'DIRECT'"
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
@@ -325,13 +340,13 @@ func (dbConn *DbServiceImpl) FetchAllOMReportingToGivenManager(managerPosition s
 
 	switch {
 	case managerPosition == constant.VicePresidentAbb: //managerPosition == constant.VicePresident || managerPosition == constant.VicePresidentAbb || managerPosition == constant.VicePresidentCC:
-		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.vice_president=$1 AND a.quarter=$2 AND a.year=$3" + channelFilter // AND a.isactive=true
 	case managerPosition == constant.GeneralManagerAbb: //managerPosition == constant.GeneralManager || managerPosition == constant.GeneralManagerAbb || managerPosition == constant.GeneralManagerCC:
-		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.general_manager=$1 AND a.quarter=$2 AND a.year=$3" + channelFilter // AND a.isactive=true
 	case managerPosition == constant.SeniorManagerAbb: //managerPosition == constant.SeniorManager || managerPosition == constant.SeniorManagerAbb || managerPosition == constant.SeniorManagerCC:
-		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.senior_manager=$1 AND a.quarter=$2 AND a.year=$3" + channelFilter // AND a.isactive=true
 	case managerPosition == constant.ManagerAbb: //managerPosition == constant.Manager || managerPosition == constant.ManagerAbb || managerPosition == constant.ManagerCC:
-		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" // AND a.isactive=true
+		query = "select distinct a.emp_id from user_master_table a INNER JOIN user_hierarchy_table b on a.emp_id = b.outlet_manager AND a.quarter = b.quarter AND a.year = b.year WHERE a.deleted IS NULL AND b.deleted IS NULL AND b.manager=$1 AND a.quarter=$2 AND a.year=$3" + channelFilter // AND a.isactive=true
 	default:
 		return nil, &errors.Error{
 			StatusCode: http.StatusBadRequest,

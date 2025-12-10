@@ -3,6 +3,7 @@ package impl
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -27,14 +28,51 @@ func (dbConn *DbServiceImpl) FetchUserBasicDetails(userID string, quarter, year 
 	)
 
 	if args != nil {
-		err = dbConn.DBClient.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, mobile_number, "+
-			"isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and isActive=true",
-			userID).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet, &user.MobileNumber,
+		err = dbConn.DBClient.QueryRowContext(ctx, fmt.Sprintf(`
+			select 
+				emp_id, 
+				name, 
+				usr_position, 
+				role, 
+				region, 
+				outlet,
+				mobile_number,
+				isAdmin, 
+				isActive 
+			from user_master_table 
+			where 
+				deleted IS NULL and 
+				emp_id='%s' and 
+				isActive=true 
+			order by 
+				year desc, quarter desc
+			limit
+				1
+		`, userID)).Scan(&user.UserId, &user.Name, &user.Position, &user.Role, &user.Region, &user.Outlet, &user.MobileNumber,
 			&user.IsAdmin, &user.IsActive)
 	} else {
-		err = dbConn.DBClient.QueryRowContext(ctx, "select emp_id, name, usr_position, region, outlet, "+"mobile_number, "+
-			"isAdmin, isActive from user_master_table where deleted IS NULL and emp_id=$1 and quarter=$2 and year=$3",
-			userID, quarter, year).Scan(&user.UserId, &user.Name, &user.Position, &user.Region, &user.Outlet,
+		err = dbConn.DBClient.QueryRowContext(ctx, fmt.Sprintf(`
+			select 
+				emp_id, 
+				name, 
+				usr_position, 
+				role, 
+				region, 
+				outlet,
+				mobile_number,
+				isAdmin, 
+				isActive 
+			from user_master_table 
+			where 
+				deleted IS NULL and 
+				emp_id='%s' and 
+				quarter=%d and 
+				year=%d 
+			order by 
+				year desc, quarter desc
+			limit
+				1
+		`, userID, quarter, year)).Scan(&user.UserId, &user.Name, &user.Position, &user.Role, &user.Region, &user.Outlet,
 			&user.MobileNumber, &user.IsAdmin, &user.IsActive)
 	}
 
@@ -161,15 +199,15 @@ func (dbConn *DbServiceImpl) FetchTotalNonManagerialEmployees(region, outlet, ch
 	channelFilter := ""
 	switch channel {
 	case "all":
-		channelFilter = " AND a.chanel in ('DIRECT', 'SELCO', 'INFOLINE')"
+		channelFilter = "chanel in ('DIRECT', 'SELCO', 'INFOLINE') AND "
 	case "all-franchise":
-		channelFilter = " AND a.chanel in ('INFOLINE', 'SELCO')"
+		channelFilter = "chanel in ('INFOLINE', 'SELCO') AND "
 	case "selco":
-		channelFilter = " AND a.chanel = 'SELCO'"
+		channelFilter = "chanel = 'SELCO' AND "
 	case "franchiseinfoline":
-		channelFilter = " AND a.chanel = 'INFOLINE'"
+		channelFilter = "chanel = 'INFOLINE' AND "
 	case "direct":
-		channelFilter = " AND a.chanel = 'DIRECT'"
+		channelFilter = "chanel = 'DIRECT' AND "
 	}
 
 	//usr_position=='BACK OFFICE'
@@ -205,33 +243,64 @@ func (dbConn *DbServiceImpl) FetchActiveUserSales(userID string, channel string,
 	channelFilter := ""
 	switch channel {
 	case "all":
-		channelFilter = " AND a.chanel in ('DIRECT', 'SELCO', 'INFOLINE')"
+		channelFilter = " AND chanel in ('DIRECT', 'SELCO', 'INFOLINE')"
 	case "all-franchise":
-		channelFilter = " AND a.chanel in ('INFOLINE', 'SELCO')"
+		channelFilter = " AND chanel in ('INFOLINE', 'SELCO')"
 	case "selco":
-		channelFilter = " AND a.chanel = 'SELCO'"
+		channelFilter = " AND chanel = 'SELCO'"
 	case "franchiseinfoline":
-		channelFilter = " AND a.chanel = 'INFOLINE'"
+		channelFilter = " AND chanel = 'INFOLINE'"
 	case "direct":
-		channelFilter = " AND a.chanel = 'DIRECT'"
+		channelFilter = " AND chanel = 'DIRECT'"
 	}
 
-	var (
-		rows *sql.Rows
-		err  error
-	)
+	var query string
 
 	if isQuarterReport {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, "+
-			"transaction_type, subcategory, mnp_donor, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and "+
-			"quarter=$2 and EXTRACT('year' from sales_date)=$3"+channelFilter,
-			userID, quarter, year)
+		query = fmt.Sprintf(`
+		select 
+			id, 
+			prev_plan, 
+			curr_plan, 
+			quantity, 
+			product_group, 
+			transaction_type, 
+			subcategory, 
+			mnp_donor, 
+			sales_date, 
+			terminate_date 
+		from sale_transaction_table 
+		where 
+			emp_id='%s' and 
+			quarter=%d and 
+			EXTRACT('year' from sales_date)=%d
+			%s
+		`, userID, quarter, year, channelFilter)
 	} else {
-		rows, err = dbConn.DBClient.QueryContext(ctx, "select id, prev_plan, curr_plan, quantity, product_group, "+
-			"transaction_type, subcategory, mnp_donor, sales_date, terminate_date from sale_transaction_table where emp_id=$1 and "+
-			"EXTRACT('month' from sales_date)=$2 and EXTRACT('year' from sales_date)=$3"+channelFilter,
-			userID, month, year)
+		query = fmt.Sprintf(`
+		select 
+			id, 
+			prev_plan, 
+			curr_plan, 
+			quantity, 
+			product_group, 
+			transaction_type, 
+			subcategory, 
+			mnp_donor, 
+			sales_date, 
+			terminate_date 
+		from sale_transaction_table 
+		where 
+			emp_id='%s' and 
+			EXTRACT('month' from sales_date)=%d and 
+			EXTRACT('year' from sales_date)=%d
+			%s
+		`, userID, month, year, channelFilter)
 	}
+
+	fmt.Println(channelFilter, "query", query)
+
+	rows, err := dbConn.DBClient.QueryContext(ctx, query)
 	if err != nil {
 		return nil, &errors.Error{
 			StatusCode: http.StatusInternalServerError,
@@ -360,15 +429,15 @@ func (dbConn *DbServiceImpl) FetchAdjustedActiveUserSales(userID string, channel
 	channelFilter := ""
 	switch channel {
 	case "all":
-		channelFilter = " AND a.chanel in ('DIRECT', 'SELCO', 'INFOLINE')"
+		channelFilter = " AND chanel in ('DIRECT', 'SELCO', 'INFOLINE')"
 	case "all-franchise":
-		channelFilter = " AND a.chanel in ('INFOLINE', 'SELCO')"
+		channelFilter = " AND chanel in ('INFOLINE', 'SELCO')"
 	case "selco":
-		channelFilter = " AND a.chanel = 'SELCO'"
+		channelFilter = " AND chanel = 'SELCO'"
 	case "franchiseinfoline":
-		channelFilter = " AND a.chanel = 'INFOLINE'"
+		channelFilter = " AND chanel = 'INFOLINE'"
 	case "direct":
-		channelFilter = " AND a.chanel = 'DIRECT'"
+		channelFilter = " AND chanel = 'DIRECT'"
 	}
 
 	var (

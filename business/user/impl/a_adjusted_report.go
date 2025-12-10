@@ -77,12 +77,16 @@ func (impl *UserImpl) updateAdjustedAgentUserReport(ctx *gin.Context, user *mode
 		}
 	}
 
+	lat, long := 0.0, 0.0
 	outletResponse, err := impl.DbService.FetchOutletDetailsViaName(user.Region, user.Outlet, quarter, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAdjustedAgentUserReport: %v", err.Details)
 		logger.FileLogger.CtxError(ctx).Str("clientID", user.UserId).Err(errors.New(err.Details.(string))).
 			Msg("AAdjustedReport : fetch outlet info failed")
 		// return nil, nil, err
+	} else if outletResponse != nil {
+		lat = outletResponse.Lat
+		long = outletResponse.Lang
 	}
 
 	// if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
@@ -97,6 +101,7 @@ func (impl *UserImpl) updateAdjustedAgentUserReport(ctx *gin.Context, user *mode
 	// 	}
 	// }
 
+	chanel = "" // chanel is not considered for promoters/csr count
 	totalEmp, err := impl.DbService.FetchTotalNonManagerialEmployees(user.Region, user.Outlet, chanel, quarter, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAdjustedAgentUserReport: %v", err.Details)
@@ -104,6 +109,7 @@ func (impl *UserImpl) updateAdjustedAgentUserReport(ctx *gin.Context, user *mode
 		return nil, nil, err
 	}
 
+	chanel = "" // chanel is not considered for promoters/csr sales
 	allUserSales, err := impl.DbService.FetchAdjustedActiveUserSales(user.UserId, chanel, isQuarterReport, quarter, month, year)
 	if err != nil {
 		err.Details = fmt.Sprintf("updateAdjustedAgentUserReport: %v", err.Details)
@@ -125,8 +131,8 @@ func (impl *UserImpl) updateAdjustedAgentUserReport(ctx *gin.Context, user *mode
 		ManagerPosition: user.ManagerPosition,
 		Region:          user.Region,
 		Outlet:          user.Outlet,
-		Latitude:        outletResponse.Lat,
-		Longitude:       outletResponse.Lang,
+		Latitude:        lat,
+		Longitude:       long,
 		CreatedAt:       time.Now(),
 		ModifiedAt:      time.Now(),
 	}
@@ -835,6 +841,7 @@ func (impl *UserImpl) updateAdjustedOutletManagerReport(ctx *gin.Context, omngr 
 	baqatiSaleMap := make(map[string]int, 0)
 	upgradeSaleMap := make(map[string]int, 0)
 
+	chanel = ""
 	for _, eachAgent := range userAgents {
 		agentReport, err := impl.CacheService.GetUserAdjustedReport(eachAgent.UserId, chanel, isQuarterReport, month, quarter, year)
 		if !(err == nil && agentReport != nil && objecthelper.IsCurrentDay(agentReport.ModifiedAt)) {
@@ -1205,7 +1212,7 @@ func (impl *UserImpl) updateAdjustedManagerReport(ctx *gin.Context, mngr *models
 		report.Longitude = outletResponse.Lang
 	}
 
-	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, quarter, year)
+	allDistinctOM, err := impl.DbService.FetchAllOMReportingToGivenManager(mngr.Position, mngr.UserId, chanel, quarter, year)
 	if err != nil {
 		logger.FileLogger.CtxError(ctx).Str("clientID", mngr.UserId).Str("position", mngr.Position).
 			Err(errors.New(err.Details.(string))).Msg("MngrAdjustedReport : fetch om list failed")

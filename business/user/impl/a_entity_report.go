@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -31,20 +32,28 @@ func (impl *UserImpl) updateOutletReport(ctx *gin.Context, regionName, outletNam
 	logger.FileLogger.CtxInfo(ctx).Str("region", regionName).Str("outlet", outletName).Bool("isQuarter", isQuarterReport).
 		Int("quarter", quarter).Int("month", month).Int("year", year).Msg("update Outlet Report")
 
+	lat, long := 0.0, 0.0
 	outletResponse, err := impl.DbService.FetchOutletDetailsViaName(regionName, outletName, quarter, year)
 	if err != nil {
-		return nil, err
+		err.Details = fmt.Sprintf("updateOutletReport: %v", err.Details)
+		logger.FileLogger.CtxError(ctx).Str("outletName", outletName).Err(errors.New(err.Details.(string))).
+			Msg("OutletReport : fetch outlet info failed")
+		// return nil, nil, err
+	} else if outletResponse != nil {
+		lat = outletResponse.Lat
+		long = outletResponse.Lang
 	}
 
-	if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
-		return nil, &errors.Error{
-			StatusCode: http.StatusBadRequest,
-			Code:       errors.InvalidDetailsCode,
-			Message:    "INVALID OUTLET CO-ORDINATES - region:" + regionName + " outlet:" + outletName,
-			Details:    "invalid outlet co-ordintaes - region:" + regionName + " outlet:" + outletName,
-		}
-	}
+	// if outletResponse.Lat == 0 || outletResponse.Lang == 0 {
+	// 	return nil, &errors.Error{
+	// 		StatusCode: http.StatusBadRequest,
+	// 		Code:       errors.InvalidDetailsCode,
+	// 		Message:    "INVALID OUTLET CO-ORDINATES - region:" + regionName + " outlet:" + outletName,
+	// 		Details:    "invalid outlet co-ordintaes - region:" + regionName + " outlet:" + outletName,
+	// 	}
+	// }
 
+	chanel = "" // chanel is not considered for promoters/csr sales
 	hbbSales, hayyakSales, baqatiSales, upgradeSales, err := impl.DbService.FetchOutletSalesCount(regionName, outletName,
 		chanel, isQuarterReport, quarter, month, year)
 	if err != nil {
@@ -98,8 +107,8 @@ func (impl *UserImpl) updateOutletReport(ctx *gin.Context, regionName, outletNam
 	outletReport := &models.OutletReportDB{
 		Outlet:             outletName,
 		Region:             regionName,
-		Latitude:           outletResponse.Lat,
-		Longitude:          outletResponse.Lang,
+		Latitude:           lat,
+		Longitude:          long,
 		HBBSalesCount:      hbbSales,
 		HayyakSalesCount:   hayyakSales,
 		BaqatiSalesCount:   baqatiSales,

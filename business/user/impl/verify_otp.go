@@ -181,6 +181,7 @@ func (impl *UserImpl) VerifyOTP(ctx *gin.Context, req *models.VerifyOTP) (*model
 		IsAdmin:       user.IsAdmin,
 		StaffName:     user.Name,
 		StaffPosition: constant.EmployeePositionMap[user.Position],
+		StaffRole:     user.Role,
 		StaffOutlet:   user.Outlet,
 		StaffRegion:   user.Region,
 		AccessToken:   accessToken,
