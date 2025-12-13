@@ -1,9 +1,17 @@
 masterCronTime: "* 5 * * *"
 secretKey: gis-jwt-token
 adminSecretKey: gis-admin-jwt-token
-corsOrigin: https://omantelsip.omantel.om/, http://sip-golang-omantel-sip.apps.ocpprod01.otg.om/, https://omantelsip.omantel.om/,
-expectedHostName: [omantelsip.omantel.om, sip-golang-omantel-sip.apps.ocpprod01.otg.om, omantelsip.omantel.om]
-expectedReferer: [https://omantelsip.online, http://sip-golang-omantel-sip.apps.ocpprod01.otg.om, https://omantelsip.omantel.om]
+corsOrigin: https://omantelsip.omantel.om/, http://sip-golang-omantel-sip.apps.ocpprod01.otg.om/, https://omantelsip.omantel.om/
+expectedHostName: [
+  omantelsip.omantel.om, 
+  sip-golang-omantel-sip.apps.ocpprod01.otg.om, 
+  omantelsip.omantel.om,
+]
+expectedReferer: [
+  https://omantelsip.online, 
+  http://sip-golang-omantel-sip.apps.ocpprod01.otg.om, 
+  https://omantelsip.omantel.om,
+]
 reportCacheTTLInHours: 48
 sessionExpiryTimeMinutes: 30
 refreshTokenExpiryHours: 3

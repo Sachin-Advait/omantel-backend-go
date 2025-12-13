@@ -1,9 +1,27 @@
 masterCronTime: "* 5 * * *"
 secretKey: gis-jwt-token
 adminSecretKey: gis-admin-jwt-token
-corsOrigin: https://omantelsip.omantel.om/, http://93.115.22.132:8090/, http://localhost:8090/
-expectedHostName: [omantelsip.omantel.om, 93.115.22.132:8090, localhost:8090]
-expectedReferer: [https://omantelsip.online, http://93.115.22.132:8090, http://localhost:8090]
+corsOrigin: "*"
+expectedHostName: [
+  omantelsip.omantel.om, 
+  185.177.116.176 ,
+  93.115.22.132:8090, 
+  localhost:3000, 
+  185.177.116.176:8090, 
+  www.insync.work.gd, 
+  insync.work.gd, 
+  localhost:8090,
+]
+expectedReferer: [
+  https://omantelsip.online, 
+  https://185.177.116.176, 
+  http://93.115.22.132:8090, 
+  http://localhost:3000, 
+  http://185.177.116.176:8090, 
+  https://www.insync.work.gd, 
+  https://insync.work.gd,
+  http://localhost:8090,   
+]
 reportCacheTTLInHours: 48
 sessionExpiryTimeMinutes: 3600
 refreshTokenExpiryHours: 12
@@ -11,8 +29,8 @@ fcmConfigFileName: fcmConfig.json
 fcmOfferTopic: omantel-offers
 fcmTrainingTopic: omantel-training
 fcmNotificationTopic: omantel-notifications
-captchaSitesEnableKey: 6LeOsMAhAAAAAFvMjuG5TX3nE_ZGYGvvbHKsyDjd
-captchaSecretKey: 6LeOsMAhAAAAAA66_QKasMPd2ghVhA6Phr1se6FK
+captchaSitesEnableKey: 6Lc61GciAAAAAALcJjbHg364YaqPKyJ3_8jbj_Ks  #6LeOsMAhAAAAAFvMjuG5TX3nE_ZGYGvvbHKsyDjd
+captchaSecretKey: 6Lc61GciAAAAALKJWSKqfOtMea39MG9H3FCux1JG #6LeOsMAhAAAAAA66_QKasMPd2ghVhA6Phr1se6FK
 verifyCaptchaGoogleApi: https://www.google.com/recaptcha/api/siteverify
 otpUrl: https://10.64.163.150:17862/services/SendNotification
 shortCode: "OMSIP"
@@ -21,7 +39,7 @@ staticUser:
   usrId: '99999'
   otp: 123456
 psqlDB:
-  host: 185.177.116.176
+  host: localhost
   port: 5432
   dbName: development
   user: insync
