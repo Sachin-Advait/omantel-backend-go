@@ -143,6 +143,137 @@ func (impl *CacheServiceImpl) DelUserReport(userId string, chanel string, isQuar
 	return nil
 }
 
+func (impl *CacheServiceImpl) InsertUserReportPerCategory(chanel string, planType string,
+	isQuarterReport bool, month, quarter, year int, userReport *models.UserReportDB,
+	keyTTL time.Duration) *errors.Error {
+
+	if userReport == nil || userReport.UserId == "" {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "insertUserReportPerCategory: cache missing details",
+		}
+	}
+
+	bytes, err := objecthelper.MarshalJSON(userReport)
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "insertUserReportPerCategory: cache marshal failed - " + err.Error(),
+		}
+	}
+
+	var key string
+
+	if isQuarterReport {
+		key = fmt.Sprintf(constant.RedisUserPerPlanReportKey, userReport.UserId, chanel, planType, 0, quarter, year)
+	} else {
+		key = fmt.Sprintf(constant.RedisUserPerPlanReportKey, userReport.UserId, chanel, planType, month, 0, year)
+	}
+
+	err = impl.RedisClient.Set(context.Background(), key, string(bytes), keyTTL).Err()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "insertUserReportPerCategory: cache operation failed - " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (impl *CacheServiceImpl) GetUserReportPerCategory(userId string, chanel string, planType string, isQuarterReport bool,
+	month, quarter, year int) (*models.UserReportDB, *errors.Error) {
+
+	if userId == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "getUserReportPerCategory: cache missing details",
+		}
+	}
+
+	var key string
+
+	if isQuarterReport {
+		key = fmt.Sprintf(constant.RedisUserPerPlanReportKey, userId, chanel, planType, 0, quarter, year)
+	} else {
+		key = fmt.Sprintf(constant.RedisUserPerPlanReportKey, userId, chanel, planType, month, 0, year)
+	}
+
+	data, err := impl.RedisClient.Get(context.Background(), key).Result()
+	if err != nil && err != redis.Nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "getUserReportPerCategory: cache operation failed - " + err.Error(),
+		}
+	}
+
+	if err == redis.Nil || data == "" {
+		return nil, &errors.Error{
+			StatusCode: http.StatusNotFound,
+			Code:       errors.UserNotFoundCode,
+			Message:    errors.UserNotFound,
+			Details:    "getUserReportPerCategory: cache no record found",
+		}
+	}
+
+	report := &models.UserReportDB{}
+
+	err = objecthelper.UnmarshalJSON([]byte(data), &report)
+	if err != nil {
+		return nil, &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "getUserReport: cache unmarshal failed - " + err.Error(),
+		}
+	}
+
+	return report, nil
+}
+
+func (impl *CacheServiceImpl) DelUserReportPerCategory(userId string, chanel string, planType string, isQuarterReport bool,
+	month, quarter, year int) *errors.Error {
+
+	if userId == "" {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "delUserReport: cache missing details",
+		}
+	}
+
+	var key string
+
+	if isQuarterReport {
+		key = fmt.Sprintf(constant.RedisUserPerPlanReportKey, userId, chanel, planType, 0, quarter, year)
+	} else {
+		key = fmt.Sprintf(constant.RedisUserPerPlanReportKey, userId, chanel, planType, month, 0, year)
+	}
+
+	err := impl.RedisClient.Del(context.Background(), key).Err()
+	if err != nil {
+		return &errors.Error{
+			StatusCode: http.StatusInternalServerError,
+			Code:       errors.InternalServerErrorCode,
+			Message:    errors.InternalServerError,
+			Details:    "delUserReportPerCategory: cache operation failed - " + err.Error(),
+		}
+	}
+
+	return nil
+}
+
 func (impl *CacheServiceImpl) InsertUserAdjustedReport(chanel string, isQuarterReport bool, month, quarter,
 	year int, userReport *models.UserReportDB, keyTTL time.Duration) *errors.Error {
 

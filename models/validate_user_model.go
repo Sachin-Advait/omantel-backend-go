@@ -144,6 +144,12 @@ func ValidateUserIncentiveRequest(req *UserIncentiveRequest, ctxHeader context.C
 		return
 	}
 
+	if !(req.PlanType == "" || req.PlanType == constant.PremiumSaleTarget || req.PlanType == constant.StandardSaleTarget ||
+		req.PlanType == constant.TotalSaleTarget) {
+		err = errors.New("invalid plan type:" + req.PlanType)
+		return
+	}
+
 	return
 }
 

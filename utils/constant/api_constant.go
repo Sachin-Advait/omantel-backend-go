@@ -48,6 +48,7 @@ const (
 	ClientPath                 = "/client"
 	TargetChartPath            = "/target-chart"
 	SalePerPlanPath            = "/sale-per-plan"
+	TargetChartPerPlanPath     = "/target-chart-per-plan"
 	GenerateOTPPath            = "/generate-otp"
 	VerifyOTPPath              = "/verify-otp"
 	UserReportPath             = "/user-report"

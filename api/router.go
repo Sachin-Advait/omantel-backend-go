@@ -91,6 +91,7 @@ func incentiveRoutes(group *gin.RouterGroup) {
 
 	group.POST(constant.TargetChartPath, user.GetSingleUserTargetChart)
 	group.POST(constant.UserTargetPath, user.GetSingleUserTargetChart)
+	group.POST(constant.TargetChartPerPlanPath, user.GetSingleUserTargetChartPerPlan)
 
 	group.POST(constant.SalePerPlanPath, user.GetSaleCountPerPlan)
 	group.POST(constant.UserSalesPerPlanPath, user.GetSaleCountPerPlan)

@@ -15,6 +15,7 @@ const (
 	NonCluster = "NON_CLUSTER"
 
 	RedisUserReportKey                 = "%s|%s|%v|%v|%v|UserReport"             // userId|chanel|month|quarter|year|UserReport
+	RedisUserPerPlanReportKey          = "%s|%s|%s|%v|%v|%v|UserPerPlanReport"   // userId|chanel|plantype|month|quarter|year|UserPerPlanReport
 	RedisUserAdjustedReportKey         = "%s|%s|%v|%v|%v|UserAdjustedReport"     // userId|chanel|month|quarter|year|UserAdjustedReport
 	RedisUserMNPSaleCountReportKey     = "%s|%s|%v|%v|%v|MNPSaleCountReport"     // userId|chanel|month|quarter|year|MNPSaleCountReport
 	RedisUserMNPPlanCountReportKey     = "%s|%s|%v|%v|%v|MNPSalePlanReport"      // userId|chanel|month|quarter|year|MNPSalePlanReport
@@ -44,6 +45,12 @@ const (
 	HayyakCategory  = "HAYYAK"
 	UpgradeCategory = "UPGRADE"
 	VOCCategory     = "VOC"
+)
+
+const (
+	TotalSaleTarget    = "TOTAL"
+	PremiumSaleTarget  = "PREMIUM"
+	StandardSaleTarget = "STANDARD"
 )
 
 const (

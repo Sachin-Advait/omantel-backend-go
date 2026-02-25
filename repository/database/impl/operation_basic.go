@@ -16,7 +16,7 @@ func (dbConn *DbServiceImpl) FetchPlans(year int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	rows, err := dbConn.DBClient.QueryContext(ctx, "select plan_code, plan_name, plan_price, sip_plan_rate, quarter from plans_table where deleted IS NULL and year=$1", year)
+	rows, err := dbConn.DBClient.QueryContext(ctx, "select plan_code, plan_name, type, plan_price, sip_plan_rate, quarter from plans_table where deleted IS NULL and year=$1", year)
 	if err != nil {
 		return fmt.Errorf("FetchPlans: query - " + err.Error())
 	}
@@ -37,12 +37,13 @@ func (dbConn *DbServiceImpl) FetchPlans(year int) error {
 		var (
 			planCode    string
 			planName    string
+			planType    string
 			planPrice   float64
 			sipPlanRate float64
 			quarter     int
 		)
 
-		if err := rows.Scan(&planCode, &planName, &planPrice, &sipPlanRate, &quarter); err != nil {
+		if err := rows.Scan(&planCode, &planName, &planType, &planPrice, &sipPlanRate, &quarter); err != nil {
 			return fmt.Errorf("FetchPlans: scan - " + err.Error())
 		}
 
@@ -53,6 +54,7 @@ func (dbConn *DbServiceImpl) FetchPlans(year int) error {
 		if models.PlanRates.PlanRateMap[year][quarter][planCode] == nil {
 			models.PlanRates.PlanRateMap[year][quarter][planCode] = &models.ProductPlans{
 				PlanName:    planName,
+				PlanType:    planType,
 				PlanPrice:   planPrice,
 				SIPRatePlan: sipPlanRate,
 			}
@@ -68,11 +70,12 @@ func (dbConn *DbServiceImpl) FetchSaleTarget(year int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	rows, err := dbConn.DBClient.QueryContext(ctx, "select region, outlet, month, baqati, hbb, hayyak, upgrade from targets_table where deleted IS NULL and year=$1", year)
+	rows, err := dbConn.DBClient.QueryContext(ctx, "select region, outlet, month, type, baqati, hbb, hayyak, upgrade from targets_table where deleted IS NULL and year=$1", year)
 	if err != nil {
 		return fmt.Errorf("FetchSaleTarget: query - " + err.Error())
 	}
 
+	// for total sale targets
 	models.SalesTrgt.Mutex.Lock()
 	defer models.SalesTrgt.Mutex.Unlock()
 
@@ -84,40 +87,102 @@ func (dbConn *DbServiceImpl) FetchSaleTarget(year int) error {
 		models.SalesTrgt.SaleTargetMap[year] = make(map[string]map[string][12]*models.ProductGrpTarget)
 	}
 
+	// for premium sale targets
+	models.PremiumSalesTrgt.Mutex.Lock()
+	defer models.PremiumSalesTrgt.Mutex.Unlock()
+
+	if models.PremiumSalesTrgt.SaleTargetMap == nil {
+		models.PremiumSalesTrgt.SaleTargetMap = make(map[int]map[string]map[string][12]*models.ProductGrpTarget)
+	}
+
+	if models.PremiumSalesTrgt.SaleTargetMap[year] == nil {
+		models.PremiumSalesTrgt.SaleTargetMap[year] = make(map[string]map[string][12]*models.ProductGrpTarget)
+	}
+
+	// for standard sale targets
+	models.StandardSalesTrgt.Mutex.Lock()
+	defer models.StandardSalesTrgt.Mutex.Unlock()
+
+	if models.StandardSalesTrgt.SaleTargetMap == nil {
+		models.StandardSalesTrgt.SaleTargetMap = make(map[int]map[string]map[string][12]*models.ProductGrpTarget)
+	}
+
+	if models.StandardSalesTrgt.SaleTargetMap[year] == nil {
+		models.StandardSalesTrgt.SaleTargetMap[year] = make(map[string]map[string][12]*models.ProductGrpTarget)
+	}
+
 	for rows.Next() {
 
 		var (
 			region  string
 			outlet  string
 			month   int
+			types   string
 			baqati  int
 			hBB     int
 			hayyak  int
 			upgrade int
 		)
 
-		if err := rows.Scan(&region, &outlet, &month, &baqati, &hBB, &hayyak, &upgrade); err != nil {
+		if err := rows.Scan(&region, &outlet, &month, &types, &baqati, &hBB, &hayyak, &upgrade); err != nil {
 			return fmt.Errorf("FetchSaleTarget: scan - " + err.Error())
 		}
 
+		// initializing maps if not already initialized to avoid nil map assignment error
 		if models.SalesTrgt.SaleTargetMap[year][region] == nil {
 			models.SalesTrgt.SaleTargetMap[year][region] = make(map[string][12]*models.ProductGrpTarget)
 		}
-
-		array, ok := models.SalesTrgt.SaleTargetMap[year][region][outlet]
-		if !ok {
-			var temp [12]*models.ProductGrpTarget
-			models.SalesTrgt.SaleTargetMap[year][region][outlet] = temp
+		if models.PremiumSalesTrgt.SaleTargetMap[year][region] == nil {
+			models.PremiumSalesTrgt.SaleTargetMap[year][region] = make(map[string][12]*models.ProductGrpTarget)
+		}
+		if models.StandardSalesTrgt.SaleTargetMap[year][region] == nil {
+			models.StandardSalesTrgt.SaleTargetMap[year][region] = make(map[string][12]*models.ProductGrpTarget)
 		}
 
-		array[month-1] = &models.ProductGrpTarget{
-			Baqati:  baqati,
-			HBB:     hBB,
-			Hayyak:  hayyak,
-			Upgrade: upgrade,
+		switch types {
+		case constant.PremiumSaleTarget: // for premium sale targets
+			array, ok := models.PremiumSalesTrgt.SaleTargetMap[year][region][outlet]
+			if !ok {
+				var temp [12]*models.ProductGrpTarget
+				models.PremiumSalesTrgt.SaleTargetMap[year][region][outlet] = temp
+			}
+			array[month-1] = &models.ProductGrpTarget{
+				Baqati:  baqati,
+				HBB:     hBB,
+				Hayyak:  hayyak,
+				Upgrade: upgrade,
+			}
+			models.PremiumSalesTrgt.SaleTargetMap[year][region][outlet] = array
+		case constant.StandardSaleTarget: // for standard sale targets
+			array, ok := models.StandardSalesTrgt.SaleTargetMap[year][region][outlet]
+			if !ok {
+				var temp [12]*models.ProductGrpTarget
+				models.StandardSalesTrgt.SaleTargetMap[year][region][outlet] = temp
+			}
+			array[month-1] = &models.ProductGrpTarget{
+				Baqati:  baqati,
+				HBB:     hBB,
+				Hayyak:  hayyak,
+				Upgrade: upgrade,
+			}
+			models.StandardSalesTrgt.SaleTargetMap[year][region][outlet] = array
+		case constant.TotalSaleTarget:
+			fallthrough
+		default:
+			// for total sale targets
+			array, ok := models.SalesTrgt.SaleTargetMap[year][region][outlet]
+			if !ok {
+				var temp [12]*models.ProductGrpTarget
+				models.SalesTrgt.SaleTargetMap[year][region][outlet] = temp
+			}
+			array[month-1] = &models.ProductGrpTarget{
+				Baqati:  baqati,
+				HBB:     hBB,
+				Hayyak:  hayyak,
+				Upgrade: upgrade,
+			}
+			models.SalesTrgt.SaleTargetMap[year][region][outlet] = array
 		}
-
-		models.SalesTrgt.SaleTargetMap[year][region][outlet] = array
 	}
 
 	return nil

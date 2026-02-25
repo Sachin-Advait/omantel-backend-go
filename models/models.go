@@ -37,6 +37,7 @@ type UserIncentiveRequest struct {
 	Monthly   string `json:"monthly"`
 	Quarterly string `json:"quarterly"`
 	Channel   string `json:"channel"`
+	PlanType  string `json:"plan_type"`
 }
 
 type UserSalesRequest struct {
@@ -321,6 +322,7 @@ type ProductWiseSalesTargetPerOutlet struct {
 
 type ProductPlans struct {
 	PlanName    string
+	PlanType    string
 	PlanPrice   float64
 	SIPRatePlan float64
 }
@@ -455,6 +457,9 @@ type LoginUsers struct {
 }
 
 var SalesTrgt SaleTarget
+var PremiumSalesTrgt SaleTarget
+var StandardSalesTrgt SaleTarget
+
 var PlanRates PlanRate
 var ValOfPoint ValueOfPoint
 var MaxPay MaxPayout

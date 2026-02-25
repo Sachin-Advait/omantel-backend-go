@@ -19,6 +19,14 @@ type CacheService interface {
 		year int) (*models.UserReportDB, *errors.Error)
 	DelUserReport(userId string, chanel string, isQuarterReport bool, month, quarter,
 		year int) *errors.Error
+
+	InsertUserReportPerCategory(chanel string, planType string, isQuarterReport bool, month, quarter, year int,
+		userReport *models.UserReportDB, keyTTL time.Duration) *errors.Error
+	GetUserReportPerCategory(userId string, chanel string, planType string, isQuarterReport bool, month, quarter,
+		year int) (*models.UserReportDB, *errors.Error)
+	DelUserReportPerCategory(userId string, chanel string, planType string, isQuarterReport bool, month, quarter,
+		year int) *errors.Error
+
 	InsertUserAdjustedReport(chanel string, isQuarterReport bool, month, quarter,
 		year int, userReport *models.UserReportDB, keyTTL time.Duration) *errors.Error
 	GetUserAdjustedReport(userId string, chanel string, isQuarterReport bool,

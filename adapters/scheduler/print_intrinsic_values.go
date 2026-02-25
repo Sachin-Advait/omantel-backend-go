@@ -16,7 +16,9 @@ func PrintIntrinsicValues() {
 
 	logger.FileLogger.Info().Int("year", year).Msg("Annual Data Log")
 	logger.FileLogger.Info().Int("year", year).Interface("plans", models.PlanRates.PlanRateMap[year]).Msg("Load Plans")
-	logger.FileLogger.Info().Int("year", year).Interface("target", models.SalesTrgt.SaleTargetMap[year]).Msg("Load Target")
+	logger.FileLogger.Info().Int("year", year).Interface("target total", models.SalesTrgt.SaleTargetMap[year]).Msg("Load Total Target")
+	logger.FileLogger.Info().Int("year", year).Interface("target premium", models.PremiumSalesTrgt.SaleTargetMap[year]).Msg("Load Premium Target")
+	logger.FileLogger.Info().Int("year", year).Interface("target standard", models.StandardSalesTrgt.SaleTargetMap[year]).Msg("Load Standard Target")
 	logger.FileLogger.Info().Int("year", year).Interface("vop", models.ValOfPoint.VopMap[year]).Msg("Load VOP")
 	logger.FileLogger.Info().Int("year", year).Interface("maxPay", models.MaxPay.Payoutmap[year]).Msg("Load MaxPay")
 	logger.FileLogger.Info().Int("year", year).Interface("maxExtraPay", models.MaxExtraPay.ExtraPayoutmap[year]).Msg("Load MaxExtraPay")
@@ -28,7 +30,9 @@ func PrintIntrinsicValues() {
 
 	logger.FileLogger.Info().Int("year", year).Msg("Annual Data Log")
 	logger.FileLogger.Info().Int("year", year).Interface("plans", models.PlanRates.PlanRateMap[year]).Msg("Load Plans")
-	logger.FileLogger.Info().Int("year", year).Interface("target", models.SalesTrgt.SaleTargetMap[year]).Msg("Load Target")
+	logger.FileLogger.Info().Int("year", year).Interface("target total", models.SalesTrgt.SaleTargetMap[year]).Msg("Load Total Target")
+	logger.FileLogger.Info().Int("year", year).Interface("target premium", models.PremiumSalesTrgt.SaleTargetMap[year]).Msg("Load Premium Target")
+	logger.FileLogger.Info().Int("year", year).Interface("target standard", models.StandardSalesTrgt.SaleTargetMap[year]).Msg("Load Standard Target")
 	logger.FileLogger.Info().Int("year", year).Interface("vop", models.ValOfPoint.VopMap[year]).Msg("Load VOP")
 	logger.FileLogger.Info().Int("year", year).Interface("maxPay", models.MaxPay.Payoutmap[year]).Msg("Load MaxPay")
 	logger.FileLogger.Info().Int("year", year).Interface("maxExtraPay", models.MaxExtraPay.ExtraPayoutmap[year]).Msg("Load MaxExtraPay")
@@ -40,7 +44,9 @@ func PrintIntrinsicValues() {
 
 	logger.FileLogger.Info().Int("year", year).Msg("Annual Data Log")
 	logger.FileLogger.Info().Int("year", year).Interface("plans", models.PlanRates.PlanRateMap[year]).Msg("Load Plans")
-	logger.FileLogger.Info().Int("year", year).Interface("target", models.SalesTrgt.SaleTargetMap[year]).Msg("Load Target")
+	logger.FileLogger.Info().Int("year", year).Interface("target total", models.SalesTrgt.SaleTargetMap[year]).Msg("Load Total Target")
+	logger.FileLogger.Info().Int("year", year).Interface("target premium", models.PremiumSalesTrgt.SaleTargetMap[year]).Msg("Load Premium Target")
+	logger.FileLogger.Info().Int("year", year).Interface("target standard", models.StandardSalesTrgt.SaleTargetMap[year]).Msg("Load Standard Target")
 	logger.FileLogger.Info().Int("year", year).Interface("vop", models.ValOfPoint.VopMap[year]).Msg("Load VOP")
 	logger.FileLogger.Info().Int("year", year).Interface("maxPay", models.MaxPay.Payoutmap[year]).Msg("Load MaxPay")
 	logger.FileLogger.Info().Int("year", year).Interface("maxExtraPay", models.MaxExtraPay.ExtraPayoutmap[year]).Msg("Load MaxExtraPay")

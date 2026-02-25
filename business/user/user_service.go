@@ -26,6 +26,8 @@ type UserProvider interface {
 		year int) (*models.TotalIncentive, *errors.Error)
 	GetUserSalesAndTargetChart(ctx *gin.Context, userId string, chanel string, isQuarterReport bool,
 		quarter, month, year int) (*models.ChartDataResponse, *errors.Error)
+	GetUserSalesAndTargetChartPerPlan(ctx *gin.Context, userID string, chanel string,
+		planType string, isQuarterReport bool, quarter, month, year int) (*models.ChartDataResponse, *errors.Error)
 
 	GetSaleCountPerPlan(ctx *gin.Context, userId, product string, chanel string, isQuarterReport bool,
 		quarter, month, year int) ([]*models.SaleCountPerPlan, *errors.Error)

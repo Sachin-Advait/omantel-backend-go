@@ -150,6 +150,35 @@ func (impl *UserImpl) getSIPRatePlan(quarter, year int, planName string) (float6
 	return 0, errors.New("PLAN-NAME INVALID - " + planName)
 }
 
+func (impl *UserImpl) getPlanType(quarter, year int, planName string) (string, error) {
+
+	planID := ""
+
+	models.PlanRates.Mutex.RLock()
+	defer models.PlanRates.Mutex.RUnlock()
+
+	if models.PlanRates.PlanRateMap[year] == nil {
+		return "", errors.New("PLAN-NAME YEAR INVALID - " + fmt.Sprintf("%v", year))
+	}
+
+	if models.PlanRates.PlanRateMap[year][quarter] == nil {
+		return "", errors.New("PLAN-NAME QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
+	}
+
+	for id, v := range models.PlanRates.PlanRateMap[year][quarter] {
+		if v.PlanName == planName {
+			planID = id
+			break
+		}
+	}
+
+	if planID != "" {
+		return models.PlanRates.PlanRateMap[year][quarter][planID].PlanType, nil
+	}
+
+	return "", errors.New("PLAN-NAME INVALID - " + planName)
+}
+
 func (impl *UserImpl) getSaleTargetPerOutlet(year, month, quarter int, isQuarterReport bool, grp,
 	region, outlet string) (int, error) {
 
@@ -245,6 +274,135 @@ func (impl *UserImpl) getSaleTargetPerOutlet(year, month, quarter int, isQuarter
 			return models.SalesTrgt.SaleTargetMap[year][region][outlet][month-1].Baqati, nil
 		case constant.UpgradeCategory:
 			return models.SalesTrgt.SaleTargetMap[year][region][outlet][month-1].Upgrade, nil
+		}
+	}
+
+	return 0, errors.New("TARGET GROUP INVALID - " + grp)
+}
+
+func (impl *UserImpl) getSaleTargetPerOutletPerCategory(year, month, quarter int, isQuarterReport bool, grp,
+	region, outlet, types string) (int, error) {
+
+	var (
+		start int
+		end   int
+	)
+
+	if isQuarterReport {
+		switch quarter {
+		case 1:
+			start = 1
+			end = 3
+		case 2:
+			start = 4
+			end = 6
+		case 3:
+			start = 7
+			end = 9
+		case 4:
+			start = 10
+			end = 12
+		default:
+			return 0, errors.New("TARGET QUARTER INVALID - " + fmt.Sprintf("%v", quarter))
+		}
+	}
+
+	var outletMap [12]*models.ProductGrpTarget
+
+	switch types {
+	case constant.PremiumSaleTarget:
+		models.PremiumSalesTrgt.Mutex.RLock()
+		defer models.PremiumSalesTrgt.Mutex.RUnlock()
+
+		if models.PremiumSalesTrgt.SaleTargetMap[year] == nil {
+			return 0, errors.New("TARGET YEAR INVALID - " + fmt.Sprintf("%v", year))
+		}
+
+		rMap, ok := models.PremiumSalesTrgt.SaleTargetMap[year][region]
+		if !ok {
+			return 0, errors.New("TARGET REGION NOT FOUND - " + region)
+		}
+
+		outletMap, ok = rMap[outlet]
+		if !ok {
+			return 0, errors.New("TARGET OUTLET NOT FOUND - " + outlet)
+		}
+
+	case constant.StandardSaleTarget:
+		models.StandardSalesTrgt.Mutex.RLock()
+		defer models.StandardSalesTrgt.Mutex.RUnlock()
+
+		if models.StandardSalesTrgt.SaleTargetMap[year] == nil {
+			return 0, errors.New("TARGET YEAR INVALID - " + fmt.Sprintf("%v", year))
+		}
+
+		rMap, ok := models.StandardSalesTrgt.SaleTargetMap[year][region]
+		if !ok {
+			return 0, errors.New("TARGET REGION NOT FOUND - " + region)
+		}
+
+		outletMap, ok = rMap[outlet]
+		if !ok {
+			return 0, errors.New("TARGET OUTLET NOT FOUND - " + outlet)
+		}
+
+	case constant.TotalSaleTarget:
+		fallthrough
+
+	default:
+		return impl.getSaleTargetPerOutlet(year, month, quarter, isQuarterReport, grp, region, outlet)
+	}
+
+	if isQuarterReport { //quarter target
+		result := 0
+		switch grp {
+		case constant.HBBCategory:
+			for i := start - 1; i < end; i++ {
+				if outletMap[i] == nil {
+					return 0, fmt.Errorf("TARGET HBB BLANK FOR MONTH - %v", i)
+				}
+				result += outletMap[i].HBB
+			}
+			return result, nil
+
+		case constant.HayyakCategory:
+			for i := start - 1; i < end; i++ {
+				if outletMap[i] == nil {
+					return 0, fmt.Errorf("TARGET HAYYAK BLANK FOR MONTH - %v", i)
+				}
+				result += outletMap[i].Hayyak
+			}
+			return result, nil
+
+		case constant.BaqatiCategory:
+			for i := start - 1; i < end; i++ {
+				if outletMap[i] == nil {
+					return 0, fmt.Errorf("TARGET BAQATI BLANK FOR MONTH - %v", i)
+				}
+				result += outletMap[i].Baqati
+			}
+			return result, nil
+
+		case constant.UpgradeCategory:
+			for i := start - 1; i < end; i++ {
+				if outletMap[i] == nil {
+					return 0, fmt.Errorf("TARGET UPGRADE BLANK FOR MONTH - %v", i)
+				}
+				result += outletMap[i].Upgrade
+			}
+			return result, nil
+
+		}
+	} else { //month target
+		switch grp {
+		case constant.HBBCategory:
+			return outletMap[month-1].HBB, nil
+		case constant.HayyakCategory:
+			return outletMap[month-1].Hayyak, nil
+		case constant.BaqatiCategory:
+			return outletMap[month-1].Baqati, nil
+		case constant.UpgradeCategory:
+			return outletMap[month-1].Upgrade, nil
 		}
 	}
 
